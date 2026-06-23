@@ -232,7 +232,25 @@
     border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
   @keyframes sp{to{transform:rotate(360deg)}}
 
-  /* ---------- modules layout ---------- */
+  /* ---- product edit tab ---- */
+  #editResults{display:flex;flex-direction:column;gap:12px;margin-top:6px}
+  .pcard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;
+    box-shadow:0 2px 10px rgba(20,26,33,.04)}
+  .pcard .pc-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .pcard .pc-head img{width:46px;height:46px;border-radius:11px;object-fit:cover;flex:none;
+    background:var(--bg);border:1px solid var(--line)}
+  .pcard .pc-mktt{color:var(--ink2);font-size:12.5px;font-weight:600}
+  .prow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+  .prow .pk{flex:none;width:58px;color:var(--ink2);font-size:13px;font-weight:600}
+  .prow .pv{flex:1;min-width:0;color:var(--ink);font-size:14.5px;font-weight:600;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .prow .pv.empty{color:var(--ink2);font-weight:400}
+  .prow .pedit{flex:none;width:34px;height:34px;border-radius:10px;border:1px solid var(--line);
+    background:var(--bg);color:var(--pine);display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .prow .pedit:active{transform:translateY(1px)}
+  .prow .pedit .i{width:16px;height:16px}
+  .prow .pedit .lockmark{position:absolute;width:0;height:0}
+  .prow.price .pedit{color:var(--amber)}
   #saleMain{max-width:680px;margin:0 auto;padding:18px 16px;display:none}
   body.m-sale #countMain,body.m-sale #countNav{display:none}
   body.m-sale #saleMain{display:block}
@@ -505,6 +523,15 @@
     </div>
   </section>
 
+  <!-- PRODUCT EDIT TAB -->
+  <section id="tab-edit" class="tab">
+    <div class="search">
+      <input id="qEdit" placeholder="חיפוש מוצר לעריכה — שם או מק״ט…" autocomplete="off" inputmode="search">
+    </div>
+    <div class="hint" id="editHint">הקלידו לפחות 2 תווים כדי למצוא מוצר. שינוי מחיר מוגן בסיסמת מנהל.</div>
+    <div id="editResults"></div>
+  </section>
+
   <!-- SUMMARY TAB -->
   <section id="tab-summary" class="tab">
     <div class="cards">
@@ -603,7 +630,8 @@
 </main>
 
 <nav id="countNav">
-  <button data-tab="count" class="active"><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg></span>ספירה</button>
+  <button data-tab="count" class="active"><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg></span>ספירת מלאי</button>
+  <button data-tab="edit"><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span>עדכון מוצרים</button>
   <button data-tab="summary"><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V11M12 21V4M19 21v-6M3 21h18"/></svg></span>סיכום</button>
   <button data-tab="admin"><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-6M4 11V3M12 21v-9M12 7V3M20 21v-4M20 13V3M1 15h6M9 7h6M17 17h6"/></svg></span>ניהול</button>
 </nav>
@@ -657,6 +685,17 @@
     <button class="scanbtn" id="bcScanBtn" style="margin-top:0"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h8l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg> סרוק ברקוד חדש</button>
     <button class="btn primary" id="bcSave" style="margin-top:12px">שמור ברקוד</button>
     <button class="btn ghost" id="bcCancel">ביטול</button>
+  </div>
+</div>
+
+<!-- FIELD EDITOR (name / price) -->
+<div class="sheet" id="fieldSheet">
+  <div class="card">
+    <h3 id="fieldTitle">עריכה</h3>
+    <div class="meta" id="fieldMeta">—</div>
+    <div class="loc"><input id="fieldInput" autocomplete="off"></div>
+    <button class="btn primary" id="fieldSave" style="margin-top:12px">שמירה</button>
+    <button class="btn ghost" id="fieldCancel">ביטול</button>
   </div>
 </div>
 
@@ -767,6 +806,7 @@ function gotoTab(tab){
   document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
   $("#tab-"+tab).classList.add("active");
   if(tab==="summary") renderSummary();
+  if(tab==="edit") refreshEditResults();
 }
 let PIN_CB=null;
 function askPin(cb){ PIN_CB=cb||null; $("#pinInput").value=""; $("#pinSheet").classList.add("open"); setTimeout(()=>$("#pinInput").focus(),60); }
@@ -1043,8 +1083,7 @@ function closeSheet(){ $("#sheet").classList.remove("open"); CURRENT=null; EDIT=
 
 function renderBcRow(p){
   const bc=p&&p.barcode;
-  $("#bcRow").innerHTML=`ברקוד: <b>${bc?esc(bc):"— אין —"}</b>`+
-    `<button class="mini" id="bcEdit" type="button" style="margin-inline-start:6px">✎</button>`;
+  $("#bcRow").innerHTML=`ברקוד: <b>${bc?esc(bc):"— אין —"}</b>`;
 }
 function setSheetImg(p){
   const img=$("#eImg");
@@ -1093,6 +1132,7 @@ async function saveBarcode(){
   try{
     await updateProductBarcode(BC_MKTT,val);
     if((CURRENT&&String(CURRENT.mktt)===BC_MKTT)||(EDIT&&String(EDIT.mktt)===BC_MKTT)) renderBcRow(PRODMAP.get(BC_MKTT));
+    if(typeof refreshEditResults==="function") refreshEditResults();
     toast(val?"✓ הברקוד נשמר":"✓ הברקוד הוסר");
     closeBc();
   }catch(e){ console.error(e); toast("שגיאה בשמירת ברקוד (בדוק חיבור)"); }
@@ -1639,6 +1679,64 @@ async function editProduct(mktt){
   renderSaleResults(search($("#qSale").value.trim()));
   if(CUR_CART!=null) renderCart();
 }
+/* ---------- product edit tab (עדכון מוצרים) ---------- */
+function renderEditResults(list){
+  const box=$("#editResults"); if(!box) return;
+  const term=$("#qEdit").value.trim();
+  if(!PRODUCTS.length){ box.innerHTML=emptyState('box','אין מוצרים','ייבא קטלוג במסך הניהול'); $("#editHint").style.display="none"; return; }
+  if(term.length<2){ box.innerHTML=""; $("#editHint").style.display="block"; return; }
+  $("#editHint").style.display="none";
+  if(!list.length){ box.innerHTML=emptyState('search','לא נמצא מוצר תואם','נסה שם או מק״ט אחר'); return; }
+  box.innerHTML=list.map(p=>{
+    const mktt=esc(String(p.mktt));
+    const pr=fmtPrice(p.price);
+    const bc=p.barcode?esc(String(p.barcode)):"";
+    const img=p.image_url?`<img loading="lazy" src="${esc(p.image_url)}" alt="" onerror="this.style.display='none'">`:"";
+    return `<div class="pcard" data-mktt="${mktt}">
+      <div class="pc-head">${img}<div><div><b>${p.name?esc(p.name):"(ללא שם)"}</b></div><div class="pc-mktt">מק״ט ${mktt}${p.unit?" · "+esc(p.unit):""}</div></div></div>
+      <div class="prow"><span class="pk">תיאור</span><span class="pv${p.name?"":" empty"}">${p.name?esc(p.name):"— ללא —"}</span><button class="pedit" data-edit-field="name" data-mktt="${mktt}" type="button" title="עריכת תיאור">${ic('edit')}</button></div>
+      <div class="prow price"><span class="pk">מחיר</span><span class="pv${pr?"":" empty"}">${pr?esc(pr):"— ללא —"}</span><button class="pedit" data-edit-field="price" data-mktt="${mktt}" type="button" title="עריכת מחיר (מנהל)">${ic('lock')}</button></div>
+      <div class="prow"><span class="pk">ברקוד</span><span class="pv${bc?"":" empty"}">${bc||"— ללא —"}</span><button class="pedit" data-edit-field="barcode" data-mktt="${mktt}" type="button" title="עריכת ברקוד">${ic('edit')}</button></div>
+    </div>`;
+  }).join("");
+}
+function refreshEditResults(){ if($("#tab-edit") && $("#tab-edit").classList.contains("active")) renderEditResults(search($("#qEdit").value)); }
+
+let FIELD_CTX=null;
+function openFieldEdit(mktt,field){
+  const p=PRODMAP.get(String(mktt)); if(!p){ toast("מוצר לא נמצא"); return; }
+  FIELD_CTX={mktt:String(mktt),field};
+  const inp=$("#fieldInput");
+  if(field==="name"){ $("#fieldTitle").textContent="עריכת תיאור"; inp.type="text"; inp.inputMode="text"; inp.value=p.name||""; }
+  else { $("#fieldTitle").textContent="עריכת מחיר"; inp.type="text"; inp.inputMode="decimal"; inp.value=(p.price!=null&&String(p.price).trim()!=="")?String(pnum(p.price)):""; }
+  $("#fieldMeta").textContent=(p.name?p.name+" · ":"")+"מק״ט "+mktt;
+  $("#fieldSheet").classList.add("open");
+  setTimeout(()=>{ inp.focus(); inp.select&&inp.select(); },60);
+}
+function closeField(){ $("#fieldSheet").classList.remove("open"); FIELD_CTX=null; }
+async function saveField(){
+  if(!FIELD_CTX) return;
+  const mktt=FIELD_CTX.mktt, field=FIELD_CTX.field, raw=$("#fieldInput").value;
+  let val;
+  if(field==="name"){ val=String(raw).trim(); if(!val){ toast("תיאור לא יכול להיות ריק"); return; } }
+  else { const n=pnum(raw); if(!(n>=0)){ toast("מחיר לא תקין"); return; } val=n; }
+  const btn=$("#fieldSave"), old=btn.textContent;
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> שומר…';
+  try{ await updateProductField(mktt,field,val); toast("המוצר עודכן"); closeField(); }
+  catch(e){ console.error(e); toast("עודכן מקומית — שגיאת סנכרון לענן"); closeField(); }
+  finally{ btn.disabled=false; btn.textContent=old; }
+}
+async function updateProductField(mktt,field,val){
+  const p=PRODMAP.get(String(mktt)); if(!p) return;
+  if(field==="name") p.name=val; else if(field==="price") p.price=val;
+  try{ localStorage.setItem(LS.products,JSON.stringify(PRODUCTS)); }catch(e){}
+  if(CLOUD && sb){ const patch={}; patch[field]=val; const {error}=await sb.from("products").update(patch).eq("mktt",String(mktt)); if(error) throw error; }
+  refreshEditResults();
+  if(typeof renderSaleResults==="function" && $("#qSale")) renderSaleResults(search($("#qSale").value.trim()));
+  if(typeof CUR_CART!=="undefined" && CUR_CART!=null) renderCart();
+}
+
+
 function renderSaleResults(list){
   const ul=$("#saleResults"), term=$("#qSale").value.trim();
   if(term.length<2){ ul.innerHTML=""; return; }
@@ -1900,6 +1998,19 @@ function bindUI(){
   let t;
   $("#q").addEventListener("input",()=>{ clearTimeout(t); t=setTimeout(()=>renderResults(search($("#q").value)),120); });
   $("#results").addEventListener("click",e=>{ const li=e.target.closest(".item"); if(li) openSheet(li.dataset.mktt); });
+  // ---- product edit tab ----
+  let te; $("#qEdit").addEventListener("input",()=>{ clearTimeout(te); te=setTimeout(()=>renderEditResults(search($("#qEdit").value)),120); });
+  $("#editResults").addEventListener("click",e=>{
+    const btn=e.target.closest("[data-edit-field]"); if(!btn) return;
+    const mktt=btn.dataset.mktt, field=btn.dataset.editField;
+    if(field==="barcode"){ openBarcodeEditor(mktt); }
+    else if(field==="price"){ requireAdmin(()=>openFieldEdit(mktt,"price")); }
+    else { openFieldEdit(mktt,"name"); }
+  });
+  $("#fieldSave").addEventListener("click",saveField);
+  $("#fieldCancel").addEventListener("click",closeField);
+  $("#fieldInput").addEventListener("keydown",e=>{ if(e.key==="Enter") saveField(); });
+  $("#fieldSheet").addEventListener("click",e=>{ if(e.target.id==="fieldSheet") closeField(); });
   $("#qSum").addEventListener("input",()=>{ clearTimeout(t); t=setTimeout(renderSummary,120); });
   $("#refreshBtn").addEventListener("click",async()=>{ await loadCounts(); renderSummary(); setStatus(); toast("רוענן"); });
 
