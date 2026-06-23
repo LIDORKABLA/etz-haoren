@@ -1296,43 +1296,70 @@ function refreshCatalogState(){
 let h5=null, scanLock=false, torchOn=false;
 async function openScanner(mode){
   SCAN_MODE = (mode==="assign"||mode==="sale") ? mode : "count";
-  if(!window.Html5Qrcode){ toast("סורק לא זמין"); return; }
-  const standalone = window.navigator.standalone===true || (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    toast(standalone ? "המצלמה חסומה במצב אפליקציה — פתח דרך ספארי" : "הדפדפן לא חושף גישה למצלמה כאן");
+
+  // 1) ודא שספריית הסריקה נטענה
+  if(!window.Html5Qrcode){
+    toast("סורק לא זמין — ספריית הסריקה לא נטענה");
     return;
   }
+
+  // 2) מצלמה בדפדפן דורשת קישור מאובטח HTTPS
+  if(!window.isSecureContext){
+    toast("המצלמה עובדת רק בקישור מאובטח HTTPS");
+    return;
+  }
+
+  // 3) ודא שהדפדפן בכלל מאפשר גישה למצלמה
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    toast("הדפדפן לא מאפשר גישה למצלמה — פתח דרך Safari/Chrome ואשר הרשאה");
+    return;
+  }
+
   $("#scanner").classList.add("open");
+  scanLock = false;
+
   const F=window.Html5QrcodeSupportedFormats;
   const formats = F ? [F.EAN_13,F.EAN_8,F.UPC_A,F.UPC_E,F.CODE_128,F.CODE_39,F.ITF,F.CODABAR,F.QR_CODE] : undefined;
-  h5=new Html5Qrcode("reader",{ formatsToSupport:formats, experimentalFeatures:{ useBarCodeDetectorIfSupported:true }, verbose:false });
-  const startCfg={ fps:15, disableFlip:true,
-    qrbox:(w,h)=>{ const width=Math.round(Math.min(w,h)*0.9); return {width, height:Math.round(width*0.55)}; } };
-  const fail=(e)=>{
+
+  h5=new Html5Qrcode("reader",{
+    formatsToSupport:formats,
+    experimentalFeatures:{ useBarCodeDetectorIfSupported:true },
+    verbose:false
+  });
+
+  const startCfg={
+    fps:10,
+    disableFlip:true,
+    qrbox:(w,h)=>{
+      const width=Math.round(Math.min(w,h)*0.85);
+      return {width, height:Math.round(width*0.55)};
+    }
+  };
+
+  try{
+    // פתיחה פשוטה ויציבה יותר: בלי deviceId exact, בלי 1920x1080, בלי focusMode
+    await h5.start(
+      { facingMode:"environment" },
+      startCfg,
+      onScan,
+      ()=>{}
+    );
+  }catch(e){
     console.error("scanner error",e);
     const s=String((e&&e.name)||(e&&e.message)||e||"");
-    if(/NotAllowed|permission|denied/i.test(s)) toast("הגישה למצלמה חסומה — אשר אותה בהגדרות הדפדפן");
-    else if(standalone) toast("המצלמה חסומה במצב אפליקציה — פתח דרך ספארי");
-    else toast("לא ניתן לפתוח מצלמה: "+(s||"לא ידוע"));
+
+    if(/NotAllowed|permission|denied/i.test(s)){
+      toast("הגישה למצלמה חסומה — אשר הרשאת מצלמה בדפדפן");
+    }else if(/NotFound|DevicesNotFound/i.test(s)){
+      toast("לא נמצאה מצלמה במכשיר");
+    }else if(/NotReadable|TrackStart/i.test(s)){
+      toast("המצלמה תפוסה באפליקציה אחרת");
+    }else{
+      toast("לא ניתן לפתוח מצלמה: "+(s||"לא ידוע"));
+    }
+
     closeScanner();
-  };
-  try{
-    let camId=null;
-    try{
-      const cams=await Html5Qrcode.getCameras();
-      if(cams && cams.length){
-        const back=cams.find(c=>/back|rear|environment|אחור/i.test(c.label||""));
-        camId=(back||cams[cams.length-1]).id;
-      }
-    }catch(ge){ console.warn("getCameras failed",ge); }
-    const camConstraints = camId
-      ? { deviceId:{exact:camId}, width:{ideal:1920}, height:{ideal:1080}, advanced:[{focusMode:"continuous"}] }
-      : { facingMode:{ideal:"environment"}, width:{ideal:1920}, height:{ideal:1080}, advanced:[{focusMode:"continuous"}] };
-    try{ await h5.start(camConstraints, startCfg, onScan, ()=>{}); }
-    catch(e1){ console.warn("hi-res start failed, fallback",e1);
-      if(camId) await h5.start(camId, startCfg, onScan, ()=>{});
-      else await h5.start({facingMode:"environment"}, startCfg, onScan, ()=>{}); }
-  }catch(e){ fail(e); }
+  }
 }
 async function toggleTorch(){
   if(!h5) return;
