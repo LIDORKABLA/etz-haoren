@@ -236,6 +236,25 @@
   #saleMain{max-width:680px;margin:0 auto;padding:18px 16px;display:none}
   body.m-sale #countMain,body.m-sale #countNav{display:none}
   body.m-sale #saleMain{display:block}
+
+  /* ---- embedded module (Base44) ---- */
+  #b44Main{display:none;flex-direction:column;height:calc(100dvh - 132px);min-height:380px}
+  body.m-b44 #countMain,body.m-b44 #countNav,body.m-b44 #saleMain{display:none}
+  body.m-b44 #b44Main{display:flex}
+  #b44Bar{display:flex;align-items:center;gap:8px;padding:8px 14px;flex:none}
+  #b44Bar .b44btn{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);
+    border:1px solid var(--border);color:var(--text-2);font-size:13px;font-weight:600;
+    padding:7px 12px;border-radius:999px;cursor:pointer}
+  #b44Bar .b44btn:active{transform:translateY(1px)}
+  #b44Bar .b44btn .i{width:16px;height:16px}
+  #b44FrameWrap{position:relative;flex:1;min-height:0;background:var(--surface)}
+  #b44Frame{width:100%;height:100%;border:0;display:block}
+  #b44Loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    color:var(--text-2);font-size:14px;background:var(--surface);transition:opacity .3s ease}
+  #b44Loading.gone{opacity:0;pointer-events:none}
+  #b44Empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:30px 22px;color:var(--text-2);font-size:14px;line-height:1.7}
+  #b44Empty b{color:var(--ink);font-size:16px;display:block;margin-bottom:6px}
   #saleCartView{display:none}
   body.cart-open #saleListView{display:none}
   body.cart-open #saleCartView{display:block}
@@ -484,6 +503,7 @@
 <div id="modebar">
   <button data-mode="sale" class="active"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.6"/><circle cx="18" cy="20" r="1.6"/><path d="M2 3h2.2l2.3 12a2 2 0 0 0 2 1.6h8.4a2 2 0 0 0 2-1.6L21 7H5.3"/></svg> מכירות</button>
   <button data-mode="count"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg> לוגיסטיקה</button>
+  <button data-mode="b44"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg> שירות</button>
 </div>
 
 <main id="countMain">
@@ -598,6 +618,20 @@
       <span>סה״כ</span><span id="cartSum">0 ₪</span>
     </div>
     <button class="btn danger" id="delCartBtn" style="margin-top:4px">מחק עגלה (שולם בקופה)</button>
+  </div>
+</main>
+
+<main id="b44Main">
+  <div id="b44Bar">
+    <button type="button" class="b44btn" id="b44Reload"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> רענון</button>
+    <button type="button" class="b44btn" id="b44Open"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14 21 3"/></svg> פתיחה בכרטיסייה</button>
+  </div>
+  <div id="b44FrameWrap">
+    <iframe id="b44Frame" title="מודול שירות" allow="camera; microphone; clipboard-read; clipboard-write; fullscreen; geolocation" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    <div id="b44Loading">טוען מודול…</div>
+  </div>
+  <div id="b44Empty" style="display:none">
+    <span><b>המודול עדיין לא חובר</b>כדי לחבר את אפליקציית ה-Base44, יש להגדיר את כתובתה בקוד (משתנה BASE44_URL).</span>
   </div>
 </main>
 
@@ -760,6 +794,10 @@ document.addEventListener("click",unlockAudio);
 
 /* ---------- admin PIN ---------- */
 const ADMIN_PIN="2707";
+
+/* === כתובת אפליקציית ה-Base44 — הדבק כאן את הכתובת המלאה בין המרכאות === */
+const BASE44_URL="https://tool-fix-flow.base44.app/Dashboard";
+let b44Loaded=false;
 let countUnlocked=false;
 function gotoTab(tab){
   document.querySelectorAll("#countNav button").forEach(x=>x.classList.toggle("active",x.dataset.tab===tab));
@@ -1468,9 +1506,29 @@ function setMode(mode){
   MODE=mode;
   document.body.classList.toggle("m-sale", mode==="sale");
   document.body.classList.toggle("m-count", mode==="count");
+  document.body.classList.toggle("m-b44", mode==="b44");
   document.querySelectorAll("#modebar button").forEach(b=>b.classList.toggle("active", b.dataset.mode===mode));
   $("#nameLabel").textContent = mode==="sale" ? "איש מכירות:" : "סופר/ת:";
   if(mode==="sale") renderCartList();
+  if(mode==="b44") loadB44();
+}
+
+/* טעינה עצלה של המודול המוטמע — נטען רק בכניסה הראשונה אליו */
+function loadB44(){
+  const frame=$("#b44Frame"), wrap=$("#b44FrameWrap"), empty=$("#b44Empty"), load=$("#b44Loading");
+  const url=(BASE44_URL||"").trim();
+  if(!url){
+    if(wrap) wrap.style.display="none";
+    if(empty) empty.style.display="flex";
+    return;
+  }
+  if(wrap) wrap.style.display="block";
+  if(empty) empty.style.display="none";
+  if(b44Loaded) return;
+  b44Loaded=true;
+  if(load){ load.classList.remove("gone"); load.textContent="טוען מודול…"; }
+  frame.addEventListener("load",()=>{ if(load) load.classList.add("gone"); });
+  frame.src=url;
 }
 
 async function loadSales(){
@@ -1857,6 +1915,16 @@ function bindUI(){
   document.querySelectorAll("#modebar button").forEach(b=>b.addEventListener("click",()=>{
     setMode(b.dataset.mode);
   }));
+  // embedded module controls
+  const b44r=$("#b44Reload"), b44o=$("#b44Open");
+  if(b44r) b44r.addEventListener("click",()=>{
+    const f=$("#b44Frame"), load=$("#b44Loading");
+    if(f&&f.src){ if(load) load.classList.remove("gone"); f.src=f.src; }
+  });
+  if(b44o) b44o.addEventListener("click",()=>{
+    const url=(BASE44_URL||"").trim();
+    if(url) window.open(url,"_blank","noopener");
+  });
   // count internal tabs
   document.querySelectorAll("#countNav button").forEach(b=>b.addEventListener("click",()=>{
     if(b.dataset.tab==="admin" && !countUnlocked){ askPin(); return; }
