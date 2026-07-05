@@ -476,6 +476,12 @@
     font-weight:800;color:var(--text);min-width:46px;height:34px;border-radius:10px;padding:0 10px;
     font-variant-numeric:tabular-nums;font-size:15px;transition:transform .14s ease,background .16s ease,border-color .16s ease}
   button.qnum:active{transform:scale(.93);background:var(--surface-2);border-color:var(--brand)}
+
+  /* ===== clearance import / reset ===== */
+  .clr-imp-row{display:flex;gap:8px;margin:6px 0 2px}
+  .clr-imp-row .btn{flex:1;width:auto;margin:0;padding:10px;font-size:13px;border-radius:11px}
+  .clr-imp-row .btn.danger{font-weight:700}
+  .clr-imp-row .btn.danger:active{background:#FBE2DD}
 </style>
 </head>
 <body>
@@ -733,6 +739,11 @@
     <div id="clrNote" class="banner" style="display:none"></div>
     <div class="search" style="margin-bottom:8px"><input id="clrFilter" placeholder="סינון מחירי חיסול…" autocomplete="off"></div>
     <button class="btn ghost" id="clrAddToggle" type="button" style="text-align:right;padding:6px 0">+ הוסף מוצר למחירי חיסול</button>
+    <div class="clr-imp-row">
+      <button class="btn ghost" id="clrImportBtn" type="button">ייבוא חיסול מאקסל</button>
+      <button class="btn danger" id="clrResetBtn" type="button">אפס את כל החיסול</button>
+    </div>
+    <input type="file" id="clrImportFile" accept=".xlsx,.xls,.csv" style="display:none">
     <div id="clrAdd" style="display:none">
       <div class="search" style="margin:6px 0"><input id="clrAddSearch" placeholder="חפש מוצר להוספה…" autocomplete="off"></div>
       <ul id="clrAddResults" class="list"></ul>
@@ -1928,6 +1939,67 @@ async function removeFromClearance(mktt){
     toast("הוסר מהחיסול");
   }catch(e){ console.error(e); toast("שגיאה בהסרה"); }
 }
+async function clrImportPickFile(){ if(!countUnlocked){ requireAdmin(clrImportPickFile); return; } if(!CLEARANCE_OK){ toast("צור תחילה את טבלת החיסול ב‑Supabase"); return; } $("#clrImportFile").click(); }
+function handleClrImportFile(file){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:"array"});
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:""});
+      if(!rows.length){ toast("הקובץ ריק"); return; }
+      const H=rows[0].map(h=>String(h).trim());
+      const mi=guess(H,["מקט","קודפריט","קוד","sku"]);
+      const pi=guess(H,["מחיר","price","מחירון"]);
+      const ni=guess(H,["שםמוצר","שםפריט","תיאור","שם","name","desc"]);
+      const noteI=guess(H,["הערה","note"]);
+      if(mi<0||pi<0){ toast("הקובץ חייב לכלול עמודת מק״ט ועמודת מחיר"); return; }
+      const body=rows.slice(1).filter(r=>r.some(c=>String(c).trim()!==""));
+      const seen=new Set(), out=[];
+      for(const r of body){
+        const mktt=String(r[mi]==null?"":r[mi]).trim(); if(!mktt||seen.has(mktt)) continue;
+        const price=pnum(r[pi]); if(!(price>0)) continue;
+        seen.add(mktt);
+        const p=PRODMAP.get(mktt);
+        const nm=ni>=0?String(r[ni]==null?"":r[ni]).trim():"";
+        const row={mktt:mktt,name:nm||(p&&p.name)||"",unit:(p&&p.unit)||"",barcode:(p&&p.barcode)||"",image_url:(p&&p.image_url)||"",price:price};
+        if(noteI>=0){ const nt=String(r[noteI]==null?"":r[noteI]).trim(); if(nt) row.note=nt; }
+        out.push(row);
+      }
+      if(!out.length){ toast("לא נמצאו שורות תקינות — צריך מק״ט ומחיר גדול מ‑0"); return; }
+      doClrImport(out);
+    }catch(err){ console.error(err); toast("שגיאה בקריאת הקובץ"); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+async function doClrImport(rows){
+  const btn=$("#clrImportBtn"), old=btn.textContent;
+  btn.disabled=true; btn.textContent="מייבא…";
+  try{
+    const {error}=await sb.from("clearance").upsert(rows,{onConflict:"mktt"});
+    if(error) throw error;
+    for(const row of rows){ CLEARANCE=CLEARANCE.filter(c=>String(c.mktt)!==String(row.mktt)); CLEARANCE.unshift(row); }
+    rebuildClearanceMap(); renderClearance(); if(CUR_CART!=null) renderCart();
+    toast("✓ יובאו "+rows.length+" פריטים למחירי חיסול");
+  }catch(e){ console.error(e); const m=String((e&&e.message)||"").toLowerCase();
+    if(m.indexOf("note")>=0) toast("כדי לייבא הערות צריך עמודת note בטבלת clearance");
+    else toast("שגיאה בייבוא לחיסול");
+  }finally{ btn.disabled=false; btn.textContent=old; const f=$("#clrImportFile"); if(f) f.value=""; }
+}
+async function resetAllClearance(){
+  if(!countUnlocked){ requireAdmin(resetAllClearance); return; }
+  if(!CLEARANCE_OK){ toast("צור תחילה את טבלת החיסול ב‑Supabase"); return; }
+  if(!CLEARANCE.length){ toast("אין פריטים לאיפוס"); return; }
+  if(!confirm("לאפס את כל מחירי החיסול? הפעולה תמחק את כל הפריטים ואי אפשר לבטל.")) return;
+  const btn=$("#clrResetBtn"), old=btn.textContent;
+  btn.disabled=true; btn.textContent="מאפס…";
+  try{
+    const {error}=await sb.from("clearance").delete().neq("mktt","");
+    if(error) throw error;
+    CLEARANCE=[]; rebuildClearanceMap(); renderClearance(); if(CUR_CART!=null) renderCart();
+    toast("כל מחירי החיסול אופסו");
+  }catch(e){ console.error(e); toast("שגיאה באיפוס"); }
+  finally{ btn.disabled=false; btn.textContent=old; }
+}
 function addClearanceToCart(mktt){
   if(CUR_CART==null){ toast("פתח עגלה תחילה"); return; }
   const c=CLEARANCE_MAP.get(String(mktt)); if(!c){ toast("פריט לא נמצא"); return; }
@@ -2086,6 +2158,9 @@ function bindUI(){
   $("#clrPdfBtn").addEventListener("click",exportClearancePDF);
   $("#clrFilter").addEventListener("input",renderClearance);
   $("#clrAddToggle").addEventListener("click",()=>{ const a=$("#clrAdd"); if(a.style.display==="none"){ requireAdmin(showClrAdd); } else { hideClrAdd(); } });
+  $("#clrImportBtn").addEventListener("click",clrImportPickFile);
+  $("#clrImportFile").addEventListener("change",e=>{ const f=e.target.files&&e.target.files[0]; if(f) handleClrImportFile(f); });
+  $("#clrResetBtn").addEventListener("click",resetAllClearance);
   $("#clrAddSearch").addEventListener("input",()=>{ clearTimeout(t); t=setTimeout(()=>renderClrAddResults(search($("#clrAddSearch").value)),120); });
   $("#clrAddResults").addEventListener("click",e=>{ const li=e.target.closest("[data-clr-pick]"); if(li) addProductToClearance(li.dataset.clrPick); });
   $("#clearanceList").addEventListener("click",e=>{ const a=e.target.closest("[data-clr-add]"); if(a){ addClearanceToCart(a.dataset.clrAdd); return; } const ed=e.target.closest("[data-clr-edit]"); if(ed){ editClearanceItem(ed.dataset.clrEdit); return; } const n=e.target.closest("[data-clr-note]"); if(n){ editClearanceNote(n.dataset.clrNote); return; } const d=e.target.closest("[data-clr-del]"); if(d){ removeFromClearance(d.dataset.clrDel); return; } });
