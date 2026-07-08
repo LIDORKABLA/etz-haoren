@@ -1302,7 +1302,7 @@ async function exportCatalog(){
 /* ---------- catalog import ---------- */
 let IMPORT_ROWS=null, IMPORT_HEADERS=null;
 function guess(headers,opts){
-  for(const o of opts){ const i=headers.findIndex(h=>String(h).toLowerCase().replace(/["'\s]/g,"").includes(o)); if(i>=0) return i; }
+  for(const o of opts){ const i=headers.findIndex(h=>String(h).toLowerCase().replace(/["'\u05F3\u05F4\s]/g,"").includes(o)); if(i>=0) return i; }
   return -1;
 }
 function fillSelect(sel,withNone,g){
@@ -2009,11 +2009,15 @@ function addClearanceToCart(mktt){
 
 function exportClearancePDF(){
   if(!CLEARANCE.length){ toast("אין פריטים בחיסול לייצוא"); return; }
+  const prev=localStorage.getItem("clrPdfNote")||"";
+  const note=prompt("הערות נוספות לשורת הסיכום (יופיעו ב-PDF, אפשר להשאיר ריק):", prev);
+  if(note===null) return;
+  try{ localStorage.setItem("clrPdfNote", note); }catch(e){}
   const w=window.open("","_blank");
   if(!w){ toast("הדפדפן חסם חלון — אפשר חלונות קופצים ונסה שוב"); return; }
-  w.document.open(); w.document.write(buildClearanceHTML(CLEARANCE)); w.document.close();
+  w.document.open(); w.document.write(buildClearanceHTML(CLEARANCE, note)); w.document.close();
 }
-function buildClearanceHTML(items){
+function buildClearanceHTML(items,note){
   const now=new Date();
   const dstr=now.toLocaleDateString("he-IL")+" "+now.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"});
   const logoSrc=(document.querySelector('#splash img')||{}).src||"";
@@ -2052,6 +2056,13 @@ function buildClearanceHTML(items){
   .ttl .dt{font-size:12.5px;color:#5b6573}
   .grid{padding:14px 26px 6px}
   .grid-row{display:flex;gap:11px;margin-bottom:11px;break-inside:avoid;page-break-inside:avoid}
+  .grid-row:last-child{margin-bottom:0}
+  .page.fit .hd{padding:13px 28px}
+  .page.fit .ttl{padding:12px 32px 2px}
+  .page.fit .grid{padding:10px 26px 4px}
+  .page.fit .grid-row{margin-bottom:8px}
+  .page.fit .card-i .ph{height:84px}
+  .page.fit .ft{margin-top:9px;padding:10px 32px}
   .card-i{flex:0 0 calc((100% - 33px)/4);border:1px solid #e7e9ee;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;background:#fff;break-inside:avoid;page-break-inside:avoid}
   .card-i .ph{height:98px;background:#f7f8fa;display:flex;align-items:center;justify-content:center;padding:5px}
   .card-i .ph img{max-width:100%;max-height:100%;object-fit:contain;display:block}
@@ -2060,18 +2071,20 @@ function buildClearanceHTML(items){
   .card-i .nm{font-weight:700;font-size:11.5px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .card-i .sk{font-size:9.5px;color:#8a929e}
   .card-i .pr{margin-top:auto;font-size:15px;font-weight:800;color:#E8412F;padding-top:4px}
-  .ft{margin-top:14px;background:#14181f;color:#aeb6c2;font-size:11.5px;padding:13px 32px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+  .ft{margin-top:14px;background:#14181f;color:#aeb6c2;font-size:11.5px;padding:13px 32px;display:flex;flex-direction:column;gap:8px}
+  .ft .ft-row{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+  .ft .ft-note{color:#fff;font-weight:700;font-size:13px;white-space:pre-wrap;line-height:1.5;border-bottom:1px solid rgba(255,255,255,.16);padding-bottom:8px}
   .ft b{color:#fff}
   @media print{ body{background:#fff} .page{box-shadow:none;margin:0;max-width:none;border-radius:0;overflow:visible} @page{size:A4;margin:8mm} .grid-row{break-inside:avoid;page-break-inside:avoid} }
 </style></head>
-<body><div class="page">
+<body><div class="page${items.length<=16?' fit':''}">
   <div class="hd">
     <div class="co">${head}</div>
     <div class="contact">${esc(SHOP_INFO.phone)}<br>${esc(SHOP_INFO.email)}<br>${esc(SHOP_INFO.address)}</div>
   </div>
   <div class="ttl"><div class="big">🔥 מחירי חיסול</div><div class="dt">${esc(now.toLocaleDateString("he-IL"))} · ${items.length} פריטים</div></div>
   <div class="grid">${rows}</div>
-  <div class="ft"><span>הופק בתאריך: <b>${esc(dstr)}</b></span><span><b>${esc(SHOP_INFO.name)}</b> · ${esc(SHOP_INFO.tagline)} · המחירים כוללים מע״מ ובכפוף למלאי</span></div>
+  <div class="ft">${note&&note.trim()?`<div class="ft-note">${esc(note.trim())}</div>`:""}<div class="ft-row"><span>הופק בתאריך: <b>${esc(dstr)}</b></span><span><b>${esc(SHOP_INFO.name)}</b> · ${esc(SHOP_INFO.tagline)} · המחירים כוללים מע״מ ובכפוף למלאי</span></div></div>
 </div>
 <script>
 (function(){var done=false;function go(){if(done)return;done=true;window.focus();window.print();}
