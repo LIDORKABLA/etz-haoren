@@ -2584,31 +2584,39 @@ initAppLock();
   document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&lb.classList.contains("show")) close(); });
 })();
 
-/* ================= WEDGE SCANNER — סורק מסופון v2 (שכבה חיצונית, לא נוגעת בלוגיקה) ================= */
-const WEDGE_HARD_ON = true;   /* מתג ראשי בקוד: false = כיבוי מוחלט של כל היכולת */
+/* ================= WEDGE SCANNER — סורק מסופון v3 (שכבה חיצונית, לא נוגעת בלוגיקה) ================= */
+const WEDGE_HARD_ON = true;   /* מתג ראשי בקוד: false = כיבוי מוחלט */
 const LSW = { on:"etz_wedge_on", term:"etz_wedge_term", dbg:"etz_wedge_dbg" };
 function wedgeEnabled(){ return WEDGE_HARD_ON && localStorage.getItem(LSW.on)!=="0"; }
 function wedgeTermMode(){ return localStorage.getItem(LSW.term)==="1"; }
 function wedgeDebug(){ return localStorage.getItem(LSW.dbg)==="1"; }
 
-/* מסכים שבהם קליטת הסורק כבויה: מצלמה / סיסמה / עריכת שדה / חיסול */
+/* אבחון: צובר אירועים ומציג אותם ברצף */
+var _wdbgBuf=[], _wdbgTimer=null;
+function _wdbg(msg){
+  _wdbgBuf.push(msg); if(_wdbgBuf.length>7) _wdbgBuf.shift();
+  if(_wdbgTimer) clearTimeout(_wdbgTimer);
+  _wdbgTimer=setTimeout(function(){ try{ toast(_wdbgBuf.join(" | ")); }catch(e){} _wdbgBuf=[]; }, 300);
+}
+
+/* מסכים שבהם קליטת הסורק כבויה */
 function wedgeBlocked(){
   return ["scanner","pinSheet","fieldSheet","clearanceSheet"].some(function(id){
     var e=document.getElementById(id); return e && e.classList.contains("open");
   });
 }
-/* הגישה החכמה: מצב הסריקה לפי המסך הפעיל */
+/* הגישה החכמה: מצב הסריקה לפי המסך */
 function wedgeContext(){
   var bc=document.getElementById("bcSheet");
   if(bc && bc.classList.contains("open")) return "assign";
   if(typeof MODE!=="undefined" && MODE==="sale" && typeof CUR_CART!=="undefined" && CUR_CART!=null) return "sale";
   return "count";
 }
-
-/* עיבוד ברקוד שנקלט — משותף לכל דרכי הקליטה */
+/* עיבוד ברקוד שנקלט */
 function wedgeHandle(code){
   code=String(code||"").replace(/[\r\n\t]/g,"").trim();
-  if(wedgeDebug()){ try{ toast("נקלט: "+(code||"(ריק)")); }catch(e){} }
+  if(!code) return;
+  if(wedgeDebug()){ _wdbg("✓נקלט:"+code); }
   if(code.length<3) return;
   if(wedgeBlocked()) return;
   SCAN_MODE=wedgeContext();
@@ -2617,7 +2625,7 @@ function wedgeHandle(code){
 
 function applyTermMode(){ document.body.classList.toggle("term-mode", wedgeTermMode()); setTimeout(refocusTrap,60); }
 
-/* --- מנגנון עמיד: מלכודת קלט נסתרת (עובד גם עם קלט IME/אנדרואיד). פעיל במצב מסופון. --- */
+/* --- מלכודת קלט נסתרת: עיבוד לפי הרגעת הקלט (לא לפי Enter, שמקדים את התווים) --- */
 var _trap=null, _trapTimer=null;
 function ensureTrap(){
   if(_trap) return _trap;
@@ -2628,43 +2636,61 @@ function ensureTrap(){
   _trap.setAttribute("autocorrect","off");
   _trap.setAttribute("autocapitalize","off");
   _trap.setAttribute("aria-hidden","true");
-  _trap.tabIndex=-1;
   _trap.style.cssText="position:fixed;top:-140px;left:-140px;width:1px;height:1px;opacity:0;border:0;padding:0;font-size:16px;";
   document.body.appendChild(_trap);
   _trap.addEventListener("input", function(){
     if(!wedgeEnabled()||!wedgeTermMode()){ _trap.value=""; return; }
+    if(wedgeDebug()){ _wdbg("in="+JSON.stringify(_trap.value)); }
     if(_trapTimer) clearTimeout(_trapTimer);
-    _trapTimer=setTimeout(trapFlush, 90);   /* סיום גם בלי Enter */
+    _trapTimer=setTimeout(trapFlush, 120);   /* מעבד רגע אחרי שהקלט נרגע — כל התווים כבר בפנים */
   });
   _trap.addEventListener("keydown", function(e){
-    if(e.key==="Enter"||e.key==="Tab"){ e.preventDefault(); if(_trapTimer) clearTimeout(_trapTimer); trapFlush(); }
+    if(e.key==="Enter"||e.key==="Tab"){
+      e.preventDefault();
+      /* לא לעבד מיד — לקצר את ההמתנה, לתת ל-input האחרון להגיע */
+      if(_trapTimer) clearTimeout(_trapTimer);
+      _trapTimer=setTimeout(trapFlush, 40);
+    }
   });
+  _trap.addEventListener("blur", function(){ setTimeout(refocusTrap,40); });
   return _trap;
 }
-function trapFlush(){ if(!_trap) return; var v=_trap.value; _trap.value=""; wedgeHandle(v); }
+function trapFlush(){
+  if(!_trap) return;
+  var code=String(_trap.value||"");
+  _trap.value="";
+  wedgeHandle(code);
+}
 function refocusTrap(){
   if(!wedgeEnabled()||!wedgeTermMode()) return;
   ensureTrap();
   var a=document.activeElement;
   var realField = a && (a.tagName==="INPUT"||a.tagName==="TEXTAREA"||a.tagName==="SELECT") && a.id!=="wedgeTrap";
-  if(realField) return;          /* המשתמש מקליד בשדה אמיתי — לא גונבים פוקוס */
-  if(wedgeBlocked()) return;      /* מודל חוסם פתוח */
+  if(realField) return;
+  if(wedgeBlocked()) return;
   try{ _trap.focus({preventScroll:true}); }catch(e){ try{ _trap.focus(); }catch(_){} }
 }
 document.addEventListener("focusout", function(){ setTimeout(refocusTrap,60); });
 document.addEventListener("click",    function(){ setTimeout(refocusTrap,60); });
 document.addEventListener("touchend", function(){ setTimeout(refocusTrap,120); }, {passive:true});
+setInterval(function(){ if(wedgeEnabled()&&wedgeTermMode()) refocusTrap(); }, 1000);  /* מייצב פוקוס */
 
-/* --- fallback: keydown גלובלי (דסקטופ / מסופונים ששולחים keydown נקי) --- */
+/* --- אבחון גיבוי: אם הקלט הולך למקום אחר, נראה זאת ברמת המסמך --- */
+document.addEventListener("keydown", function(e){
+  if(!wedgeDebug()) return;
+  if(document.activeElement && document.activeElement.id==="wedgeTrap") return;
+  _wdbg("docKey="+e.key+"/"+(e.keyCode||e.which||"?"));
+}, true);
+
+/* --- fallback keydown (דסקטופ / מסופון ששולח keydown נקי) --- */
 (function(){
-  var buf="", last=0, fastGaps=0, keys=0;
-  var GAP=60, MINLEN=3;
+  var buf="", last=0, fastGaps=0, keys=0; var GAP=60, MINLEN=3;
   document.addEventListener("keydown", function(e){
     if(!wedgeEnabled()) return;
-    if(document.activeElement && document.activeElement.id==="wedgeTrap") return; /* המלכודת מטפלת */
+    if(document.activeElement && document.activeElement.id==="wedgeTrap") return;
     var now=Date.now(), dt=now-last; last=now;
     if(e.key==="Enter"||e.key==="Tab"){
-      var looksScan = buf.length>=MINLEN && keys>=MINLEN && fastGaps>=Math.max(1,keys-1);
+      var looksScan=buf.length>=MINLEN && keys>=MINLEN && fastGaps>=Math.max(1,keys-1);
       var code=buf; buf=""; fastGaps=0; keys=0;
       if(looksScan){ e.preventDefault(); e.stopPropagation(); wedgeHandle(code); }
       return;
@@ -2674,7 +2700,6 @@ document.addEventListener("touchend", function(){ setTimeout(refocusTrap,120); }
   }, true);
 })();
 
-/* חיווט הטוגלים במסך הניהול */
 function wireWedgeSettings(){
   var on=document.getElementById("wedgeOnTgl");
   var term=document.getElementById("wedgeTermTgl");
