@@ -669,6 +669,20 @@
   .who-nick.show{display:inline-flex}
   .who-nick::before{content:"\2726";font-size:12px;color:#FFE39A;opacity:.95}
   @keyframes nickPop{0%{opacity:0;transform:translateY(-3px) scale(.82)}100%{opacity:1;transform:none}}
+
+/* ===== סורק מסופון: מצב מסופון + טוגלים (נוסף) ===== */
+body.term-mode{ font-size:17px; }
+body.term-mode .btn{ padding:16px 18px; font-size:1.06rem; }
+body.term-mode #countNav button, body.term-mode #modebar button{ padding:14px 10px; font-size:1rem; }
+body.term-mode input{ font-size:1.06rem; }
+.tgl-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin:12px 0; }
+.tgl{ position:relative; display:inline-block; width:46px; height:26px; flex:0 0 auto; cursor:pointer; }
+.tgl input{ opacity:0; width:0; height:0; position:absolute; }
+.tgl > span{ position:absolute; inset:0; background:#ccc; border-radius:26px; transition:.2s; }
+.tgl > span::before{ content:""; position:absolute; width:20px; height:20px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s; }
+.tgl input:checked + span{ background:var(--pine); }
+.tgl input:checked + span::before{ transform:translateX(20px); }
+
 </style>
 </head>
 <body>
@@ -799,6 +813,20 @@
       <h4>איפוס ספירה</h4>
       <p>מוחק את כל רישומי הספירה הנוכחיים (הקטלוג נשאר). השתמשו לפני ספירה חדשה.</p>
       <button class="btn danger" id="clearBtn">מחיקת כל הספירות</button>
+    </div>
+
+    <div class="panel">
+      <h4>סורק מסופון</h4>
+      <p>קליטת ברקוד ממסופון סריקה — גם בלי ללחוץ קודם על שדה החיפוש. הזיהוי לפי מהירות ההקלדה, כך שהקלדה ידנית רגילה לא מושפעת.</p>
+      <div class="tgl-row">
+        <span>קליטת סורק מסופון פעילה</span>
+        <label class="tgl"><input type="checkbox" id="wedgeOnTgl"><span></span></label>
+      </div>
+      <div class="tgl-row">
+        <span>מצב מסופון (כפתורים ופונט גדולים)</span>
+        <label class="tgl"><input type="checkbox" id="wedgeTermTgl"><span></span></label>
+      </div>
+      <p style="font-size:.9rem;color:var(--muted,#777)">אם משהו מתנהג לא כשורה — כבה כאן את קליטת הסורק, והאפליקציה חוזרת מיד להתנהגות הרגילה.</p>
     </div>
 
     <div class="panel">
@@ -2552,7 +2580,73 @@ initAppLock();
   document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&lb.classList.contains("show")) close(); });
 })();
 
+/* ================= WEDGE SCANNER — סורק מסופון (שכבה חיצונית, לא נוגעת בלוגיקה) ================= */
+/* מתג ראשי בקוד: הפוך ל-false כדי לכבות לגמרי את כל היכולת החדשה */
+const WEDGE_HARD_ON = true;
+const LSW = { on:"etz_wedge_on", term:"etz_wedge_term" };
+function wedgeEnabled(){ return WEDGE_HARD_ON && localStorage.getItem(LSW.on)!=="0"; }
+function wedgeTermMode(){ return localStorage.getItem(LSW.term)==="1"; }
+
+/* מסכים שבהם קליטת הסורק כבויה: מצלמה / סיסמה / עריכת שדה ידנית / חיסול */
+function wedgeBlocked(){
+  return ["scanner","pinSheet","fieldSheet","clearanceSheet"].some(function(id){
+    var e=document.getElementById(id); return e && e.classList.contains("open");
+  });
+}
+/* הגישה החכמה: קביעת מצב הסריקה לפי המסך הפעיל */
+function wedgeContext(){
+  var bc=document.getElementById("bcSheet");
+  if(bc && bc.classList.contains("open")) return "assign";  /* עורך ברקוד → מילוי הברקוד */
+  if(typeof MODE!=="undefined" && MODE==="sale" && typeof CUR_CART!=="undefined" && CUR_CART!=null) return "sale"; /* מכירות + עגלה → הוספה לעגלה */
+  return "count";                                           /* אחרת → ספירה / פתיחת מוצר */
+}
+
+function applyTermMode(){ document.body.classList.toggle("term-mode", wedgeTermMode()); }
+
+/* המאזין הגלובלי: מזהה רצף תווים מהיר שנגמר ב-Enter/Tab כסריקה.
+   הקלדה אנושית איטית (מרווח גדול בין תווים) ולכן לעולם לא נתפסת. */
+(function(){
+  var buf="", last=0, fastGaps=0, keys=0;
+  var GAP=45;   /* ms — מרווח מעליו נחשב הקלדה אנושית, מתחיל רצף חדש */
+  var MINLEN=3; /* אורך מינימלי לברקוד */
+  document.addEventListener("keydown", function(e){
+    if(!wedgeEnabled()) return;
+    var now=Date.now(), dt=now-last; last=now;
+    if(e.key==="Enter" || e.key==="Tab"){
+      var looksScan = buf.length>=MINLEN && keys>=MINLEN && fastGaps>=Math.max(1,keys-1);
+      var code=buf; buf=""; fastGaps=0; keys=0;
+      if(looksScan){
+        if(wedgeBlocked()) return;                 /* מצלמה/סיסמה/עריכה/חיסול — לא נוגעים */
+        e.preventDefault(); e.stopPropagation();    /* מונע שליחה / מעבר שדה לא רצויים */
+        SCAN_MODE = wedgeContext();
+        try{ onScan(code); }catch(err){ console.error("wedge",err); }
+      }
+      return;
+    }
+    if(e.key.length!==1) return;                    /* מקשי בקרה — התעלם */
+    if(dt>GAP){ buf=e.key; keys=1; fastGaps=0; }    /* רצף חדש */
+    else { buf+=e.key; keys++; fastGaps++; }        /* המשך רצף מהיר */
+  }, true);
+})();
+
+/* חיווט הטוגלים במסך הניהול + החלת מצב מסופון בטעינה */
+function wireWedgeSettings(){
+  var on=document.getElementById("wedgeOnTgl");
+  var term=document.getElementById("wedgeTermTgl");
+  if(on){
+    on.checked = localStorage.getItem(LSW.on)!=="0";
+    on.addEventListener("change", function(){ localStorage.setItem(LSW.on, on.checked?"1":"0"); });
+  }
+  if(term){
+    term.checked = wedgeTermMode();
+    term.addEventListener("change", function(){ localStorage.setItem(LSW.term, term.checked?"1":"0"); applyTermMode(); });
+  }
+  applyTermMode();
+}
+/* ================= סוף WEDGE SCANNER ================= */
+
 boot();
+wireWedgeSettings();
 </script>
 </body>
 </html>
