@@ -1291,8 +1291,8 @@ function search(term){
   const scored=[];
   for(const p of PRODUCTS){
     const name=String(p.name||"").toLowerCase();
-    const hay=name+" "+String(p.mktt).toLowerCase()+" "+String(p.barcode||"").toLowerCase();
-    if(tokens.every(t=>hay.includes(t))){
+    const hay=name+" "+String(p.mktt).toLowerCase()+" "+String(p.barcode||"").toLowerCase()+" "+bcNorm(p.barcode||"").toLowerCase()+" "+bcNorm(p.mktt||"").toLowerCase();
+    if(tokens.every(t=>hay.includes(t)||hay.includes(bcNorm(t)))){
       let score=name.indexOf(tokens[0]); if(score<0) score=900+String(p.mktt).toLowerCase().indexOf(tokens[0]);
       scored.push([score,p]);
     }
