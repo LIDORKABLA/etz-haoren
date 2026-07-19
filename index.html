@@ -2416,6 +2416,31 @@ function bindUI(){
   }));
   let t;
   $("#q").addEventListener("input",()=>{ clearTimeout(t); t=setTimeout(()=>renderResults(search($("#q").value)),120); });
+  /* ספירת מלאי: ברקוד מדויק בשדה החיפוש פותח ישירות את הפריט + שדה הכמות (בלי שלב בחירה) */
+  (function(){
+    var qEl=$("#q"); if(!qEl) return;
+    var scanT=null;
+    function tryDirect(){
+      if(scanT){ clearTimeout(scanT); scanT=null; }
+      var v=String(qEl.value||"").trim();
+      if(v.length<4) return false;
+      var p=findByCode(v);
+      if(p){
+        qEl.value=""; try{ renderResults([]); }catch(e){}
+        try{ feedback(true); }catch(e){}
+        openSheet(p.mktt);   /* פותח פריט, מנקה כמות, וממקד את שדה הכמות — המקלדת עולה */
+        return true;
+      }
+      return false;
+    }
+    qEl.addEventListener("keydown", function(e){
+      if(e.key==="Enter"){ e.preventDefault(); tryDirect(); }
+    });
+    qEl.addEventListener("input", function(){
+      if(scanT) clearTimeout(scanT);
+      scanT=setTimeout(tryDirect, 160);
+    });
+  })();
   $("#results").addEventListener("click",e=>{ const li=e.target.closest(".item"); if(li) openSheet(li.dataset.mktt); });
   // ---- product edit tab ----
   let te; $("#qEdit").addEventListener("input",()=>{ clearTimeout(te); te=setTimeout(()=>renderEditResults(search($("#qEdit").value)),120); });
