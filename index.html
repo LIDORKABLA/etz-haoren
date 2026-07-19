@@ -2584,14 +2584,13 @@ initAppLock();
   document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&lb.classList.contains("show")) close(); });
 })();
 
-/* ================= WEDGE SCANNER — סורק מסופון v4 (שכבה חיצונית, לא נוגעת בלוגיקה) ================= */
+/* ================= WEDGE SCANNER — סורק מסופון v5 (מלכודת קלט ל-IME אנדרואיד) ================= */
 const WEDGE_HARD_ON = true;   /* מתג ראשי בקוד: false = כיבוי מוחלט */
 const LSW = { on:"etz_wedge_on", term:"etz_wedge_term", dbg:"etz_wedge_dbg" };
 function wedgeEnabled(){ return WEDGE_HARD_ON && localStorage.getItem(LSW.on)!=="0"; }
 function wedgeTermMode(){ return localStorage.getItem(LSW.term)==="1"; }
 function wedgeDebug(){ return localStorage.getItem(LSW.dbg)==="1"; }
 
-/* אבחון: צובר אירועים ומציג ברצף (רק כשמצב אבחון דלוק) */
 var _wdbgBuf=[], _wdbgTimer=null;
 function _wdbg(msg){
   _wdbgBuf.push(msg); if(_wdbgBuf.length>8) _wdbgBuf.shift();
@@ -2599,62 +2598,72 @@ function _wdbg(msg){
   _wdbgTimer=setTimeout(function(){ try{ toast(_wdbgBuf.join(" ")); }catch(e){} _wdbgBuf=[]; }, 350);
 }
 
-/* מסכים שבהם קליטת הסורק כבויה */
 function wedgeBlocked(){
   return ["scanner","pinSheet","fieldSheet","clearanceSheet"].some(function(id){
     var e=document.getElementById(id); return e && e.classList.contains("open");
   });
 }
-/* הגישה החכמה: מצב הסריקה לפי המסך */
 function wedgeContext(){
   var bc=document.getElementById("bcSheet");
   if(bc && bc.classList.contains("open")) return "assign";
   if(typeof MODE!=="undefined" && MODE==="sale" && typeof CUR_CART!=="undefined" && CUR_CART!=null) return "sale";
   return "count";
 }
-/* האם הפוקוס נמצא כרגע בשדה הקלדה אמיתי (אז המשתמש מקליד ידנית — לא נוגעים) */
-function inRealField(){
-  var a=document.activeElement;
-  return !!(a && (a.tagName==="INPUT"||a.tagName==="TEXTAREA"||a.tagName==="SELECT"));
-}
-/* עיבוד ברקוד שנקלט */
 function wedgeHandle(code){
   code=String(code||"").replace(/[\r\n\t]/g,"").trim();
-  if(wedgeDebug() && code){ _wdbg("✓נקלט:"+code); }
+  if(!code) return;
+  if(wedgeDebug()) _wdbg("✓נקלט:"+code);
   if(code.length<3) return;
   if(wedgeBlocked()) return;
   SCAN_MODE=wedgeContext();
   try{ onScan(code); }catch(err){ console.error("wedge",err); }
 }
 
-function applyTermMode(){ document.body.classList.toggle("term-mode", wedgeTermMode()); }
+/* --- מלכודת קלט נסתרת: קולטת את זרם ה-IME. inputmode=none מונע מקלדת וירטואלית אך לא חוסם קלט חומרה. --- */
+var _trap=null, _timer=null;
+function ensureTrap(){
+  if(_trap) return _trap;
+  _trap=document.createElement("input");
+  _trap.id="wedgeTrap"; _trap.type="text";
+  _trap.setAttribute("inputmode","none");
+  _trap.setAttribute("autocomplete","off");
+  _trap.setAttribute("autocorrect","off");
+  _trap.setAttribute("autocapitalize","off");
+  _trap.setAttribute("spellcheck","false");
+  _trap.setAttribute("aria-hidden","true");
+  _trap.style.cssText="position:fixed;bottom:0;left:-9999px;width:1px;height:1px;opacity:0;border:0;padding:0;font-size:16px;";
+  document.body.appendChild(_trap);
+  _trap.addEventListener("input", function(){
+    if(!wedgeEnabled()||!wedgeTermMode()){ _trap.value=""; return; }
+    if(wedgeDebug()) _wdbg("in:"+JSON.stringify(String(_trap.value).slice(-24)));
+    if(_timer) clearTimeout(_timer);
+    _timer=setTimeout(trapFlush, 140);   /* מעבד אחרי שהקלט נרגע — כל התווים כבר בפנים */
+  });
+  _trap.addEventListener("keydown", function(e){
+    if(e.key==="Enter"||e.key==="Tab"){ e.preventDefault(); if(_timer) clearTimeout(_timer); _timer=setTimeout(trapFlush, 45); }
+  });
+  _trap.addEventListener("blur", function(){ setTimeout(refocusTrap, 50); });
+  return _trap;
+}
+function trapFlush(){ if(!_trap) return; var v=_trap.value; _trap.value=""; wedgeHandle(v); }
+function refocusTrap(){
+  if(!wedgeEnabled()||!wedgeTermMode()) return;
+  ensureTrap();
+  var a=document.activeElement;
+  if(a && a!==_trap && (a.tagName==="INPUT"||a.tagName==="TEXTAREA"||a.tagName==="SELECT")) return; /* שדה אמיתי בפוקוס — לא גונבים */
+  if(wedgeBlocked()) return;
+  try{ _trap.focus({preventScroll:true}); }catch(e){ try{ _trap.focus(); }catch(_){} }
+}
+function applyTermMode(){
+  document.body.classList.toggle("term-mode", wedgeTermMode());
+  if(wedgeTermMode()){ ensureTrap(); setTimeout(refocusTrap, 80); }
+  else if(_trap){ try{ _trap.blur(); }catch(e){} }
+}
+document.addEventListener("focusout", function(){ setTimeout(refocusTrap, 60); });
+document.addEventListener("click",    function(){ setTimeout(refocusTrap, 60); });
+document.addEventListener("touchend", function(){ setTimeout(refocusTrap, 140); }, {passive:true});
+setInterval(function(){ if(wedgeEnabled()&&wedgeTermMode()) refocusTrap(); }, 1200);
 
-/* --- מנגנון ראשי: מאזין ברמת הדף. צובר תווים רק כשאין שדה קלט בפוקוס (= סריקה, לא הקלדה). --- */
-(function(){
-  var buf="", timer=null;
-  function flush(){ var code=buf; buf=""; wedgeHandle(code); }
-  document.addEventListener("keydown", function(e){
-    if(!wedgeEnabled()) return;
-    if(inRealField()) return;                 /* הקלדה ידנית בשדה — מתעלמים לגמרי */
-    if(e.key==="Enter"||e.key==="Tab"){
-      if(buf){ e.preventDefault(); if(timer) clearTimeout(timer); flush(); }
-      return;
-    }
-    if(e.key && e.key.length===1){
-      buf+=e.key;
-      if(wedgeDebug()) _wdbg("k:"+e.key);
-      if(timer) clearTimeout(timer);
-      timer=setTimeout(flush, 140);           /* סיום גם אם המסופון לא שולח Enter */
-      return;
-    }
-    /* מקש בקרה לא-מזוהה (למשל קלט IME) — נציג באבחון כדי לדעת */
-    if(wedgeDebug() && e.key && e.key!=="Shift" && e.key!=="Alt" && e.key!=="Control"){
-      _wdbg("?"+e.key+"/"+(e.keyCode||e.which||"·"));
-    }
-  }, true);
-})();
-
-/* חיווט הטוגלים במסך הניהול */
 function wireWedgeSettings(){
   var on=document.getElementById("wedgeOnTgl");
   var term=document.getElementById("wedgeTermTgl");
