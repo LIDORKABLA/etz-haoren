@@ -685,7 +685,7 @@ body.term-mode input{ font-size:1.06rem; }
 
 
 /* ===== מחשבון ספירה (כפתור צף + פאנל) ===== */
-#calcFab{position:fixed;left:16px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:35;
+#calcFab{position:fixed;left:16px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:45;
   display:none;align-items:center;justify-content:center;width:54px;height:54px;padding:0;
   border:none;border-radius:50%;cursor:pointer;color:#fff;
   background:linear-gradient(135deg,#0B7D71,#095e55);
@@ -693,7 +693,7 @@ body.term-mode input{ font-size:1.06rem; }
 #calcFab:active{transform:scale(.95)}
 #calcFab .i{width:24px;height:24px}
 body.m-count #calcFab{display:inline-flex}
-#calcPanel{position:fixed;left:16px;bottom:calc(148px + env(safe-area-inset-bottom));z-index:36;
+#calcPanel{position:fixed;left:16px;bottom:calc(148px + env(safe-area-inset-bottom));z-index:50;
   width:min(290px,calc(100vw - 32px));background:var(--card);border:1px solid var(--line);
   border-radius:18px;box-shadow:0 18px 44px rgba(0,0,0,.24);padding:13px;
   display:none;flex-direction:column;gap:10px}
@@ -717,6 +717,17 @@ body.m-count #calcFab{display:inline-flex}
 .ck.eq{background:var(--pine);color:#fff}
 .ck.wide{grid-column:span 2}
 .ck.tall{grid-row:span 2}
+
+
+.calc-sheet-btn{display:inline-flex;align-items:center;gap:7px;margin:2px auto 0;padding:9px 16px;
+  border:1px solid var(--line);border-radius:11px;background:var(--card);color:var(--pine);
+  font-family:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.calc-sheet-btn:active{background:var(--bg)}
+.calc-sheet-btn .i{width:17px;height:17px}
+.qtyrow + .calc-sheet-btn{display:flex;width:fit-content}
+.calc-to-qty{width:100%;margin-top:2px;padding:13px 0;border:none;border-radius:12px;
+  background:var(--pine);color:#fff;font-family:inherit;font-size:15px;font-weight:800;cursor:pointer}
+.calc-to-qty:active{filter:brightness(.95)}
 
 </style>
 </head>
@@ -929,6 +940,7 @@ body.m-count #calcFab{display:inline-flex}
       <input id="eQty" type="number" inputmode="decimal" value="" placeholder="כמות" step="any">
       <button id="plus" type="button">+</button>
     </div>
+    <button id="calcInSheet" class="calc-sheet-btn" type="button"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="16" y1="14" x2="16" y2="18"/><line x1="8" y1="18" x2="12" y2="18"/></svg> מחשבון</button>
     <div class="loc"><input id="eLoc" placeholder="מיקום / מדף (לא חובה)" autocomplete="off"></div>
     <button class="btn primary" id="addBtn">הוסף ספירה</button>
     <button class="btn ghost" id="cancelBtn">ביטול</button>
@@ -1005,6 +1017,7 @@ body.m-count #calcFab{display:inline-flex}
     <button class="ck wide" data-k="0" type="button">0</button>
     <button class="ck" data-k="." type="button">.</button>
   </div>
+  <button id="calcToQty" class="calc-to-qty" type="button" style="display:none">הזן כמות ↓</button>
 </div>
 
 <div class="sheet" id="clearanceSheet">
@@ -2684,7 +2697,7 @@ function _wdbg(msg){
 }
 
 function wedgeBlocked(){
-  return ["scanner","pinSheet","fieldSheet","clearanceSheet"].some(function(id){
+  return ["scanner","pinSheet","fieldSheet","clearanceSheet","sheet"].some(function(id){
     var e=document.getElementById(id); return e && e.classList.contains("open");
   });
 }
@@ -2813,7 +2826,26 @@ function calcPress(k){
   else { _calcExpr+=k; }
   calcRender();
 }
-function calcOpen(){ var p=document.getElementById("calcPanel"); if(p){ p.classList.add("open"); } }
+var _calcTarget=null;
+function _updateCalcToQty(){ var b=document.getElementById("calcToQty"); if(b) b.style.display=_calcTarget?"block":"none"; }
+function calcOpen(){ _calcTarget=null; _updateCalcToQty(); var p=document.getElementById("calcPanel"); if(p){ p.classList.add("open"); } }
+function calcOpenFor(t){
+  _calcTarget=t; _calcExpr="";
+  try{ var a=document.activeElement; if(a&&a.blur) a.blur(); }catch(e){}   /* סוגר את מקלדת המערכת כדי שהמחשבון לא יוסתר */
+  _updateCalcToQty(); calcRender();
+  var p=document.getElementById("calcPanel"); if(p){ p.classList.add("open"); }
+}
+function calcToQty(){
+  if(!_calcTarget) return;
+  var v=calcEval(_calcExpr);
+  var el=document.getElementById(_calcTarget);
+  if(el){
+    var out=(v!=null&&isFinite(v))?String(Math.round(v*1e6)/1e6):(_calcExpr||"");
+    el.value=out;
+    try{ el.dispatchEvent(new Event("input",{bubbles:true})); }catch(e){}
+  }
+  calcClose();
+}
 function calcClose(){ var p=document.getElementById("calcPanel"); if(p){ p.classList.remove("open"); } }
 function wireCalc(){
   var fab=document.getElementById("calcFab"); if(fab) fab.addEventListener("click", calcOpen);
@@ -2823,6 +2855,8 @@ function wireCalc(){
     var b=e.target && e.target.closest ? e.target.closest("button[data-k]") : null;
     if(b){ calcPress(b.getAttribute("data-k")); }
   });
+  var cis=document.getElementById("calcInSheet"); if(cis) cis.addEventListener("click", function(){ calcOpenFor("eQty"); });
+  var ctq=document.getElementById("calcToQty"); if(ctq) ctq.addEventListener("click", calcToQty);
   calcRender();
 }
 /* ================= סוף מחשבון ספירה ================= */
