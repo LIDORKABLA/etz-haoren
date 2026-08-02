@@ -729,6 +729,14 @@ body.m-count #calcFab{display:inline-flex}
   background:var(--pine);color:#fff;font-family:inherit;font-size:15px;font-weight:800;cursor:pointer}
 .calc-to-qty:active{filter:brightness(.95)}
 
+
+/* ===== ייצוא עגלה לאקסל ===== */
+#exportCartXlsxBtn{background:#1D6F42;color:#fff}
+.xlsx-col{display:flex;align-items:center;gap:11px;padding:12px 13px;border:1px solid var(--line);
+  border-radius:12px;margin-bottom:8px;cursor:pointer;font-weight:600;color:var(--ink);background:var(--card)}
+.xlsx-col input{width:20px;height:20px;accent-color:var(--pine);flex:0 0 auto}
+.xlsx-col:active{background:var(--bg)}
+
 </style>
 </head>
 <body>
@@ -916,6 +924,7 @@ body.m-count #calcFab{display:inline-flex}
       <span>סה״כ</span><span id="cartSum">0 ₪</span>
     </div>
     <button class="btn primary" id="waQuoteBtn" style="margin-top:8px;background:#25D366"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg> שיתוף פירוט מוצרים בוואטסאפ</button>
+    <button class="btn" id="exportCartXlsxBtn" style="margin-top:8px"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> ייצוא לאקסל</button>
     <button class="btn danger" id="delCartBtn" style="margin-top:8px">מחק עגלה (שולם בקופה)</button>
   </div>
 </main>
@@ -928,6 +937,15 @@ body.m-count #calcFab{display:inline-flex}
 </nav>
 
 <!-- ENTRY SHEET -->
+<div class="sheet" id="cartXlsxSheet">
+  <div class="card">
+    <h3>ייצוא עגלה לאקסל</h3>
+    <div class="meta">בחר אילו עמודות לכלול בקובץ</div>
+    <div id="cartXlsxCols" style="margin:14px 0"></div>
+    <button class="btn primary" id="doCartXlsxBtn">ייצא לאקסל</button>
+    <button class="btn ghost" id="cartXlsxCancel" style="margin-top:8px">ביטול</button>
+  </div>
+</div>
 <div class="sheet" id="sheet">
   <div class="card">
     <h3 id="eName">—</h3>
@@ -2861,9 +2879,67 @@ function wireCalc(){
 }
 /* ================= סוף מחשבון ספירה ================= */
 
+
+/* ================= ייצוא עגלת לקוח לאקסל ================= */
+var CART_XLSX_COLS=[
+  {label:"מק״ט",        w:16, def:true,  get:function(it,p,cm){ return it.mktt; }},
+  {label:"שם מוצר",     w:42, def:true,  get:function(it,p,cm){ return it.name||(p&&p.name)||""; }},
+  {label:"ברקוד",       w:20, def:true,  get:function(it,p,cm){ return (p&&p.barcode)||""; }},
+  {label:"כמות",        w:10, def:true,  get:function(it,p,cm){ return Number(it.qty)||0; }},
+  {label:"מחיר יחידה",  w:12, def:true,  get:function(it,p,cm){ return Number(it.unit_price)||0; }},
+  {label:"סה״כ שורה",   w:13, def:true,  get:function(it,p,cm){ return (Number(it.qty)||0)*(Number(it.unit_price)||0); }},
+  {label:"קישור תמונה", w:48, def:true,  get:function(it,p,cm){ return (p&&(p.image_url||p.image))||(cm&&cm.image_url)||""; }},
+  {label:"מלאי נוכחי",   w:12, def:false, get:function(it,p,cm){ return (p&&p.stock!=null&&p.stock!=="")?p.stock:""; }},
+  {label:"יחידה",       w:12, def:false, get:function(it,p,cm){ return (p&&p.unit)||""; }},
+  {label:"מיקום",       w:14, def:false, get:function(it,p,cm){ return (p&&p.loc)||""; }}
+];
+function openCartXlsx(){
+  if(typeof CUR_CART==="undefined"||CUR_CART==null){ toast("לא נבחרה עגלה"); return; }
+  if(!cartItems(CUR_CART).length){ toast("העגלה ריקה"); return; }
+  var box=document.getElementById("cartXlsxCols");
+  if(box){
+    box.innerHTML=CART_XLSX_COLS.map(function(c,i){
+      return '<label class="xlsx-col"><input type="checkbox" data-i="'+i+'"'+(c.def?" checked":"")+'><span>'+c.label+'</span></label>';
+    }).join("");
+  }
+  var s=document.getElementById("cartXlsxSheet"); if(s) s.classList.add("open");
+}
+function closeCartXlsx(){ var s=document.getElementById("cartXlsxSheet"); if(s) s.classList.remove("open"); }
+function doCartXlsx(){
+  var box=document.getElementById("cartXlsxCols"); if(!box) return;
+  var chosen=[];
+  box.querySelectorAll('input[type=checkbox]').forEach(function(cb){ if(cb.checked) chosen.push(CART_XLSX_COLS[+cb.getAttribute("data-i")]); });
+  if(!chosen.length){ toast("בחר לפחות עמודה אחת"); return; }
+  var items=cartItems(CUR_CART);
+  if(!items.length){ toast("העגלה ריקה"); return; }
+  var aoa=[chosen.map(function(c){ return c.label; })];
+  items.forEach(function(it){
+    var p=PRODMAP.get(String(it.mktt));
+    var cm=(typeof CLEARANCE_MAP!=="undefined")?CLEARANCE_MAP.get(String(it.mktt)):null;
+    aoa.push(chosen.map(function(c){ return c.get(it,p,cm); }));
+  });
+  var ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws["!cols"]=chosen.map(function(c){ return {wch:c.w}; });
+  var wb=XLSX.utils.book_new(); wb.Workbook={Views:[{RTL:true}]};
+  XLSX.utils.book_append_sheet(wb,ws,"עגלה");
+  var c=(typeof CARTS!=="undefined")?CARTS.find(function(x){ return String(x.id)===String(CUR_CART); }):null;
+  var who=(c&&c.customer)?String(c.customer).replace(/[\\/:*?"<>|]/g,"_"):"עגלה";
+  var d=new Date(), pad=function(n){ return String(n).padStart(2,"0"); };
+  XLSX.writeFile(wb, who+"_"+d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+".xlsx");
+  closeCartXlsx();
+}
+function wireCartXlsx(){
+  var b=document.getElementById("exportCartXlsxBtn"); if(b) b.addEventListener("click", openCartXlsx);
+  var d=document.getElementById("doCartXlsxBtn"); if(d) d.addEventListener("click", doCartXlsx);
+  var c=document.getElementById("cartXlsxCancel"); if(c) c.addEventListener("click", closeCartXlsx);
+  var s=document.getElementById("cartXlsxSheet"); if(s) s.addEventListener("click", function(e){ if(e.target.id==="cartXlsxSheet") closeCartXlsx(); });
+}
+/* ================= סוף ייצוא עגלה ================= */
+
 boot();
 wireWedgeSettings();
 wireCalc();
+wireCartXlsx();
 </script>
 </body>
 </html>
