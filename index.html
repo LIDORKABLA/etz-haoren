@@ -737,6 +737,87 @@ body.m-count #calcFab{display:inline-flex}
 .xlsx-col input{width:20px;height:20px;accent-color:var(--pine);flex:0 0 auto}
 .xlsx-col:active{background:var(--bg)}
 
+
+/* ===== חיפוש מוצר מהיר ===== */
+#prodQuick{display:flex;flex-direction:column;gap:12px}
+.pq-card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.pq-img{width:100%;height:210px;object-fit:contain;background:#f6f5f0;display:block}
+.pq-noimg{width:100%;height:120px;display:flex;align-items:center;justify-content:center;background:#f6f5f0;color:#9a9a9a;font-size:14px}
+.pq-body{padding:13px 16px}
+.pq-name{font-size:17px;font-weight:800;color:var(--ink);margin-bottom:11px;line-height:1.3}
+.pq-grid{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;font-size:15px}
+.pq-lbl{color:#8a8f96;font-weight:600}
+.pq-val{color:var(--ink);font-weight:700;text-align:left;direction:ltr}
+.pq-price{color:var(--pine);font-size:16px}
+.pq-empty{text-align:center;color:#8a8f96;padding:28px 0}
+
+
+/* ===== צ'אט צוות ===== */
+#chatFab{position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:38;
+  display:inline-flex;align-items:center;justify-content:center;width:54px;height:54px;padding:0;
+  border:none;border-radius:50%;cursor:pointer;color:#fff;background:linear-gradient(135deg,#0B7D71,#095e55);
+  box-shadow:0 8px 22px rgba(11,125,113,.42),0 2px 6px rgba(0,0,0,.15);transition:transform .06s}
+#chatFab:active{transform:scale(.95)}
+#chatFab .i{width:25px;height:25px}
+.chat-card{display:flex;flex-direction:column;height:82vh;max-height:82vh;padding:0;overflow:hidden;width:min(480px,100%)}
+.chat-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line);flex:0 0 auto}
+.chat-head span{font-weight:800;font-size:16px;color:var(--ink)}
+#chatClose{width:32px;height:32px;border:none;background:var(--bg);border-radius:9px;font-size:16px;cursor:pointer;color:var(--ink);font-family:inherit}
+.chat-msgs{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
+.cmsg{max-width:80%;align-self:flex-start;display:flex;flex-direction:column;gap:2px}
+.cmsg.mine{align-self:flex-end;align-items:flex-end}
+.cmsg-author{font-size:12px;color:#8a8f96;font-weight:700;padding:0 4px}
+.cmsg-bubble{background:var(--card);border:1px solid var(--line);padding:9px 13px;border-radius:14px;font-size:15px;color:var(--ink);word-break:break-word;line-height:1.4;text-align:right}
+.cmsg.mine .cmsg-bubble{background:var(--pine);color:#fff;border-color:var(--pine)}
+.cmsg-time{font-size:10.5px;color:#a0a4a8;padding:0 5px}
+.chat-empty{text-align:center;color:#a0a4a8;padding:40px 20px;font-size:14px;margin:auto}
+.chat-input{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--line);align-items:center;flex:0 0 auto}
+.chat-input input{flex:1;padding:11px 14px;border:1px solid var(--line);border-radius:12px;font-family:inherit;font-size:15px;background:var(--card);color:var(--ink)}
+#chatSend{padding:11px 20px;border:none;border-radius:12px;background:var(--pine);color:#fff;font-family:inherit;font-weight:700;cursor:pointer;flex:0 0 auto}
+.chat-note{text-align:center;font-size:11.5px;color:#a0a4a8;padding:8px 0 12px;flex:0 0 auto}
+
+
+/* ===== צ'אט: הרחבות (השתקה, שיתוף מוצר, תמונות, באנר) ===== */
+.chat-head-btns{display:flex;gap:6px;align-items:center}
+.chat-ic{width:38px;height:38px;flex:0 0 auto;border:none;background:var(--bg);border-radius:11px;cursor:pointer;
+  font-size:18px;display:inline-flex;align-items:center;justify-content:center;color:var(--pine);font-family:inherit}
+.chat-ic:active{background:var(--line)}
+.chat-ic .i{width:20px;height:20px}
+.cmsg-bubble.rich{padding:0;overflow:hidden;background:var(--card)}
+.cmsg.mine .cmsg-bubble.rich{background:var(--card);border-color:var(--line)}
+.cmsg-prod{width:210px;max-width:70vw}
+.cmsg-prod>img{width:100%;height:150px;object-fit:contain;background:#f6f5f0;display:block}
+.cmsg-prod-b{padding:9px 12px;display:flex;flex-direction:column;gap:2px}
+.cmsg-prod-b b{font-size:15px;color:var(--ink)}
+.cmsg-prod-b span{font-size:12.5px;color:#8a8f96}
+.cmsg-prod-price{color:var(--pine)!important;font-weight:800;font-size:14px!important}
+.cmsg-img{max-width:210px;max-height:230px;border-radius:12px;display:block;cursor:pointer;object-fit:cover}
+.cmsg-cap{padding:5px 3px 0;font-size:14px;color:var(--ink)}
+.chat-prodpick{position:absolute;inset:0;background:var(--card);z-index:5;display:none;flex-direction:column;padding:14px 16px;border-radius:inherit}
+.chat-prodpick.open{display:flex}
+.cpp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cpp-head span{font-weight:800;font-size:16px;color:var(--ink)}
+#cppClose{width:32px;height:32px;border:none;background:var(--bg);border-radius:9px;font-size:16px;cursor:pointer;color:var(--ink);font-family:inherit}
+#cppSearch{padding:11px 14px;border:1px solid var(--line);border-radius:12px;font-family:inherit;font-size:15px;background:var(--bg);color:var(--ink);margin-bottom:10px}
+#cppResults{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.cpp-item{display:flex;gap:10px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:12px;cursor:pointer}
+.cpp-item:active{background:var(--bg)}
+.cpp-item img{width:46px;height:46px;object-fit:contain;background:#f6f5f0;border-radius:8px;flex:0 0 auto}
+.cpp-noimg{width:46px;height:46px;background:#f6f5f0;border-radius:8px;flex:0 0 auto}
+.cpp-item b{font-size:14.5px;color:var(--ink);display:block}
+.cpp-item span{font-size:12.5px;color:#8a8f96}
+.chat-banner{position:fixed;top:calc(8px + env(safe-area-inset-top));left:50%;transform:translateX(-50%) translateY(-160%);
+  width:min(440px,calc(100vw - 20px));z-index:60;background:rgba(255,255,255,.92);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid rgba(0,0,0,.06);
+  border-radius:18px;box-shadow:0 12px 34px rgba(0,0,0,.20);cursor:pointer;
+  transition:transform .34s cubic-bezier(.2,.9,.3,1.2),opacity .3s;opacity:0;pointer-events:none}
+.chat-banner.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
+.cb-in{display:flex;align-items:center;gap:11px;padding:12px 15px}
+.cb-ic{width:38px;height:38px;border-radius:10px;background:var(--pine);color:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;flex:0 0 auto}
+.cb-tx{flex:1;min-width:0}
+.cb-title{font-weight:800;font-size:14px;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cb-msg{font-size:13.5px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
 </style>
 </head>
 <body>
@@ -906,7 +987,8 @@ body.m-count #calcFab{display:inline-flex}
 <main id="saleMain">
   <div id="saleListView">
     <button class="btn primary" id="newCartBtn" style="margin-bottom:12px">+ עגלה חדשה</button>
-    <div class="search" style="margin-bottom:10px"><input id="qCart" placeholder="חיפוש עגלה לפי שם לקוח…" autocomplete="off"></div>
+    <div class="search" style="margin-bottom:10px"><input id="qProd" placeholder="חיפוש מוצר — שם, מק״ט או ברקוד…" autocomplete="off" inputmode="search"></div>
+    <div id="prodQuick"></div>
     <div id="cartList"></div>
   </div>
 
@@ -946,6 +1028,27 @@ body.m-count #calcFab{display:inline-flex}
     <button class="btn ghost" id="cartXlsxCancel" style="margin-top:8px">ביטול</button>
   </div>
 </div>
+<button id="chatFab" type="button" aria-label="צ'אט צוות"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></svg></button>
+<div class="sheet" id="chatSheet">
+  <div class="card chat-card">
+    <div class="chat-head"><span>צ'אט צוות</span><div class="chat-head-btns"><button id="chatMuteBtn" class="chat-ic" type="button" title="השתקת התראות">🔔</button><button id="chatClose" type="button" aria-label="סגור">✕</button></div></div>
+    <div id="chatMsgs" class="chat-msgs"></div>
+    <div class="chat-input">
+      <button id="chatShareProd" class="chat-ic" type="button" title="שתף מוצר"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.89 1.45l8 4A2 2 0 0 1 22 7.24v9.53a2 2 0 0 1-1.11 1.79l-8 4a2 2 0 0 1-1.79 0l-8-4a2 2 0 0 1-1.11-1.79V7.24a2 2 0 0 1 1.11-1.79l8-4a2 2 0 0 1 1.78 0z"/><polyline points="2.32 6.16 12 11 21.68 6.16"/><line x1="12" y1="22.76" x2="12" y2="11"/></svg></button>
+      <button id="chatAttach" class="chat-ic" type="button" title="צרף תמונה"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>
+      <input id="chatText" placeholder="כתוב הודעה…" autocomplete="off" maxlength="500">
+      <button id="chatSend" type="button">שלח</button>
+      <input id="chatFile" type="file" accept="image/*" style="display:none">
+    </div>
+    <div class="chat-note">ההודעות נמחקות אוטומטית אחרי 48 שעות</div>
+    <div id="chatProdPick" class="chat-prodpick">
+      <div class="cpp-head"><span>שיתוף מוצר</span><button id="cppClose" type="button">✕</button></div>
+      <input id="cppSearch" placeholder="חפש מוצר לשיתוף…" autocomplete="off" inputmode="search">
+      <div id="cppResults"></div>
+    </div>
+  </div>
+</div>
+<div id="chatBanner" class="chat-banner"></div>
 <div class="sheet" id="sheet">
   <div class="card">
     <h3 id="eName">—</h3>
@@ -1964,7 +2067,7 @@ function openCart(id){ CUR_CART=id; document.body.classList.add("cart-open"); $(
 function closeCart(){ CUR_CART=null; document.body.classList.remove("cart-open"); renderCartList(); }
 
 function renderCartList(){
-  const term=$("#qCart").value.trim().toLowerCase();
+  const _qc=$("#qCart"); const term=_qc?_qc.value.trim().toLowerCase():"";
   const list=CARTS.filter(c=>!term||String(c.customer||"").toLowerCase().includes(term));
   const box=$("#cartList");
   if(!list.length){ box.innerHTML='<div class="empty">אין עגלות פתוחות. לחץ "עגלה חדשה".</div>'; return; }
@@ -2582,7 +2685,7 @@ function bindUI(){
 
   // sales module
   $("#newCartBtn").addEventListener("click",newCart);
-  $("#qCart").addEventListener("input",()=>{ clearTimeout(t); t=setTimeout(renderCartList,120); });
+  { const _qp=$("#qProd"); if(_qp) _qp.addEventListener("input",()=>{ clearTimeout(t); t=setTimeout(quickProdSearch,150); }); }
   $("#cartList").addEventListener("click",e=>{ const row=e.target.closest(".cartrow"); if(row) openCart(row.dataset.cart); });
   $("#backToList").addEventListener("click",closeCart);
   $("#qSale").addEventListener("input",()=>{ clearTimeout(t); t=setTimeout(()=>renderSaleResults(search($("#qSale").value)),120); });
@@ -2936,10 +3039,185 @@ function wireCartXlsx(){
 }
 /* ================= סוף ייצוא עגלה ================= */
 
+
+/* ================= חיפוש מוצר מהיר (בדיקת מלאי/מחיר) ================= */
+function quickProdSearch(){
+  var q=document.getElementById("qProd"); if(!q) return;
+  var term=q.value.trim();
+  var box=document.getElementById("prodQuick"), list=document.getElementById("cartList");
+  if(term.length<2){ if(box) box.innerHTML=""; if(list) list.style.display=""; return; }
+  if(list) list.style.display="none";
+  var res=search(term);
+  if(!box) return;
+  if(!res.length){ box.innerHTML='<div class="pq-empty">לא נמצא מוצר תואם</div>'; return; }
+  box.innerHTML=res.slice(0,20).map(function(p){
+    var img=p.image_url?'<img class="pq-img" loading="lazy" src="'+esc(p.image_url)+'" alt="" onerror="this.style.display=\'none\'">':'<div class="pq-noimg">אין תמונה</div>';
+    var stock=(p.stock!=null&&p.stock!=="")?p.stock:"—";
+    return '<div class="pq-card">'+img+'<div class="pq-body">'+
+      '<div class="pq-name">'+esc(p.name||"(ללא שם)")+'</div>'+
+      '<div class="pq-grid">'+
+        '<span class="pq-lbl">מק״ט</span><span class="pq-val">'+esc(p.mktt)+'</span>'+
+        '<span class="pq-lbl">מלאי נוכחי</span><span class="pq-val">'+esc(stock)+'</span>'+
+        '<span class="pq-lbl">ברקוד</span><span class="pq-val">'+esc(p.barcode||"—")+'</span>'+
+        '<span class="pq-lbl">מחיר</span><span class="pq-val pq-price">'+esc(p.price?fmtPrice(p.price):"—")+'</span>'+
+      '</div></div></div>';
+  }).join("");
+}
+/* ================= סוף חיפוש מוצר מהיר ================= */
+
+
+/* ================= צ'אט צוות (מורחב) ================= */
+var CHAT_TTL=48*3600*1000;
+var CHAT_MSGS=[], CHAT_SUB=null, LS_CHAT_MUTE="etz_chat_mute";
+function chatRole(){ return (typeof MODE!=="undefined"&&MODE==="sale")?"מכירות":"לוגיסטיקה"; }
+function chatAuthor(){ var c=document.getElementById("counter"); var v=c?String(c.value||"").trim():""; return v||"אנונימי"; }
+function chatMuted(){ return localStorage.getItem(LS_CHAT_MUTE)==="1"; }
+function toggleChatMute(){ localStorage.setItem(LS_CHAT_MUTE, chatMuted()?"0":"1"); updateMuteBtn(); toast(chatMuted()?"התראות הצ'אט מושתקות":"התראות הצ'אט פעילות"); }
+function updateMuteBtn(){ var b=document.getElementById("chatMuteBtn"); if(b) b.textContent=chatMuted()?"🔕":"🔔"; }
+
+async function chatInsert(obj){
+  if(typeof CLOUD==="undefined"||!CLOUD||!sb){ toast("הצ'אט זמין רק עם חיבור לענן"); return false; }
+  try{ var r=await sb.from("chat_messages").insert(obj); if(r&&r.error) throw r.error; return true; }
+  catch(e){ console.error("chat insert",e); toast("שגיאה בשליחה"); return false; }
+}
+async function openChat(){
+  var s=document.getElementById("chatSheet"); if(s) s.classList.add("open");
+  updateMuteBtn(); await loadChat(); chatSubscribe();
+  setTimeout(function(){ var t=document.getElementById("chatText"); if(t) t.focus(); }, 120);
+}
+function closeChat(){ var s=document.getElementById("chatSheet"); if(s) s.classList.remove("open"); closeProdPick(); }
+async function loadChat(){
+  if(typeof CLOUD==="undefined"||!CLOUD||!sb){ renderChat([]); return; }
+  var since=new Date(Date.now()-CHAT_TTL).toISOString();
+  try{
+    try{ sb.from("chat_messages").delete().lt("created_at",since).then(function(){},function(){}); }catch(e){}
+    var r=await sb.from("chat_messages").select("*").gte("created_at",since).order("created_at",{ascending:true}).limit(300);
+    CHAT_MSGS=(r&&r.data)||[]; renderChat(CHAT_MSGS);
+  }catch(e){ console.error("chat load",e); }
+}
+function chatSubscribe(){
+  if(typeof CLOUD==="undefined"||!CLOUD||!sb||CHAT_SUB) return;
+  CHAT_SUB=sb.channel("chat-live").on("postgres_changes",{event:"INSERT",schema:"public",table:"chat_messages"},function(p){
+    if(!CHAT_MSGS.some(function(m){return String(m.id)===String(p.new.id);})){
+      CHAT_MSGS.push(p.new); renderChat(CHAT_MSGS);
+      if(p.new.author!==chatAuthor()) chatBanner(p.new);
+    }
+  }).subscribe();
+}
+async function sendChat(){
+  var t=document.getElementById("chatText"); if(!t) return;
+  var text=String(t.value||"").trim(); if(!text) return;
+  t.value="";
+  var ok=await chatInsert({author:chatAuthor(),role:chatRole(),kind:"text",text:text});
+  if(!ok) t.value=text;
+}
+function renderChat(msgs){
+  var box=document.getElementById("chatMsgs"); if(!box) return;
+  var me=chatAuthor(), now=Date.now();
+  var vis=(msgs||[]).filter(function(m){ return now-new Date(m.created_at).getTime()<CHAT_TTL; });
+  if(!vis.length){ box.innerHTML='<div class="chat-empty">אין הודעות עדיין.<br>כתוב הודעה כדי להתחיל שיחה עם הצוות.</div>'; return; }
+  box.innerHTML=vis.map(function(m){
+    var mine=(m.author===me);
+    var d=new Date(m.created_at), hh=String(d.getHours()).padStart(2,"0"), mm=String(d.getMinutes()).padStart(2,"0");
+    var who=esc(m.author||"—")+(m.role?' · '+esc(m.role):'');
+    var body, rich="";
+    if(m.kind==="product"&&m.meta){
+      var t=m.meta; rich=" rich";
+      body='<div class="cmsg-prod">'+
+        (t.image_url?'<img src="'+esc(t.image_url)+'" alt="" onerror="this.style.display=\'none\'">':'')+
+        '<div class="cmsg-prod-b"><b>'+esc(t.name||"(ללא שם)")+'</b>'+
+        '<span>מק״ט '+esc(t.mktt||"")+'</span>'+
+        (t.barcode?'<span>ברקוד '+esc(t.barcode)+'</span>':'')+
+        ((t.stock!==""&&t.stock!=null)?'<span>מלאי '+esc(t.stock)+'</span>':'')+
+        (t.price?'<span class="cmsg-prod-price">'+esc(fmtPrice(t.price))+'</span>':'')+
+        '</div></div>';
+    } else if(m.kind==="image"&&m.meta&&m.meta.url){
+      rich=" rich";
+      body='<img class="cmsg-img" src="'+esc(m.meta.url)+'" alt="" onclick="window.open(this.src,\'_blank\')">'+(m.text?'<div class="cmsg-cap">'+esc(m.text)+'</div>':'');
+    } else { body=esc(m.text||""); }
+    return '<div class="cmsg '+(mine?"mine":"")+'">'+
+      (mine?"":'<div class="cmsg-author">'+who+'</div>')+
+      '<div class="cmsg-bubble'+rich+'">'+body+'</div>'+
+      '<div class="cmsg-time">'+hh+':'+mm+'</div></div>';
+  }).join("");
+  box.scrollTop=box.scrollHeight;
+}
+
+/* התראה בסגנון אייפון (באנר עליון) */
+function chatBanner(m){
+  if(chatMuted()) return;
+  var sheet=document.getElementById("chatSheet"); if(sheet&&sheet.classList.contains("open")) return;
+  var b=document.getElementById("chatBanner"); if(!b) return;
+  var who=esc(m.author||"—")+(m.role?' · '+esc(m.role):'');
+  var prev=(m.kind==="product")?"📦 שיתף מוצר":((m.kind==="image")?"📷 שלח תמונה":esc(String(m.text||"").slice(0,70)));
+  b.innerHTML='<div class="cb-in"><div class="cb-ic">💬</div><div class="cb-tx"><div class="cb-title">'+who+'</div><div class="cb-msg">'+prev+'</div></div></div>';
+  b.classList.add("show");
+  clearTimeout(b._t); b._t=setTimeout(function(){ b.classList.remove("show"); }, 4500);
+  b.onclick=function(){ b.classList.remove("show"); openChat(); };
+  try{ if(navigator.vibrate) navigator.vibrate(60); }catch(e){}
+}
+
+/* שיתוף מוצר */
+function openProdPick(){ var p=document.getElementById("chatProdPick"); if(!p) return; p.classList.add("open"); var s=document.getElementById("cppSearch"); if(s){ s.value=""; setTimeout(function(){s.focus();},100); } var r=document.getElementById("cppResults"); if(r) r.innerHTML=""; }
+function closeProdPick(){ var p=document.getElementById("chatProdPick"); if(p) p.classList.remove("open"); }
+function cppSearch(){
+  var s=document.getElementById("cppSearch"), box=document.getElementById("cppResults"); if(!s||!box) return;
+  var term=s.value.trim();
+  if(term.length<2){ box.innerHTML=""; return; }
+  var res=search(term);
+  box.innerHTML=res.slice(0,15).map(function(p){
+    return '<div class="cpp-item" data-mktt="'+esc(p.mktt)+'">'+
+      (p.image_url?'<img src="'+esc(p.image_url)+'" alt="" onerror="this.style.display=\'none\'">':'<div class="cpp-noimg"></div>')+
+      '<div><b>'+esc(p.name||"(ללא שם)")+'</b><span>מק״ט '+esc(p.mktt)+(p.price?' · '+esc(fmtPrice(p.price)):'')+'</span></div></div>';
+  }).join("")||'<div class="chat-empty">לא נמצא מוצר</div>';
+}
+async function pickProduct(mktt){
+  var p=(typeof PRODMAP!=="undefined")?PRODMAP.get(String(mktt)):null; if(!p) return;
+  closeProdPick();
+  await chatInsert({author:chatAuthor(),role:chatRole(),kind:"product",text:"",
+    meta:{mktt:p.mktt,name:p.name||"",image_url:p.image_url||"",price:p.price||"",stock:(p.stock!=null?p.stock:""),barcode:p.barcode||""}});
+}
+
+/* צירוף תמונה (דורש bucket בשם chat ב-Supabase Storage) */
+async function onChatFile(e){
+  var f=e.target.files&&e.target.files[0]; e.target.value="";
+  if(!f) return;
+  if(typeof CLOUD==="undefined"||!CLOUD||!sb){ toast("אין חיבור לענן"); return; }
+  if(f.size>5*1024*1024){ toast("הקובץ גדול מדי (עד 5MB)"); return; }
+  toast("מעלה תמונה…");
+  try{
+    var path=Date.now()+"_"+String(f.name||"img").replace(/[^\w.\-]/g,"_");
+    var up=await sb.storage.from("chat").upload(path,f,{cacheControl:"3600",upsert:false});
+    if(up.error) throw up.error;
+    var url=sb.storage.from("chat").getPublicUrl(path).data.publicUrl;
+    await chatInsert({author:chatAuthor(),role:chatRole(),kind:"image",text:"",meta:{url:url,name:f.name}});
+  }catch(err){ console.error("upload",err); toast("שגיאה בהעלאה — ודא שנוצר bucket בשם chat"); }
+}
+
+function wireChat(){
+  var fab=document.getElementById("chatFab"); if(fab) fab.addEventListener("click", openChat);
+  var cl=document.getElementById("chatClose"); if(cl) cl.addEventListener("click", closeChat);
+  var snd=document.getElementById("chatSend"); if(snd) snd.addEventListener("click", sendChat);
+  var txt=document.getElementById("chatText"); if(txt) txt.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); sendChat(); } });
+  var s=document.getElementById("chatSheet"); if(s) s.addEventListener("click", function(e){ if(e.target.id==="chatSheet") closeChat(); });
+  var mb=document.getElementById("chatMuteBtn"); if(mb) mb.addEventListener("click", toggleChatMute);
+  var sp=document.getElementById("chatShareProd"); if(sp) sp.addEventListener("click", openProdPick);
+  var cc=document.getElementById("cppClose"); if(cc) cc.addEventListener("click", closeProdPick);
+  var cs=document.getElementById("cppSearch"); if(cs) cs.addEventListener("input", function(){ clearTimeout(cs._t); cs._t=setTimeout(cppSearch,150); });
+  var cr=document.getElementById("cppResults"); if(cr) cr.addEventListener("click", function(e){ var it=e.target.closest?e.target.closest("[data-mktt]"):null; if(it) pickProduct(it.getAttribute("data-mktt")); });
+  var at=document.getElementById("chatAttach"), fi=document.getElementById("chatFile");
+  if(at&&fi){ at.addEventListener("click", function(){ fi.click(); }); fi.addEventListener("change", onChatFile); }
+  updateMuteBtn();
+  /* מנוי גלובלי כדי שהתראות יגיעו גם כשהצ'אט סגור */
+  chatSubscribe();
+}
+/* ================= סוף צ'אט צוות ================= */
+
 boot();
 wireWedgeSettings();
 wireCalc();
 wireCartXlsx();
+wireChat();
 </script>
 </body>
 </html>
