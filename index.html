@@ -818,6 +818,18 @@ body.m-count #calcFab{display:inline-flex}
 .cb-title{font-weight:800;font-size:14px;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cb-msg{font-size:13.5px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
+
+
+/* ===== חיווי הוספה (ירוק/אדום) ===== */
+#pulseFX{position:fixed;inset:0;z-index:70;pointer-events:none;display:flex;align-items:flex-start;justify-content:center;opacity:0;transition:opacity .14s}
+#pulseFX.show{opacity:1}
+#pulseFX::before{content:"";position:absolute;inset:0;opacity:.13}
+#pulseFX.ok::before{background:#12A150}
+#pulseFX.err::before{background:#E5484D}
+#pulseFX .tag{margin-top:calc(74px + env(safe-area-inset-top));padding:13px 26px;border-radius:15px;color:#fff;font-weight:800;font-size:17px;box-shadow:0 10px 28px rgba(0,0,0,.26);max-width:88vw;text-align:center}
+#pulseFX.ok .tag{background:#12A150}
+#pulseFX.err .tag{background:#E5484D}
+
 </style>
 </head>
 <body>
@@ -987,6 +999,8 @@ body.m-count #calcFab{display:inline-flex}
 <main id="saleMain">
   <div id="saleListView">
     <button class="btn primary" id="newCartBtn" style="margin-bottom:12px">+ עגלה חדשה</button>
+    <button class="btn" id="importCartBtn" style="margin-bottom:12px"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px;vertical-align:-3px;margin-left:6px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 9l5-5 5 5"/><path d="M12 4v12"/></svg>ייבא עגלה מאקסל</button>
+    <input id="importCartFile" type="file" accept=".xlsx,.xls,.csv" style="display:none">
     <div class="search" style="margin-bottom:10px"><input id="qProd" placeholder="חיפוש מוצר — שם, מק״ט או ברקוד…" autocomplete="off" inputmode="search"></div>
     <div id="prodQuick"></div>
     <div id="cartList"></div>
@@ -1049,6 +1063,7 @@ body.m-count #calcFab{display:inline-flex}
   </div>
 </div>
 <div id="chatBanner" class="chat-banner"></div>
+<div id="pulseFX"><div class="tag"></div></div>
 <div class="sheet" id="sheet">
   <div class="card">
     <h3 id="eName">—</h3>
@@ -1643,13 +1658,13 @@ async function submitCount(){
     } else {
       const stored=await addCount({mktt:String(CURRENT.mktt),name:CURRENT.name||"",qty,counter:cnt,location:loc});
       RECENT.unshift(stored); RECENT=RECENT.slice(0,20); renderRecent();
-      feedback(true);
+      feedback(true); pulseFX(true,"✓ נספר: "+(CURRENT.name||CURRENT.mktt)+" × "+qty);
       toast("✓ נספר: "+(CURRENT.name||CURRENT.mktt)+" × "+qty);
     }
     const wasAdd=!EDIT;
     closeSheet();
     if(wasAdd){ $("#q").value=""; renderResults([]); $("#q").focus(); }
-  }catch(e){ console.error(e); toast("שגיאה בשמירה"); }
+  }catch(e){ console.error(e); feedback(false); pulseFX(false,"✗ לא נשמר — נסה שוב"); toast("שגיאה בשמירה"); }
   finally{ btn.disabled=false; btn.textContent=old; }
 }
 
@@ -1912,7 +1927,7 @@ function onScan(code){
   if(SCAN_MODE==="sale"){
     closeScanner().then(()=>{
       setTimeout(()=>{scanLock=false;},900);
-      if(p){ if(CUR_CART!=null) addItemToCart(p); else toast("פתח או צור עגלה קודם"); }
+      if(p){ if(CUR_CART!=null) queueAddToCart(p); else toast("פתח או צור עגלה קודם"); }
       else { feedback(false); $("#qSale").value=c; renderSaleResults(search(c)); toast("ברקוד לא מזוהה"); }
     });
     return;
@@ -2106,23 +2121,49 @@ function renderCart(){
   {const _s=$("#cartSum"),_v=String(cartTotal(c.id));if(_s.dataset.v!==undefined&&_s.dataset.v!==_v){_s.classList.remove("pulse");void _s.offsetWidth;_s.classList.add("pulse");}_s.dataset.v=_v;_s.textContent=fmtNis(cartTotal(c.id));}
 }
 
+function pulseFX(ok,text){
+  var el=document.getElementById("pulseFX"); if(!el) return;
+  var tag=el.querySelector(".tag"); if(tag) tag.textContent=text||(ok?"✓ נקלט":"✗ לא נקלט");
+  el.classList.remove("show","ok","err"); void el.offsetWidth;
+  el.classList.add(ok?"ok":"err","show");
+  clearTimeout(el._t); el._t=setTimeout(function(){ el.classList.remove("show"); }, ok?750:1600);
+}
+/* כתיבה לעגלה עם ניסיונות חוזרים */
+async function cartWrite(existing, product, price, forcePrice){
+  for(var a=0;a<3;a++){
+    try{
+      if(existing){
+        var patch={qty:(Number(existing.qty)||0)+1}; if(forcePrice) patch.unit_price=price;
+        var u=await sb.from("cart_items").update(patch).eq("id",existing.id);
+        if(u.error) throw u.error;
+        Object.assign(existing,patch);
+      } else {
+        var r=await sb.from("cart_items").insert({cart_id:CUR_CART,mktt:String(product.mktt),name:product.name||"",qty:1,unit_price:price}).select();
+        if(r.error) throw r.error;
+        if(!ITEMS.some(function(x){return x.id===r.data[0].id;})) ITEMS.push(r.data[0]);
+      }
+      return true;
+    }catch(e){ console.error("cart write "+a,e); await new Promise(function(rs){setTimeout(rs,300);}); }
+  }
+  return false;
+}
 async function addItemToCart(product, priceOverride){
-  if(CUR_CART==null) return;
+  if(CUR_CART==null){ pulseFX(false,"אין עגלה פתוחה"); return; }
   let price;
   if(priceOverride!=null) price=pnum(priceOverride);
   else if(isClearance(product.mktt)) price=clearancePrice(product.mktt);
   else price=pnum(product.price);
   const forcePrice=(priceOverride!=null)||isClearance(product.mktt);
   const existing=cartItems(CUR_CART).find(i=>String(i.mktt)===String(product.mktt));
-  try{
-    if(existing){ const patch={qty:(Number(existing.qty)||0)+1}; if(forcePrice) patch.unit_price=price; await updateItem(existing,patch); }
-    else{
-      const {data,error}=await sb.from("cart_items").insert({cart_id:CUR_CART,mktt:String(product.mktt),name:product.name||"",qty:1,unit_price:price}).select();
-      if(error) throw error;
-      if(!ITEMS.some(x=>x.id===data[0].id)) ITEMS.push(data[0]);
-    }
-    touchCart(CUR_CART); feedback(true); renderCart(); renderCartList();
-  }catch(e){ console.error(e); toast("שגיאה בהוספה (בדוק חיבור)"); }
+  const ok=await cartWrite(existing, product, price, forcePrice);
+  if(ok){ touchCart(CUR_CART); feedback(true); pulseFX(true,"✓ "+(product.name||product.mktt)); renderCart(); renderCartList(); }
+  else{ feedback(false); pulseFX(false,"✗ לא נוסף — נסה שוב"); }
+}
+/* תור סדרתי: מונע התנגשות בהוספה מהירה */
+var CART_Q=Promise.resolve();
+function queueAddToCart(product, priceOverride){
+  CART_Q=CART_Q.then(function(){ return addItemToCart(product, priceOverride); }).catch(function(e){ console.error(e); pulseFX(false,"✗ שגיאה"); });
+  return CART_Q;
 }
 async function updateItem(item,patch){
   try{
@@ -2454,7 +2495,7 @@ function addClearanceToCart(mktt){
   if(CUR_CART==null){ toast("פתח עגלה תחילה"); return; }
   const c=CLEARANCE_MAP.get(String(mktt)); if(!c){ toast("פריט לא נמצא"); return; }
   const product=PRODMAP.get(String(mktt))||{mktt:String(mktt),name:c.name,price:c.price};
-  addItemToCart(product, pnum(c.price));
+  queueAddToCart(product, pnum(c.price));
 }
 
 function loadScript(src){return new Promise(function(res,rej){ if(document.querySelector('script[src="'+src+'"]')) return res(); var s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=function(){rej(new Error("script load failed"))}; document.head.appendChild(s); });}
@@ -2689,7 +2730,7 @@ function bindUI(){
   $("#cartList").addEventListener("click",e=>{ const row=e.target.closest(".cartrow"); if(row) openCart(row.dataset.cart); });
   $("#backToList").addEventListener("click",closeCart);
   $("#qSale").addEventListener("input",()=>{ clearTimeout(t); t=setTimeout(()=>renderSaleResults(search($("#qSale").value)),120); });
-  $("#saleResults").addEventListener("click",e=>{ const ed=e.target.closest("[data-edit-prod]"); if(ed){ e.stopPropagation(); editProduct(ed.dataset.editProd); return; } const li=e.target.closest(".item"); if(!li) return; const p=PRODMAP.get(li.dataset.mktt); if(p){ addItemToCart(p); $("#qSale").value=""; renderSaleResults([]); } });
+  $("#saleResults").addEventListener("click",e=>{ const ed=e.target.closest("[data-edit-prod]"); if(ed){ e.stopPropagation(); editProduct(ed.dataset.editProd); return; } const li=e.target.closest(".item"); if(!li) return; const p=PRODMAP.get(li.dataset.mktt); if(p){ queueAddToCart(p); $("#qSale").value=""; renderSaleResults([]); } });
   $("#clearanceFab").addEventListener("click",openClearance);
   $("#clrClose").addEventListener("click",closeClearance);
   $("#clearanceSheet").addEventListener("click",e=>{ if(e.target.id==="clearanceSheet") closeClearance(); });
@@ -3213,11 +3254,65 @@ function wireChat(){
 }
 /* ================= סוף צ'אט צוות ================= */
 
+
+/* ================= ייבוא עגלה מאקסל ================= */
+async function importCartFromFile(file){
+  var sp=$("#counter").value.trim();
+  if(!sp){ toast("יש להזין שם איש מכירות למעלה"); if(typeof nameReq==="function") nameReq(); $("#counter").focus(); return; }
+  if(typeof CLOUD==="undefined"||!CLOUD||!sb){ toast("ייבוא עגלה זמין רק עם חיבור לענן"); return; }
+  var rows;
+  try{
+    var buf=await file.arrayBuffer();
+    var wb=XLSX.read(buf,{type:"array"});
+    var ws=wb.Sheets[wb.SheetNames[0]];
+    rows=XLSX.utils.sheet_to_json(ws,{header:1,blankrows:false});
+  }catch(e){ console.error("import read",e); toast("שגיאה בקריאת הקובץ"); return; }
+  if(!rows||rows.length<2){ toast("הקובץ ריק או ללא נתונים"); return; }
+  var hdr=(rows[0]||[]).map(function(h){ return String(h==null?"":h).trim(); });
+  function findCol(re){ for(var i=0;i<hdr.length;i++){ if(re.test(hdr[i])) return i; } return -1; }
+  var cM=findCol(/מק|mktt|sku|קוד|ברקוד|barcode/i);
+  var cQ=findCol(/כמות|qty|quantity|יח/i);
+  var cP=findCol(/מחיר|price|unit/i);
+  if(cM<0||cQ<0){ toast("לא זוהו עמודות מק״ט וכמות בקובץ"); return; }
+  var found=[], missing=0;
+  for(var r=1;r<rows.length;r++){
+    var row=rows[r]||[];
+    var mk=String(row[cM]==null?"":row[cM]).trim();
+    if(!mk) continue;
+    var qty=Number(row[cQ])||0; if(qty<=0) qty=1;
+    var p=(typeof findByCode==="function"?findByCode(mk):null)||PRODMAP.get(mk)||PRODMAP.get(String(mk));
+    if(!p){ missing++; continue; }
+    var price=(cP>=0 && row[cP]!=null && row[cP]!=="")?pnum(row[cP]):pnum(p.price);
+    found.push({mktt:String(p.mktt),name:p.name||"",qty:qty,unit_price:price});
+  }
+  if(!found.length){ toast("לא נמצאו מוצרים תואמים בקובץ"); return; }
+  var cust=(prompt("שם הלקוח לעגלה ("+found.length+" פריטים):","עגלה מיובאת")||"").trim();
+  if(!cust) return;
+  try{
+    var ins1=await sb.from("carts").insert({customer:cust,salesperson:sp,status:"open"}).select();
+    if(ins1.error) throw ins1.error;
+    var cart=ins1.data[0];
+    if(!CARTS.some(function(c){return c.id===cart.id;})) CARTS.unshift(cart);
+    var payload=found.map(function(f){ return {cart_id:cart.id,mktt:f.mktt,name:f.name,qty:f.qty,unit_price:f.unit_price}; });
+    var ins2=await sb.from("cart_items").insert(payload).select();
+    if(ins2.error) throw ins2.error;
+    (ins2.data||[]).forEach(function(it){ if(!ITEMS.some(function(x){return x.id===it.id;})) ITEMS.push(it); });
+    openCart(cart.id);
+    toast("יובאו "+found.length+" פריטים"+(missing?" · "+missing+" לא נמצאו":""));
+  }catch(e){ console.error("import cart",e); toast("שגיאה בייבוא (בדוק חיבור)"); }
+}
+function wireImportCart(){
+  var b=document.getElementById("importCartBtn"), f=document.getElementById("importCartFile");
+  if(b&&f){ b.addEventListener("click",function(){ f.click(); }); f.addEventListener("change",function(e){ var file=e.target.files&&e.target.files[0]; e.target.value=""; if(file) importCartFromFile(file); }); }
+}
+/* ================= סוף ייבוא עגלה ================= */
+
 boot();
 wireWedgeSettings();
 wireCalc();
 wireCartXlsx();
 wireChat();
+wireImportCart();
 </script>
 </body>
 </html>
