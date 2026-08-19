@@ -830,6 +830,7 @@ body.m-count #calcFab{display:inline-flex}
 #pulseFX.ok .tag{background:#12A150}
 #pulseFX.err .tag{background:#E5484D}
 
+.price-tag.clr{background:#E5484D!important;color:#fff!important}
 </style>
 </head>
 <body>
@@ -926,6 +927,11 @@ body.m-count #calcFab{display:inline-flex}
 
   <!-- ADMIN TAB -->
   <section id="tab-admin" class="tab">
+    <div class="panel">
+      <h4>עדכון יזום מאקסל</h4>
+      <p>עדכון שדה בודד (מחיר / תמונה / מלאי ועוד) למק״טים נבחרים בלבד — שאר הנתונים לא משתנים. המזהה בקובץ הוא המק״ט.</p>
+      <button class="btn" id="bulkUpdateBtn" type="button">פתח עדכון יזום</button>
+    </div>
     <div class="panel">
       <h4>ייבוא קטלוג מוצרים</h4>
       <p>העלו קובץ אקסל (xlsx/csv) של כל המוצרים. נזהה אוטומטית את העמודות — תוכלו לתקן למטה. אם יש עמודת ברקוד, מפו אותה כדי לאפשר סריקה.</p>
@@ -1064,6 +1070,25 @@ body.m-count #calcFab{display:inline-flex}
 </div>
 <div id="chatBanner" class="chat-banner"></div>
 <div id="pulseFX"><div class="tag"></div></div>
+<div class="sheet" id="bulkSheet">
+  <div class="card">
+    <h3>עדכון יזום מאקסל</h3>
+    <div class="meta">בחר שדה לעדכון, ואז קובץ עם עמודת מק״ט ועמודת הערך</div>
+    <select id="bulkField" style="width:100%;margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:12px;font-family:inherit;font-size:15px;background:var(--card);color:var(--ink)">
+      <option value="price">מחיר</option>
+      <option value="image_url">תמונה (קישור URL)</option>
+      <option value="name">שם מוצר</option>
+      <option value="stock">מלאי</option>
+      <option value="unit">יחידה</option>
+      <option value="barcode">ברקוד</option>
+    </select>
+    <button class="btn" id="bulkFileBtn" type="button">בחר קובץ אקסל…</button>
+    <input id="bulkFile" type="file" accept=".xlsx,.xls,.csv" style="display:none">
+    <div id="bulkInfo" class="meta" style="margin:10px 0;min-height:20px"></div>
+    <button class="btn primary" id="bulkGo" type="button" disabled>עדכן מוצרים</button>
+    <button class="btn ghost" id="bulkCancel" type="button" style="margin-top:8px">ביטול</button>
+  </div>
+</div>
 <div class="sheet" id="sheet">
   <div class="card">
     <h3 id="eName">—</h3>
@@ -1550,7 +1575,7 @@ function renderResults(list){
   if(!list.length){ ul.innerHTML='<li>'+emptyState('search','לא נמצא מוצר תואם','נסה שם או מק״ט אחר')+'</li>'; return; }
   ul.innerHTML=list.map(p=>`<li class="item" data-mktt="${esc(p.mktt)}">
       ${p.image_url?`<img class="thumb" loading="lazy" src="${esc(p.image_url)}" alt="" onerror="this.style.display='none'">`:""}
-      <div class="nm"><b>${esc(p.name||"(ללא שם)")}</b><span>מק״ט ${esc(p.mktt)}${p.unit?" · "+esc(p.unit):""}${p.price?` · <span class="price-tag">${esc(fmtPrice(p.price))}</span>`:""}</span></div>
+      <div class="nm"><b>${esc(p.name||"(ללא שם)")}</b><span>מק״ט ${esc(p.mktt)}${p.unit?" · "+esc(p.unit):""}${effPrice(p)!=null?` · <span class="price-tag${isClearance(p.mktt)?" clr":""}">${esc(fmtPrice(effPrice(p)))}${isClearance(p.mktt)?" 🔥":""}</span>`:""}</span></div>
       <div class="go">בחר ←</div></li>`).join("");
 }
 
@@ -1595,8 +1620,8 @@ function setSheetImg(p){
 }
 function fmtPrice(v){ if(v==null||String(v).trim()==="") return ""; const s=String(v).trim(); return /^[\d.,]+$/.test(s)? s+" ₪" : s; }
 function setPrice(p){
-  const el=$("#ePrice"), pr=fmtPrice(p&&p.price);
-  if(pr){ el.textContent="מחיר: "+pr; el.style.display="block"; } else el.style.display="none";
+  const el=$("#ePrice"), ep=effPrice(p), pr=fmtPrice(ep);
+  if(pr){ el.textContent=(isClearance(p&&p.mktt)?"מחיר חיסול: ":"מחיר: ")+pr; el.style.display="block"; } else el.style.display="none";
 }
 function openBarcodeEditor(mktt){
   BC_MKTT=String(mktt);
@@ -2276,7 +2301,7 @@ function renderSaleResults(list){
     const note=(clr&&clr.note)?`<div class="clr-note">${ic("note")} ${esc(clr.note)}</div>`:"";
     return `<li class="item" data-mktt="${esc(p.mktt)}">
       ${p.image_url?`<img class="thumb" loading="lazy" src="${esc(p.image_url)}" alt="" onerror="this.style.display='none'">`:""}
-      <div class="nm"><b>${esc(p.name||"(ללא שם)")}</b><span>מק״ט ${esc(p.mktt)} · מלאי: ${esc(curStock(p.mktt))}${p.price?` · <span class="price-tag">${esc(fmtPrice(p.price))}</span>`:""}</span>${note}</div>
+      <div class="nm"><b>${esc(p.name||"(ללא שם)")}</b><span>מק״ט ${esc(p.mktt)} · מלאי: ${esc(curStock(p.mktt))}${effPrice(p)!=null?` · <span class="price-tag${isClearance(p.mktt)?" clr":""}">${esc(fmtPrice(effPrice(p)))}${isClearance(p.mktt)?" 🔥":""}</span>`:""}</span>${note}</div>
       <button class="edit-prod" data-edit-prod="${esc(String(p.mktt))}" type="button" title="ערוך מוצר">${ic("edit")}</button><div class="go">+ הוסף</div></li>`;
   }).join("");
 }
@@ -2303,6 +2328,7 @@ const SHOP_INFO={ name:"עץ האורן", tagline:"המרכז לכלי עבוד�
 let CLEARANCE=[], CLEARANCE_MAP=new Map(), CLEARANCE_OK=false;
 function isClearance(mktt){ return CLEARANCE_MAP.has(String(mktt)); }
 function clearancePrice(mktt){ const c=CLEARANCE_MAP.get(String(mktt)); return c?pnum(c.price):null; }
+function effPrice(p){ if(!p) return null; if(isClearance(p.mktt)){ var c=clearancePrice(p.mktt); if(c!=null) return c; } return (p.price!=null&&p.price!=="")?pnum(p.price):null; }
 function rebuildClearanceMap(){ CLEARANCE_MAP=new Map(CLEARANCE.map(c=>[String(c.mktt),c])); }
 async function probeClearance(){
   if(!CLOUD){ CLEARANCE_OK=false; return; }
@@ -3100,7 +3126,7 @@ function quickProdSearch(){
         '<span class="pq-lbl">מק״ט</span><span class="pq-val">'+esc(p.mktt)+'</span>'+
         '<span class="pq-lbl">מלאי נוכחי</span><span class="pq-val">'+esc(stock)+'</span>'+
         '<span class="pq-lbl">ברקוד</span><span class="pq-val">'+esc(p.barcode||"—")+'</span>'+
-        '<span class="pq-lbl">מחיר</span><span class="pq-val pq-price">'+esc(p.price?fmtPrice(p.price):"—")+'</span>'+
+        '<span class="pq-lbl">'+(isClearance(p.mktt)?"מחיר חיסול":"מחיר")+'</span><span class="pq-val pq-price">'+esc(effPrice(p)!=null?fmtPrice(effPrice(p)):"—")+'</span>'+
       '</div></div></div>';
   }).join("");
 }
@@ -3209,14 +3235,14 @@ function cppSearch(){
   box.innerHTML=res.slice(0,15).map(function(p){
     return '<div class="cpp-item" data-mktt="'+esc(p.mktt)+'">'+
       (p.image_url?'<img src="'+esc(p.image_url)+'" alt="" onerror="this.style.display=\'none\'">':'<div class="cpp-noimg"></div>')+
-      '<div><b>'+esc(p.name||"(ללא שם)")+'</b><span>מק״ט '+esc(p.mktt)+(p.price?' · '+esc(fmtPrice(p.price)):'')+'</span></div></div>';
+      '<div><b>'+esc(p.name||"(ללא שם)")+'</b><span>מק״ט '+esc(p.mktt)+(effPrice(p)!=null?' · '+esc(fmtPrice(effPrice(p))):'')+'</span></div></div>';
   }).join("")||'<div class="chat-empty">לא נמצא מוצר</div>';
 }
 async function pickProduct(mktt){
   var p=(typeof PRODMAP!=="undefined")?PRODMAP.get(String(mktt)):null; if(!p) return;
   closeProdPick();
   await chatInsert({author:chatAuthor(),role:chatRole(),kind:"product",text:"",
-    meta:{mktt:p.mktt,name:p.name||"",image_url:p.image_url||"",price:p.price||"",stock:(p.stock!=null?p.stock:""),barcode:p.barcode||""}});
+    meta:{mktt:p.mktt,name:p.name||"",image_url:p.image_url||"",price:(effPrice(p)!=null?effPrice(p):(p.price||"")),stock:(p.stock!=null?p.stock:""),barcode:p.barcode||""}});
 }
 
 /* צירוף תמונה (דורש bucket בשם chat ב-Supabase Storage) */
@@ -3307,12 +3333,94 @@ function wireImportCart(){
 }
 /* ================= סוף ייבוא עגלה ================= */
 
+
+/* ================= עדכון יזום מאקסל ================= */
+var BULK_DATA=null;
+function openBulk(){ BULK_DATA=null; var i=document.getElementById("bulkInfo"); if(i) i.textContent=""; var g=document.getElementById("bulkGo"); if(g) g.disabled=true; var s=document.getElementById("bulkSheet"); if(s) s.classList.add("open"); }
+function closeBulk(){ var s=document.getElementById("bulkSheet"); if(s) s.classList.remove("open"); }
+async function updateProductField(mktt, field, value){
+  if(typeof CLOUD!=="undefined" && CLOUD && sb){
+    var patch={}; patch[field]=value;
+    var r=await sb.from("products").update(patch).eq("mktt",String(mktt));
+    if(r.error) throw r.error;
+  }
+  var p=PRODMAP.get(String(mktt));
+  if(p){
+    if(field==="barcode"){
+      if(p.barcode && typeof BARCODEMAP!=="undefined") BARCODEMAP.delete(String(p.barcode).trim());
+      p.barcode=value||null;
+      if(value && typeof BARCODEMAP!=="undefined") BARCODEMAP.set(String(value).trim(),p);
+      if(typeof BARCODEMAP_NORM!=="undefined") BARCODEMAP_NORM=null;
+    } else { p[field]=value; }
+  }
+}
+async function bulkReadFile(file){
+  var field=document.getElementById("bulkField").value;
+  try{
+    var buf=await file.arrayBuffer();
+    var wb=XLSX.read(buf,{type:"array"});
+    var ws=wb.Sheets[wb.SheetNames[0]];
+    var rows=XLSX.utils.sheet_to_json(ws,{header:1,blankrows:false});
+    if(!rows||rows.length<2){ toast("הקובץ ריק או ללא נתונים"); return; }
+    var hdr=(rows[0]||[]).map(function(h){ return String(h==null?"":h).trim(); });
+    function findCol(re){ for(var i=0;i<hdr.length;i++){ if(re.test(hdr[i])) return i; } return -1; }
+    var cM=findCol(/מק|mktt|sku|קוד/i); if(cM<0) cM=0;
+    var reMap={price:/מחיר|price/i, image_url:/תמונה|image|url|קישור/i, name:/שם|name/i, stock:/מלאי|stock/i, unit:/יחיד|unit/i, barcode:/ברקוד|barcode/i};
+    var cV=reMap[field]?findCol(reMap[field]):-1;
+    if(cV<0){ for(var i=0;i<hdr.length;i++){ if(i!==cM){ cV=i; break; } } }
+    if(cV<0){ toast("לא זוהתה עמודת ערך בקובץ"); return; }
+    var found=[], missing=0;
+    for(var r=1;r<rows.length;r++){
+      var row=rows[r]||[];
+      var mk=String(row[cM]==null?"":row[cM]).trim(); if(!mk) continue;
+      var p=PRODMAP.get(mk)||PRODMAP.get(String(mk)); if(!p){ missing++; continue; }
+      var v=row[cV]; if(v==null||v==="") continue;
+      found.push({mktt:String(p.mktt), value:v});
+    }
+    BULK_DATA={field:field, items:found};
+    var info=document.getElementById("bulkInfo");
+    if(info) info.textContent=found.length+" מק״טים מוכנים לעדכון"+(missing?" · "+missing+" לא נמצאו במערכת":"");
+    var g=document.getElementById("bulkGo"); if(g) g.disabled=!found.length;
+  }catch(e){ console.error("bulk read",e); toast("שגיאה בקריאת הקובץ"); }
+}
+async function bulkApply(){
+  if(!BULK_DATA||!BULK_DATA.items.length) return;
+  if(typeof CLOUD==="undefined"||!CLOUD||!sb){ toast("עדכון זמין רק עם חיבור לענן"); return; }
+  var field=BULK_DATA.field, items=BULK_DATA.items;
+  var btn=document.getElementById("bulkGo"), old=btn.textContent;
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> מעדכן…';
+  var ok=0, fail=0;
+  for(var i=0;i<items.length;i++){
+    try{
+      var val=items[i].value;
+      if(field==="price"||field==="stock") val=pnum(val);
+      else val=String(val).trim();
+      await updateProductField(items[i].mktt, field, val);
+      ok++;
+    }catch(e){ console.error("bulk apply",items[i].mktt,e); fail++; }
+  }
+  try{ if(typeof LS!=="undefined"&&LS.products) localStorage.setItem(LS.products,JSON.stringify(PRODUCTS)); }catch(e){}
+  btn.disabled=false; btn.textContent=old;
+  closeBulk();
+  toast("עודכנו "+ok+" מוצרים"+(fail?" · "+fail+" נכשלו":""));
+}
+function wireBulk(){
+  var ob=document.getElementById("bulkUpdateBtn"); if(ob) ob.addEventListener("click", openBulk);
+  var fb=document.getElementById("bulkFileBtn"), f=document.getElementById("bulkFile");
+  if(fb&&f){ fb.addEventListener("click",function(){ f.click(); }); f.addEventListener("change",function(e){ var file=e.target.files&&e.target.files[0]; e.target.value=""; if(file) bulkReadFile(file); }); }
+  var g=document.getElementById("bulkGo"); if(g) g.addEventListener("click", bulkApply);
+  var c=document.getElementById("bulkCancel"); if(c) c.addEventListener("click", closeBulk);
+  var s=document.getElementById("bulkSheet"); if(s) s.addEventListener("click", function(e){ if(e.target.id==="bulkSheet") closeBulk(); });
+}
+/* ================= סוף עדכון יזום ================= */
+
 boot();
 wireWedgeSettings();
 wireCalc();
 wireCartXlsx();
 wireChat();
 wireImportCart();
+wireBulk();
 </script>
 </body>
 </html>
