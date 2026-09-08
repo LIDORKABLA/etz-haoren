@@ -1777,10 +1777,10 @@ async function exportCatalog(){
     if(CLOUD) await loadProducts();
     if(!PRODUCTS.length){ toast("הקטלוג ריק"); return; }
     const rows=[...PRODUCTS].sort((a,b)=>String(a.mktt).localeCompare(String(b.mktt),'he',{numeric:true}));
-    const aoa=[["מק״ט","שם מוצר","יחידה","ברקוד","מחיר","מלאי נוכחי"]];
-    rows.forEach(p=>aoa.push([p.mktt,p.name||"",p.unit||"",p.barcode||"",p.price||"",p.stock||""]));
+    const aoa=[["מק״ט","שם מוצר","יחידה","ברקוד","מחיר","מלאי נוכחי","קישור תמונה"]];
+    rows.forEach(p=>aoa.push([p.mktt,p.name||"",p.unit||"",p.barcode||"",p.price||"",p.stock||"",p.image_url||""]));
     const ws=XLSX.utils.aoa_to_sheet(aoa);
-    ws["!cols"]=[{wch:16},{wch:42},{wch:12},{wch:20},{wch:12},{wch:12}];
+    ws["!cols"]=[{wch:16},{wch:42},{wch:12},{wch:20},{wch:12},{wch:12},{wch:48}];
     const wb=XLSX.utils.book_new(); wb.Workbook={Views:[{RTL:true}]};
     XLSX.utils.book_append_sheet(wb,ws,"קטלוג");
     const d=new Date(), pad=n=>String(n).padStart(2,"0");
@@ -3389,15 +3389,16 @@ async function bulkApply(){
   var field=BULK_DATA.field, items=BULK_DATA.items;
   var btn=document.getElementById("bulkGo"), old=btn.textContent;
   btn.disabled=true; btn.innerHTML='<span class="spin"></span> מעדכן…';
-  var ok=0, fail=0;
-  for(var i=0;i<items.length;i++){
-    try{
-      var val=items[i].value;
-      if(field==="price"||field==="stock") val=pnum(val);
-      else val=String(val).trim();
-      await updateProductField(items[i].mktt, field, val);
-      ok++;
-    }catch(e){ console.error("bulk apply",items[i].mktt,e); fail++; }
+  var ok=0, fail=0, CHUNK=20;
+  for(var i=0;i<items.length;i+=CHUNK){
+    var chunk=items.slice(i,i+CHUNK);
+    var res=await Promise.all(chunk.map(function(it){
+      var val=it.value;
+      if(field==="price"||field==="stock") val=pnum(val); else val=String(val).trim();
+      return updateProductField(it.mktt, field, val).then(function(){ return true; }).catch(function(e){ console.error("bulk apply",it.mktt,e); return false; });
+    }));
+    res.forEach(function(r){ if(r) ok++; else fail++; });
+    btn.innerHTML='<span class="spin"></span> מעדכן… '+Math.min(i+CHUNK,items.length)+"/"+items.length;
   }
   try{ if(typeof LS!=="undefined"&&LS.products) localStorage.setItem(LS.products,JSON.stringify(PRODUCTS)); }catch(e){}
   btn.disabled=false; btn.textContent=old;
