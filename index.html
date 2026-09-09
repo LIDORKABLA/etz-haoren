@@ -831,6 +831,7 @@ body.m-count #calcFab{display:inline-flex}
 #pulseFX.err .tag{background:#E5484D}
 
 .price-tag.clr{background:#E5484D!important;color:#fff!important}
+.clr-cheapest{display:block;font-size:12px;color:#9a9a9a;font-weight:600;text-decoration:line-through;margin-top:2px}
 </style>
 </head>
 <body>
@@ -1081,12 +1082,22 @@ body.m-count #calcFab{display:inline-flex}
       <option value="stock">מלאי</option>
       <option value="unit">יחידה</option>
       <option value="barcode">ברקוד</option>
+      <option value="cheapest_il">המחיר הזול בישראל (חיסול)</option>
     </select>
     <button class="btn" id="bulkFileBtn" type="button">בחר קובץ אקסל…</button>
     <input id="bulkFile" type="file" accept=".xlsx,.xls,.csv" style="display:none">
     <div id="bulkInfo" class="meta" style="margin:10px 0;min-height:20px"></div>
     <button class="btn primary" id="bulkGo" type="button" disabled>עדכן מוצרים</button>
     <button class="btn ghost" id="bulkCancel" type="button" style="margin-top:8px">ביטול</button>
+  </div>
+</div>
+<div class="sheet" id="clrXlsxSheet">
+  <div class="card">
+    <h3>ייצוא קטלוג חיסול לאקסל</h3>
+    <div class="meta">בחר אילו עמודות לכלול בקובץ</div>
+    <div id="clrXlsxCols" style="margin:14px 0"></div>
+    <button class="btn primary" id="doClrXlsxBtn" type="button">ייצא לאקסל</button>
+    <button class="btn ghost" id="clrXlsxCancel" type="button" style="margin-top:8px">ביטול</button>
   </div>
 </div>
 <div class="sheet" id="sheet">
@@ -1195,6 +1206,8 @@ body.m-count #calcFab{display:inline-flex}
     <button class="btn ghost" id="clrAddToggle" type="button" style="text-align:right;padding:6px 0">+ הוסף מוצר למחירי חיסול</button>
     <div class="clr-imp-row">
       <button class="btn ghost" id="clrImportBtn" type="button">ייבוא חיסול מאקסל</button>
+      <button class="btn" id="clrExportBtn" type="button" style="background:#1D6F42;color:#fff">ייצוא לאקסל</button>
+      <button class="btn" id="clrCardsBtn" type="button">תמונות לפריטים</button>
       <button class="btn danger" id="clrResetBtn" type="button">אפס את כל החיסול</button>
     </div>
     <input type="file" id="clrImportFile" accept=".xlsx,.xls,.csv" style="display:none">
@@ -2373,7 +2386,7 @@ function renderClearance(){
     return `<div class="clr-item">
       ${c.image_url?`<img class="thumb" loading="lazy" src="${esc(c.image_url)}" onerror="this.style.display='none'">`:'<div class="thumb"></div>'}
       <div class="ci"><b>${esc(c.name||c.mktt)}</b><span>מק״ט ${esc(c.mktt)} · מלאי: ${esc(curStock(c.mktt))}</span>${c.note?`<div class="clr-note">${ic("note")} ${esc(c.note)}</div>`:""}</div>
-      <div class="clr-price">${ic("lock")} ${fmtNis(pnum(c.price))}</div>
+      <div class="clr-price">${ic("lock")} ${fmtNis(pnum(c.price))}${(c.cheapest_il!=null&&c.cheapest_il!=="")?`<span class="clr-cheapest">הזול בישראל: ${fmtNis(pnum(c.cheapest_il))}</span>`:""}</div>
       <div class="clr-row2">${addBtn}<button class="clr-mini" data-clr-edit="${esc(String(c.mktt))}" type="button" title="ערוך פריט">${ic("edit")}</button><button class="clr-mini" data-clr-note="${esc(String(c.mktt))}" type="button" title="הערה">${ic("note")}</button><button class="clr-mini del" data-clr-del="${esc(String(c.mktt))}" type="button" title="הסר מחיסול">${ic("trash")}</button></div>
     </div>`;
   }).join("");
@@ -2421,7 +2434,10 @@ async function editClearanceItem(mktt){
   if(!(price>0)){ toast("מחיר לא תקין"); return; }
   const img=prompt("קישור לתמונה (URL) — השאר ריק להסרת התמונה:", c.image_url||"");
   if(img===null) return;
-  const patch={name:String(name).trim(), price:price, image_url:String(img).trim()};
+  const cheapV=prompt("המחיר הזול בישראל (₪) — השאר ריק אם אין:", (c.cheapest_il!=null&&c.cheapest_il!=="")?String(c.cheapest_il):"");
+  if(cheapV===null) return;
+  const cheapest=String(cheapV).trim()===""?null:pnum(cheapV);
+  const patch={name:String(name).trim(), price:price, image_url:String(img).trim(), cheapest_il:cheapest};
   try{
     const {error}=await sb.from("clearance").update(patch).eq("mktt",String(mktt));
     if(error) throw error;
@@ -3339,6 +3355,12 @@ var BULK_DATA=null;
 function openBulk(){ BULK_DATA=null; var i=document.getElementById("bulkInfo"); if(i) i.textContent=""; var g=document.getElementById("bulkGo"); if(g) g.disabled=true; var s=document.getElementById("bulkSheet"); if(s) s.classList.add("open"); }
 function closeBulk(){ var s=document.getElementById("bulkSheet"); if(s) s.classList.remove("open"); }
 async function updateProductField(mktt, field, value){
+  if(field==="cheapest_il"){
+    var cv=(value===""||value==null)?null:pnum(value);
+    if(typeof CLOUD!=="undefined" && CLOUD && sb){ var rc=await sb.from("clearance").update({cheapest_il:cv}).eq("mktt",String(mktt)); if(rc.error) throw rc.error; }
+    var cc=(typeof CLEARANCE_MAP!=="undefined")?CLEARANCE_MAP.get(String(mktt)):null; if(cc) cc.cheapest_il=cv;
+    return;
+  }
   if(typeof CLOUD!=="undefined" && CLOUD && sb){
     var patch={}; patch[field]=value;
     var r=await sb.from("products").update(patch).eq("mktt",String(mktt));
@@ -3365,7 +3387,7 @@ async function bulkReadFile(file){
     var hdr=(rows[0]||[]).map(function(h){ return String(h==null?"":h).trim(); });
     function findCol(re){ for(var i=0;i<hdr.length;i++){ if(re.test(hdr[i])) return i; } return -1; }
     var cM=findCol(/מק|mktt|sku|קוד/i); if(cM<0) cM=0;
-    var reMap={price:/מחיר|price/i, image_url:/תמונה|image|url|קישור/i, name:/שם|name/i, stock:/מלאי|stock/i, unit:/יחיד|unit/i, barcode:/ברקוד|barcode/i};
+    var reMap={price:/מחיר|price/i, image_url:/תמונה|image|url|קישור/i, name:/שם|name/i, stock:/מלאי|stock/i, unit:/יחיד|unit/i, barcode:/ברקוד|barcode/i, cheapest_il:/זול|cheapest|ישראל|market/i};
     var cV=reMap[field]?findCol(reMap[field]):-1;
     if(cV<0){ for(var i=0;i<hdr.length;i++){ if(i!==cM){ cV=i; break; } } }
     if(cV<0){ toast("לא זוהתה עמודת ערך בקובץ"); return; }
@@ -3373,7 +3395,8 @@ async function bulkReadFile(file){
     for(var r=1;r<rows.length;r++){
       var row=rows[r]||[];
       var mk=String(row[cM]==null?"":row[cM]).trim(); if(!mk) continue;
-      var p=PRODMAP.get(mk)||PRODMAP.get(String(mk)); if(!p){ missing++; continue; }
+      var p=(field==="cheapest_il") ? (CLEARANCE_MAP.get(mk)||CLEARANCE_MAP.get(String(mk))) : (PRODMAP.get(mk)||PRODMAP.get(String(mk)));
+      if(!p){ missing++; continue; }
       var v=row[cV]; if(v==null||v==="") continue;
       found.push({mktt:String(p.mktt), value:v});
     }
@@ -3415,6 +3438,142 @@ function wireBulk(){
 }
 /* ================= סוף עדכון יזום ================= */
 
+
+/* ================= ייצוא קטלוג חיסול לאקסל ================= */
+var CLR_XLSX_COLS=[
+  {label:"מק״ט",              w:16, def:true,  get:function(c,p){ return c.mktt; }},
+  {label:"שם מוצר",           w:42, def:true,  get:function(c,p){ return c.name||(p&&p.name)||""; }},
+  {label:"מחיר חיסול",        w:14, def:true,  get:function(c,p){ return pnum(c.price); }},
+  {label:"מחיר רגיל במערכת",  w:16, def:true,  get:function(c,p){ return (p&&p.price!=null&&p.price!=="")?pnum(p.price):""; }},
+  {label:"המחיר הזול בישראל", w:18, def:true,  get:function(c,p){ return (c.cheapest_il!=null&&c.cheapest_il!=="")?pnum(c.cheapest_il):""; }},
+  {label:"ברקוד",             w:20, def:true,  get:function(c,p){ return c.barcode||(p&&p.barcode)||""; }},
+  {label:"קישור תמונה",       w:48, def:true,  get:function(c,p){ return c.image_url||(p&&p.image_url)||""; }},
+  {label:"יחידה",             w:12, def:false, get:function(c,p){ return c.unit||(p&&p.unit)||""; }},
+  {label:"מלאי נוכחי",        w:12, def:false, get:function(c,p){ return (p&&p.stock!=null&&p.stock!=="")?p.stock:""; }},
+  {label:"הערה",              w:30, def:false, get:function(c,p){ return c.note||""; }}
+];
+function openClrXlsx(){
+  if(typeof CLEARANCE==="undefined"||!CLEARANCE||!CLEARANCE.length){ toast("קטלוג החיסול ריק"); return; }
+  var box=document.getElementById("clrXlsxCols");
+  if(box){ box.innerHTML=CLR_XLSX_COLS.map(function(c,i){ return '<label class="xlsx-col"><input type="checkbox" data-i="'+i+'"'+(c.def?" checked":"")+'><span>'+c.label+'</span></label>'; }).join(""); }
+  var s=document.getElementById("clrXlsxSheet"); if(s) s.classList.add("open");
+}
+function closeClrXlsx(){ var s=document.getElementById("clrXlsxSheet"); if(s) s.classList.remove("open"); }
+function doClrXlsx(){
+  var box=document.getElementById("clrXlsxCols"); if(!box) return;
+  var chosen=[];
+  box.querySelectorAll('input[type=checkbox]').forEach(function(cb){ if(cb.checked) chosen.push(CLR_XLSX_COLS[+cb.getAttribute("data-i")]); });
+  if(!chosen.length){ toast("בחר לפחות עמודה אחת"); return; }
+  var aoa=[chosen.map(function(c){ return c.label; })];
+  CLEARANCE.forEach(function(c){
+    var p=PRODMAP.get(String(c.mktt));
+    aoa.push(chosen.map(function(col){ return col.get(c,p); }));
+  });
+  var ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws["!cols"]=chosen.map(function(c){ return {wch:c.w}; });
+  var wb=XLSX.utils.book_new(); wb.Workbook={Views:[{RTL:true}]};
+  XLSX.utils.book_append_sheet(wb,ws,"חיסול");
+  var d=new Date(), pad=function(n){ return String(n).padStart(2,"0"); };
+  XLSX.writeFile(wb, "קטלוג_חיסול_"+d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+".xlsx");
+  closeClrXlsx();
+}
+function wireClrXlsx(){
+  var b=document.getElementById("clrExportBtn"); if(b) b.addEventListener("click", openClrXlsx);
+  var d=document.getElementById("doClrXlsxBtn"); if(d) d.addEventListener("click", doClrXlsx);
+  var c=document.getElementById("clrXlsxCancel"); if(c) c.addEventListener("click", closeClrXlsx);
+  var s=document.getElementById("clrXlsxSheet"); if(s) s.addEventListener("click", function(e){ if(e.target.id==="clrXlsxSheet") closeClrXlsx(); });
+}
+/* ================= סוף ייצוא קטלוג חיסול ================= */
+
+
+/* ================= תמונות שיווקיות לפריטי חיסול ================= */
+function buildCardHTML(c,p){
+  var img=c.image_url||(p&&p.image_url)||"";
+  var name=c.name||(p&&p.name)||c.mktt;
+  var price=fmtNis(pnum(c.price));
+  var cheap=(c.cheapest_il!=null&&c.cheapest_il!=="")?fmtNis(pnum(c.cheapest_il)):"";
+  return '<!doctype html><html dir="rtl"><head><meta charset="utf-8">'+
+  '<style>@import url("https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;800;900&display=swap");'+
+  '*{margin:0;padding:0;box-sizing:border-box;font-family:Heebo,Arial,sans-serif}'+
+  '.card-mkt{width:1080px;height:1080px;background:linear-gradient(160deg,#F7F6F1,#E8E5DB);display:flex;flex-direction:column;position:relative;overflow:hidden}'+
+  '.cm-head{display:flex;align-items:center;justify-content:space-between;padding:48px 56px 0}'+
+  '.cm-brand{display:flex;align-items:center;gap:16px;font-size:42px;font-weight:800;color:#0B7D71}'+
+  '.cm-brand svg{width:56px;height:56px}'+
+  '.cm-badge{background:#E5484D;color:#fff;font-size:32px;font-weight:900;padding:14px 32px;border-radius:999px;transform:rotate(3deg);box-shadow:0 8px 20px rgba(229,72,77,.35)}'+
+  '.cm-img{flex:1;display:flex;align-items:center;justify-content:center;padding:24px 56px;min-height:0}'+
+  '.cm-img img{max-width:100%;max-height:500px;object-fit:contain;filter:drop-shadow(0 24px 44px rgba(0,0,0,.18))}'+
+  '.cm-noimg{width:400px;height:400px;background:#fff;border-radius:28px;display:flex;align-items:center;justify-content:center;color:#c4c4c4;font-size:34px}'+
+  '.cm-body{padding:0 56px 40px;text-align:center}'+
+  '.cm-name{font-size:56px;font-weight:800;color:#171D24;line-height:1.15;margin-bottom:28px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}'+
+  '.cm-pricewrap{display:inline-flex;flex-direction:column;align-items:center;gap:8px}'+
+  '.cm-price{font-size:120px;font-weight:900;color:#0B7D71;line-height:.95}'+
+  '.cm-cheap{font-size:40px;color:#9a9a9a;font-weight:700;text-decoration:line-through}'+
+  '.cm-foot{background:#0B7D71;color:#fff;text-align:center;padding:28px;font-size:34px;font-weight:700;letter-spacing:.5px}'+
+  '</style></head><body>'+
+  '<div class="card-mkt">'+
+    '<div class="cm-head">'+
+      '<div class="cm-brand"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5 6.5 10.5h3L5 17h5.2v4.5h1.6V17H17l-4.5-6.5h3z"/></svg> עץ האורן</div>'+
+      '<div class="cm-badge">מחיר חיסול</div>'+
+    '</div>'+
+    '<div class="cm-img">'+(img?'<img src="'+esc(img)+'" crossorigin="anonymous">':'<div class="cm-noimg">אין תמונה</div>')+'</div>'+
+    '<div class="cm-body">'+
+      '<div class="cm-name">'+esc(name)+'</div>'+
+      '<div class="cm-pricewrap"><div class="cm-price">'+price+'</div>'+
+      (cheap?'<div class="cm-cheap">הזול בישראל: '+cheap+'</div>':'')+'</div>'+
+    '</div>'+
+    '<div class="cm-foot">המרכז לכלי עבודה · צפת</div>'+
+  '</div></body></html>';
+}
+async function exportClearanceCards(){
+  var btn=document.getElementById("clrCardsBtn"), old=btn.innerHTML;
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> מכין…';
+  var fr=null;
+  try{
+    await loadScript("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
+    await loadScript("https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js");
+    var term=($("#clrFilter").value||"").trim().toLowerCase();
+    var items=CLEARANCE.filter(function(c){ return !term || (String(c.name||"")+" "+String(c.mktt||"")).toLowerCase().indexOf(term)>=0; });
+    if(!items.length){ toast("אין פריטים לייצוא"); return; }
+    var zip=new JSZip();
+    fr=document.createElement("iframe");
+    fr.style.cssText="position:fixed;left:-12000px;top:0;width:1080px;height:1080px;border:0;visibility:hidden";
+    document.body.appendChild(fr);
+    for(var i=0;i<items.length;i++){
+      var c=items[i], p=PRODMAP.get(String(c.mktt));
+      var doc=fr.contentDocument;
+      doc.open(); doc.write(buildCardHTML(c,p)); doc.close();
+      var imgs=Array.prototype.slice.call(doc.images);
+      await Promise.all(imgs.map(function(im){
+        var u=im.getAttribute("src")||"";
+        if(!u||u.indexOf("data:")===0) return Promise.resolve();
+        var prox="https://images.weserv.nl/?url="+encodeURIComponent("ssl:"+u.replace(/^https?:\/\//,""));
+        return new Promise(function(res){
+          var done=false, finish=function(ok){ if(done)return; done=true; if(!ok){ im.style.display="none"; } res(); };
+          im.crossOrigin="anonymous"; im.onload=function(){ finish(true); }; im.onerror=function(){ finish(false); }; im.src=prox;
+          setTimeout(function(){ finish(false); },9000);
+        });
+      }));
+      if(doc.fonts&&doc.fonts.ready){ try{ await doc.fonts.ready; }catch(e){} }
+      await new Promise(function(r){ setTimeout(r,150); });
+      var card=doc.querySelector(".card-mkt");
+      var canvas=await html2canvas(card,{scale:2,useCORS:true,allowTaint:false,backgroundColor:null,imageTimeout:15000,logging:false,windowWidth:1080,windowHeight:1080});
+      var blob=await new Promise(function(res){ canvas.toBlob(res,"image/png"); });
+      if(blob){ zip.file("חיסול_"+String(c.mktt).replace(/[^\w]+/g,"_")+".png", blob); }
+      btn.innerHTML='<span class="spin"></span> '+(i+1)+"/"+items.length;
+    }
+    var content=await zip.generateAsync({type:"blob"});
+    var d=new Date(), pad=function(n){ return String(n).padStart(2,"0"); };
+    var url=URL.createObjectURL(content);
+    var a=document.createElement("a"); a.href=url; a.download="תמונות-חיסול-"+d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+".zip";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); },5000);
+    toast("✓ נוצרו "+items.length+" תמונות (ZIP)");
+  }catch(e){ console.error("cards",e); toast("שגיאה ביצירת התמונות"); }
+  finally{ if(fr) fr.remove(); btn.disabled=false; btn.innerHTML=old; }
+}
+function wireClrCards(){ var b=document.getElementById("clrCardsBtn"); if(b) b.addEventListener("click", exportClearanceCards); }
+/* ================= סוף תמונות חיסול ================= */
+
 boot();
 wireWedgeSettings();
 wireCalc();
@@ -3422,6 +3581,8 @@ wireCartXlsx();
 wireChat();
 wireImportCart();
 wireBulk();
+wireClrXlsx();
+wireClrCards();
 </script>
 </body>
 </html>
