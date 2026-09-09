@@ -2145,7 +2145,7 @@ function renderCart(){
         ${_img?`<img class="thumb" loading="lazy" src="${esc(_img)}" alt="" onerror="this.style.display='none'">`:`<div class="thumb thumb-ph">${ic("box")}</div>`}
         <div class="citem-info">
           <div class="top"><b>${esc(i.name||i.mktt)}</b><span class="csub">${fmtNis(sub)}</span></div>
-          <div class="sub">מק״ט ${esc(i.mktt)}</div>
+          <div class="sub">מק״ט ${esc(i.mktt)}${clrCheapest(i.mktt)!=null?` · הזול בישראל <s style="color:#c0392b">${esc(fmtNis(clrCheapest(i.mktt)))}</s>`:""}</div>
         </div>
       </div>
       <div class="ctrls">
@@ -2342,6 +2342,7 @@ let CLEARANCE=[], CLEARANCE_MAP=new Map(), CLEARANCE_OK=false;
 function isClearance(mktt){ return CLEARANCE_MAP.has(String(mktt)); }
 function clearancePrice(mktt){ const c=CLEARANCE_MAP.get(String(mktt)); return c?pnum(c.price):null; }
 function effPrice(p){ if(!p) return null; if(isClearance(p.mktt)){ var c=clearancePrice(p.mktt); if(c!=null) return c; } return (p.price!=null&&p.price!=="")?pnum(p.price):null; }
+function clrCheapest(mktt){ var c=(typeof CLEARANCE_MAP!=="undefined")?CLEARANCE_MAP.get(String(mktt)):null; return (c&&c.cheapest_il!=null&&c.cheapest_il!=="")?pnum(c.cheapest_il):null; }
 function rebuildClearanceMap(){ CLEARANCE_MAP=new Map(CLEARANCE.map(c=>[String(c.mktt),c])); }
 async function probeClearance(){
   if(!CLOUD){ CLEARANCE_OK=false; return; }
@@ -3142,7 +3143,7 @@ function quickProdSearch(){
         '<span class="pq-lbl">מק״ט</span><span class="pq-val">'+esc(p.mktt)+'</span>'+
         '<span class="pq-lbl">מלאי נוכחי</span><span class="pq-val">'+esc(stock)+'</span>'+
         '<span class="pq-lbl">ברקוד</span><span class="pq-val">'+esc(p.barcode||"—")+'</span>'+
-        '<span class="pq-lbl">'+(isClearance(p.mktt)?"מחיר חיסול":"מחיר")+'</span><span class="pq-val pq-price">'+esc(effPrice(p)!=null?fmtPrice(effPrice(p)):"—")+'</span>'+
+        '<span class="pq-lbl">'+(isClearance(p.mktt)?"מחיר חיסול":"מחיר")+'</span><span class="pq-val pq-price">'+esc(effPrice(p)!=null?fmtPrice(effPrice(p)):"—")+'</span>'+(clrCheapest(p.mktt)!=null?'<span class="pq-lbl">הזול בישראל</span><span class="pq-val" style="text-decoration:line-through;color:#a0a4a8">'+esc(fmtPrice(clrCheapest(p.mktt)))+'</span>':'')+
       '</div></div></div>';
   }).join("");
 }
@@ -3497,24 +3498,25 @@ function buildCardHTML(c,p){
   return '<!doctype html><html dir="rtl"><head><meta charset="utf-8">'+
   '<style>@import url("https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;800;900&display=swap");'+
   '*{margin:0;padding:0;box-sizing:border-box;font-family:Heebo,Arial,sans-serif}'+
-  '.card-mkt{width:1080px;height:1080px;background:linear-gradient(160deg,#F7F6F1,#E8E5DB);display:flex;flex-direction:column;position:relative;overflow:hidden}'+
-  '.cm-head{display:flex;flex-direction:column;align-items:center;gap:14px;padding:40px 56px 0}'+
-  '.cm-logo{width:360px;height:auto;object-fit:contain}'+
-  '.cm-badge{background:#E5484D;color:#fff;font-size:30px;font-weight:900;padding:11px 30px;border-radius:999px;box-shadow:0 8px 20px rgba(229,72,77,.35)}'+
-  '.cm-img{flex:1;display:flex;align-items:center;justify-content:center;padding:14px 56px;min-height:0}'+
-  '.cm-img img{max-width:100%;max-height:360px;object-fit:contain;filter:drop-shadow(0 20px 40px rgba(0,0,0,.18))}'+
-  '.cm-noimg{width:340px;height:340px;background:#fff;border-radius:28px;display:flex;align-items:center;justify-content:center;color:#c4c4c4;font-size:32px}'+
-  '.cm-body{padding:0 56px 30px;text-align:center}'+
-  '.cm-name{font-size:48px;font-weight:800;color:#171D24;line-height:1.15;margin-bottom:22px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}'+
-  '.cm-cheap{font-size:38px;color:#777;font-weight:700;margin-bottom:14px}'+
+  '.card-mkt{width:1080px;height:1080px;background:linear-gradient(160deg,#F7F6F1,#E8E5DB);display:flex;flex-direction:column;overflow:hidden}'+
+  '.cm-logo-wrap{text-align:center;padding:42px 56px 4px}'+
+  '.cm-logo{width:330px;height:auto;object-fit:contain}'+
+  '.cm-img{flex:1;display:flex;align-items:center;justify-content:center;padding:22px 56px 10px;min-height:0}'+
+  '.cm-imgbox{position:relative;background:#fff;border-radius:32px;padding:30px;box-shadow:0 16px 40px rgba(0,0,0,.10);width:480px;height:480px;max-height:100%;display:flex;align-items:center;justify-content:center}'+
+  '.cm-imgbox img{max-width:100%;max-height:100%;object-fit:contain}'+
+  '.cm-noimg{color:#c4c4c4;font-size:34px}'+
+  '.cm-badge{position:absolute;top:-24px;right:28px;background:#E5484D;color:#fff;font-size:30px;font-weight:900;padding:12px 30px;border-radius:999px;box-shadow:0 10px 22px rgba(229,72,77,.4)}'+
+  '.cm-body{padding:6px 56px 28px;text-align:center}'+
+  '.cm-name{font-size:48px;font-weight:800;color:#171D24;line-height:1.15;margin-bottom:20px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}'+
+  '.cm-cheap{font-size:38px;color:#777;font-weight:700;margin-bottom:10px}'+
   '.cm-cheap .strike{text-decoration:line-through;text-decoration-color:#E5484D;text-decoration-thickness:4px}'+
-  '.cm-our{font-size:40px;color:#171D24;font-weight:800;display:flex;flex-direction:column;align-items:center;gap:2px}'+
-  '.cm-our .big{font-size:118px;color:#0B7D71;font-weight:900;line-height:.95}'+
+  '.cm-our{font-size:40px;color:#171D24;font-weight:800;display:flex;flex-direction:column;align-items:center;gap:0}'+
+  '.cm-our .big{font-size:116px;color:#0B7D71;font-weight:900;line-height:.98}'+
   '.cm-foot{background:#0B7D71;color:#fff;text-align:center;padding:26px;font-size:36px;font-weight:800;letter-spacing:.3px}'+
   '</style></head><body>'+
   '<div class="card-mkt">'+
-    '<div class="cm-head"><img class="cm-logo" src="'+LOGO_B64+'" alt=""><div class="cm-badge">מחיר חיסול</div></div>'+
-    '<div class="cm-img">'+(img?'<img src="'+esc(img)+'" crossorigin="anonymous">':'<div class="cm-noimg">אין תמונה</div>')+'</div>'+
+    '<div class="cm-logo-wrap"><img class="cm-logo" src="'+LOGO_B64+'" alt=""></div>'+
+    '<div class="cm-img"><div class="cm-imgbox"><span class="cm-badge">מחיר חיסול</span>'+(img?'<img src="'+esc(img)+'" crossorigin="anonymous">':'<div class="cm-noimg">אין תמונה</div>')+'</div></div>'+
     '<div class="cm-body">'+
       '<div class="cm-name">'+esc(name)+'</div>'+
       (cheap?'<div class="cm-cheap">המחיר הזול בישראל: <span class="strike">'+cheap+'</span></div>':'')+
