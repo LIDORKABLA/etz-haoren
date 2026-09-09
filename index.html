@@ -1086,6 +1086,12 @@ body.m-count #calcFab{display:inline-flex}
     </select>
     <button class="btn" id="bulkFileBtn" type="button">בחר קובץ אקסל…</button>
     <input id="bulkFile" type="file" accept=".xlsx,.xls,.csv" style="display:none">
+    <div id="bulkMap" style="display:none;margin:12px 0;text-align:right">
+      <label style="display:block;font-size:13px;color:#777;margin:8px 4px 4px">עמודת מק״ט בקובץ</label>
+      <select id="bulkColMktt" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:14px;background:var(--card);color:var(--ink)"></select>
+      <label style="display:block;font-size:13px;color:#777;margin:12px 4px 4px">עמודת הערך לעדכון</label>
+      <select id="bulkColVal" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:14px;background:var(--card);color:var(--ink)"></select>
+    </div>
     <div id="bulkInfo" class="meta" style="margin:10px 0;min-height:20px"></div>
     <button class="btn primary" id="bulkGo" type="button" disabled>עדכן מוצרים</button>
     <button class="btn ghost" id="bulkCancel" type="button" style="margin-top:8px">ביטול</button>
@@ -2445,7 +2451,13 @@ async function editClearanceItem(mktt){
     Object.assign(c,patch); renderClearance();
     if(CUR_CART!=null) renderCart();
     toast("הפריט עודכן");
-  }catch(e){ console.error(e); toast("שגיאה בעדכון הפריט"); }
+  }catch(e){
+    console.error(e);
+    var m=String((e&&e.message)||"");
+    if(m.indexOf("cheapest_il")>=0||m.indexOf("schema cache")>=0||m.indexOf("column")>=0)
+      toast("חסרה עמודה ב-Supabase — הרץ: alter table clearance add column cheapest_il numeric");
+    else toast("שגיאה בעדכון הפריט");
+  }
 }
 async function editClearanceNote(mktt){
   if(!countUnlocked){ requireAdmin(()=>editClearanceNote(mktt)); return; }
@@ -3353,7 +3365,7 @@ function wireImportCart(){
 
 /* ================= עדכון יזום מאקסל ================= */
 var BULK_DATA=null;
-function openBulk(){ BULK_DATA=null; var i=document.getElementById("bulkInfo"); if(i) i.textContent=""; var g=document.getElementById("bulkGo"); if(g) g.disabled=true; var s=document.getElementById("bulkSheet"); if(s) s.classList.add("open"); }
+function openBulk(){ BULK_DATA=null; BULK_RAW=null; var i=document.getElementById("bulkInfo"); if(i) i.textContent=""; var g=document.getElementById("bulkGo"); if(g) g.disabled=true; var m=document.getElementById("bulkMap"); if(m) m.style.display="none"; var s=document.getElementById("bulkSheet"); if(s) s.classList.add("open"); }
 function closeBulk(){ var s=document.getElementById("bulkSheet"); if(s) s.classList.remove("open"); }
 async function updateProductField(mktt, field, value){
   if(field==="cheapest_il"){
@@ -3377,8 +3389,8 @@ async function updateProductField(mktt, field, value){
     } else { p[field]=value; }
   }
 }
+var BULK_RAW=null;
 async function bulkReadFile(file){
-  var field=document.getElementById("bulkField").value;
   try{
     var buf=await file.arrayBuffer();
     var wb=XLSX.read(buf,{type:"array"});
@@ -3386,26 +3398,50 @@ async function bulkReadFile(file){
     var rows=XLSX.utils.sheet_to_json(ws,{header:1,blankrows:false});
     if(!rows||rows.length<2){ toast("הקובץ ריק או ללא נתונים"); return; }
     var hdr=(rows[0]||[]).map(function(h){ return String(h==null?"":h).trim(); });
+    BULK_RAW={rows:rows, hdr:hdr};
+    var field=document.getElementById("bulkField").value;
+    var optsHtml=hdr.map(function(h,i){ return '<option value="'+i+'">'+esc(h||("עמודה "+(i+1)))+'</option>'; }).join("");
+    var mk=document.getElementById("bulkColMktt"), vl=document.getElementById("bulkColVal");
+    mk.innerHTML=optsHtml; vl.innerHTML=optsHtml;
     function findCol(re){ for(var i=0;i<hdr.length;i++){ if(re.test(hdr[i])) return i; } return -1; }
     var cM=findCol(/מק|mktt|sku|קוד/i); if(cM<0) cM=0;
-    var reMap={price:/מחיר|price/i, image_url:/תמונה|image|url|קישור/i, name:/שם|name/i, stock:/מלאי|stock/i, unit:/יחיד|unit/i, barcode:/ברקוד|barcode/i, cheapest_il:/זול|cheapest|ישראל|market/i};
+    var reMap={price:/מחיר|price/i,image_url:/תמונה|image|url|קישור/i,name:/שם|name/i,stock:/מלאי|stock/i,unit:/יחיד|unit/i,barcode:/ברקוד|barcode/i,cheapest_il:/זול|cheapest|ישראל|market/i};
     var cV=reMap[field]?findCol(reMap[field]):-1;
-    if(cV<0){ for(var i=0;i<hdr.length;i++){ if(i!==cM){ cV=i; break; } } }
-    if(cV<0){ toast("לא זוהתה עמודת ערך בקובץ"); return; }
-    var found=[], missing=0;
-    for(var r=1;r<rows.length;r++){
-      var row=rows[r]||[];
-      var mk=String(row[cM]==null?"":row[cM]).trim(); if(!mk) continue;
-      var p=(field==="cheapest_il") ? (CLEARANCE_MAP.get(mk)||CLEARANCE_MAP.get(String(mk))) : (PRODMAP.get(mk)||PRODMAP.get(String(mk)));
-      if(!p){ missing++; continue; }
-      var v=row[cV]; if(v==null||v==="") continue;
-      found.push({mktt:String(p.mktt), value:v});
-    }
-    BULK_DATA={field:field, items:found};
-    var info=document.getElementById("bulkInfo");
-    if(info) info.textContent=found.length+" מק״טים מוכנים לעדכון"+(missing?" · "+missing+" לא נמצאו במערכת":"");
-    var g=document.getElementById("bulkGo"); if(g) g.disabled=!found.length;
+    if(cV<0){ for(var i=0;i<hdr.length;i++){ if(i!==cM){ cV=i; break; } } if(cV<0) cV=(hdr.length>1?1:0); }
+    mk.value=String(cM); vl.value=String(cV);
+    var m=document.getElementById("bulkMap"); if(m) m.style.display="block";
+    bulkBuild();
   }catch(e){ console.error("bulk read",e); toast("שגיאה בקריאת הקובץ"); }
+}
+function bulkBuild(){
+  if(!BULK_RAW) return;
+  var field=document.getElementById("bulkField").value;
+  var cM=+document.getElementById("bulkColMktt").value;
+  var cV=+document.getElementById("bulkColVal").value;
+  var rows=BULK_RAW.rows, found=[], missing=0;
+  for(var r=1;r<rows.length;r++){
+    var row=rows[r]||[];
+    var mk=String(row[cM]==null?"":row[cM]).trim(); if(!mk) continue;
+    var p=(field==="cheapest_il")?(CLEARANCE_MAP.get(mk)||CLEARANCE_MAP.get(String(mk))):(PRODMAP.get(mk)||PRODMAP.get(String(mk)));
+    if(!p){ missing++; continue; }
+    var v=row[cV]; if(v==null||v==="") continue;
+    found.push({mktt:String(p.mktt), value:v});
+  }
+  BULK_DATA={field:field, items:found};
+  var info=document.getElementById("bulkInfo");
+  if(info) info.textContent=found.length+" מק״טים מוכנים לעדכון"+(missing?" · "+missing+" לא נמצאו במערכת":"");
+  var g=document.getElementById("bulkGo"); if(g) g.disabled=!found.length;
+}
+function bulkReguess(){
+  if(!BULK_RAW) return;
+  var hdr=BULK_RAW.hdr, field=document.getElementById("bulkField").value;
+  function findCol(re){ for(var i=0;i<hdr.length;i++){ if(re.test(hdr[i])) return i; } return -1; }
+  var reMap={price:/מחיר|price/i,image_url:/תמונה|image|url|קישור/i,name:/שם|name/i,stock:/מלאי|stock/i,unit:/יחיד|unit/i,barcode:/ברקוד|barcode/i,cheapest_il:/זול|cheapest|ישראל|market/i};
+  var cM=+document.getElementById("bulkColMktt").value;
+  var cV=reMap[field]?findCol(reMap[field]):-1;
+  if(cV<0){ for(var i=0;i<hdr.length;i++){ if(i!==cM){ cV=i; break; } } if(cV<0) cV=(hdr.length>1?1:0); }
+  document.getElementById("bulkColVal").value=String(cV);
+  bulkBuild();
 }
 async function bulkApply(){
   if(!BULK_DATA||!BULK_DATA.items.length) return;
@@ -3431,6 +3467,9 @@ async function bulkApply(){
 }
 function wireBulk(){
   var ob=document.getElementById("bulkUpdateBtn"); if(ob) ob.addEventListener("click", openBulk);
+  var cm=document.getElementById("bulkColMktt"); if(cm) cm.addEventListener("change", bulkBuild);
+  var cvv=document.getElementById("bulkColVal"); if(cvv) cvv.addEventListener("change", bulkBuild);
+  var bf=document.getElementById("bulkField"); if(bf) bf.addEventListener("change", function(){ if(BULK_RAW) bulkReguess(); });
   var fb=document.getElementById("bulkFileBtn"), f=document.getElementById("bulkFile");
   if(fb&&f){ fb.addEventListener("click",function(){ f.click(); }); f.addEventListener("change",function(e){ var file=e.target.files&&e.target.files[0]; e.target.value=""; if(file) bulkReadFile(file); }); }
   var g=document.getElementById("bulkGo"); if(g) g.addEventListener("click", bulkApply);
