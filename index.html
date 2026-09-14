@@ -491,7 +491,7 @@
   #lightbox .lb-close svg{width:22px;height:22px}
 
   /* ===== image lightbox ===== */
-  #imgLightbox{position:fixed;inset:0;z-index:210;display:flex;align-items:center;justify-content:center;padding:24px;
+  #imgLightbox{position:fixed;inset:0;z-index:250;display:flex;align-items:center;justify-content:center;padding:24px;
     background:rgba(8,16,14,.84);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);
     visibility:hidden;opacity:0;pointer-events:none;transition:opacity .26s ease,visibility .26s ease}
   #imgLightbox.show{visibility:visible;opacity:1;pointer-events:auto}
@@ -841,6 +841,30 @@ body.m-count #calcFab{display:inline-flex}
 .ai-src{font-size:13.5px;color:var(--pine);text-decoration:none;word-break:break-all;padding:6px 10px;background:var(--bg);border-radius:9px;display:block}
 .ai-note{margin-top:16px;font-size:11.5px;color:#a0a4a8;line-height:1.4;text-align:center}
 
+
+/* ===== כפתור AI כללי ===== */
+.ai-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border:1px solid #d9c9f5;background:#f5f0ff;color:#7c3aed;border-radius:9px;font-family:inherit;font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap}
+.ai-btn:active{background:#ebe3fc}
+.ai-mini{margin-top:6px;padding:3px 9px;font-size:11.5px}
+.pq-ai{margin-top:10px}
+.clr-mini.ai-btn{width:auto;padding:0 10px;color:#7c3aed;border-color:#d9c9f5;background:#f5f0ff;font-size:12px}
+
+#aiSheet{z-index:52}
+
+/* ===== אנימציית טעינה ל-AI ===== */
+.ai-loading{display:flex;flex-direction:column;align-items:center;gap:16px;padding:34px 0}
+.ai-spinner{width:46px;height:46px;border:4px solid #ede7f9;border-top-color:#7c3aed;border-radius:50%;animation:aispin .8s linear infinite}
+@keyframes aispin{to{transform:rotate(360deg)}}
+.ai-loading-txt{font-size:14.5px;color:#7c3aed;font-weight:700;animation:aipulse 1.4s ease-in-out infinite}
+@keyframes aipulse{0%,100%{opacity:.55}50%{opacity:1}}
+
+#aiSheet{z-index:260}
+
+/* ===== חיווי מטמון AI ===== */
+.ai-cached{margin-top:14px;font-size:12px;color:#a0a4a8;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ai-refresh{border:1px solid var(--line);background:var(--bg);color:var(--pine);border-radius:8px;padding:4px 11px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.ai-refresh:active{background:var(--line)}
+
 </style>
 </head>
 <body>
@@ -1137,7 +1161,7 @@ body.m-count #calcFab{display:inline-flex}
       <button id="plus" type="button">+</button>
     </div>
     <button id="calcInSheet" class="calc-sheet-btn" type="button"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="16" y1="14" x2="16" y2="18"/><line x1="8" y1="18" x2="12" y2="18"/></svg> מחשבון</button>
-    <button id="aiInSheet" class="calc-sheet-btn" type="button" style="color:#7c3aed"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4z"/><path d="M19 14l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg> מידע מהאינטרנט</button>
+    <button id="aiInSheet" class="calc-sheet-btn" type="button" style="color:#7c3aed"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4z"/><path d="M19 14l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg> AI</button>
     <div class="loc"><input id="eLoc" placeholder="מיקום / מדף (לא חובה)" autocomplete="off"></div>
     <button class="btn primary" id="addBtn">הוסף ספירה</button>
     <button class="btn ghost" id="cancelBtn">ביטול</button>
@@ -1252,12 +1276,7 @@ body.m-count #calcFab{display:inline-flex}
   <div class="load-txt">טוען נתונים…</div>
 </div>
 
-<div id="lightbox" aria-hidden="true">
-  <div class="lb-stage">
-    <button type="button" class="lb-close" aria-label="סגירה"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-    <img id="lbImg" src="" alt="תצוגת מוצר">
-  </div>
-</div>
+
 
 <div id="imgLightbox">
   <button id="lightboxClose" type="button" aria-label="סגור"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
@@ -1313,7 +1332,8 @@ function emptyState(icon,title,hint){return '<div class="empty-state"><span clas
 function openImage(src){var lb=document.getElementById("imgLightbox"),im=document.getElementById("lightboxImg");if(!lb||!im||!src)return;im.src=src;lb.classList.add("show");document.body.style.overflow="hidden";}
 function closeImage(){var lb=document.getElementById("imgLightbox");if(lb)lb.classList.remove("show");document.body.style.overflow="";}
 document.addEventListener("click",function(e){var t=e.target&&e.target.closest&&e.target.closest("img.thumb");if(t&&t.getAttribute("src")){e.stopPropagation();e.preventDefault();openImage(t.getAttribute("src"));}},true);
-document.addEventListener("click",function(e){if(e.target&&e.target.closest&&e.target.closest("#imgLightbox"))closeImage();});
+(function(){var lb=document.getElementById("imgLightbox");if(lb)lb.addEventListener("click",function(e){e.stopPropagation();e.preventDefault();closeImage();});})();
+document.addEventListener("keydown",function(e){if(e.key==="Escape"){var lb=document.getElementById("imgLightbox");if(lb&&lb.classList.contains("show"))closeImage();}});
 function showLoading(t){var o=document.getElementById("loadOverlay");if(!o)return;if(t){var x=o.querySelector(".load-txt");if(x)x.textContent=t;}o.classList.add("show");}
 function hideLoading(){var o=document.getElementById("loadOverlay");if(o)o.classList.remove("show");}
 
@@ -2171,6 +2191,7 @@ function renderCart(){
         <div class="citem-info">
           <div class="top"><b>${esc(i.name||i.mktt)}</b><span class="csub">${fmtNis(sub)}</span></div>
           <div class="sub">מק״ט ${esc(i.mktt)}${clrCheapest(i.mktt)!=null?` · הזול בישראל <s style="color:#c0392b">${esc(fmtNis(clrCheapest(i.mktt)))}</s>`:""}</div>
+          <button class="ai-btn ai-mini" data-mktt="${esc(i.mktt)}" type="button">✨ AI</button>
         </div>
       </div>
       <div class="ctrls">
@@ -2413,7 +2434,7 @@ function renderClearance(){
       ${c.image_url?`<img class="thumb" loading="lazy" src="${esc(c.image_url)}" onerror="this.style.display='none'">`:'<div class="thumb"></div>'}
       <div class="ci"><b>${esc(c.name||c.mktt)}</b><span>מק״ט ${esc(c.mktt)} · מלאי: ${esc(curStock(c.mktt))}</span>${c.note?`<div class="clr-note">${ic("note")} ${esc(c.note)}</div>`:""}</div>
       <div class="clr-price">${ic("lock")} ${fmtNis(pnum(c.price))}${(c.cheapest_il!=null&&c.cheapest_il!=="")?`<span class="clr-cheapest">הזול בישראל: ${fmtNis(pnum(c.cheapest_il))}</span>`:""}</div>
-      <div class="clr-row2">${addBtn}<button class="clr-mini" data-clr-edit="${esc(String(c.mktt))}" type="button" title="ערוך פריט">${ic("edit")}</button><button class="clr-mini" data-clr-note="${esc(String(c.mktt))}" type="button" title="הערה">${ic("note")}</button><button class="clr-mini del" data-clr-del="${esc(String(c.mktt))}" type="button" title="הסר מחיסול">${ic("trash")}</button></div>
+      <div class="clr-row2">${addBtn}<button class="clr-mini" data-clr-edit="${esc(String(c.mktt))}" type="button" title="ערוך פריט">${ic("edit")}</button><button class="clr-mini" data-clr-note="${esc(String(c.mktt))}" type="button" title="הערה">${ic("note")}</button><button class="clr-mini del" data-clr-del="${esc(String(c.mktt))}" type="button" title="הסר מחיסול">${ic("trash")}</button><button class="clr-mini ai-btn" data-mktt="${esc(String(c.mktt))}" type="button" title="מידע AI">✨ AI</button></div>
     </div>`;
   }).join("");
 }
@@ -3175,7 +3196,7 @@ function quickProdSearch(){
         '<span class="pq-lbl">מלאי נוכחי</span><span class="pq-val">'+esc(stock)+'</span>'+
         '<span class="pq-lbl">ברקוד</span><span class="pq-val">'+esc(p.barcode||"—")+'</span>'+
         '<span class="pq-lbl">'+(isClearance(p.mktt)?"מחיר חיסול":"מחיר")+'</span><span class="pq-val pq-price">'+esc(effPrice(p)!=null?fmtPrice(effPrice(p)):"—")+'</span>'+(clrCheapest(p.mktt)!=null?'<span class="pq-lbl">הזול בישראל</span><span class="pq-val" style="text-decoration:line-through;color:#a0a4a8">'+esc(fmtPrice(clrCheapest(p.mktt)))+'</span>':'')+
-      '</div></div></div>';
+      '</div><div class="pq-ai"><button class="ai-btn" data-mktt="'+esc(p.mktt)+'">✨ AI</button></div></div></div>';
   }).join("");
 }
 /* ================= סוף חיפוש מוצר מהיר ================= */
@@ -3635,30 +3656,63 @@ function wireClrCards(){ var b=document.getElementById("clrCardsBtn"); if(b) b.a
 
 
 /* ================= מידע מוצר מ-AI ================= */
-async function askProductAI(){
-  if(typeof CURRENT==="undefined"||!CURRENT){ toast("פתח מוצר קודם"); return; }
+var AI_LAST=null;
+function showAIResult(body,src,data,cached){
+  if(body) body.textContent=data.text||"לא נמצא מידע רשמי מספק על מוצר זה.";
+  if(!src) return;
+  var h="";
+  if(data.sources && data.sources.length){
+    h='<div class="ai-src-title">מקורות:</div>'+data.sources.map(function(x){ return '<a class="ai-src" href="'+esc(x.url)+'" target="_blank" rel="noopener">'+esc(x.title||x.url)+'</a>'; }).join("");
+  }
+  if(cached){ h+='<div class="ai-cached">✓ מידע שמור (ללא עלות) · <button class="ai-refresh" type="button">רענן מהאינטרנט</button></div>'; }
+  src.innerHTML=h;
+}
+async function askProductAI(prod, forceRefresh){
+  var P=prod||(typeof CURRENT!=="undefined"?CURRENT:null);
+  if(!P){ toast("פתח מוצר קודם"); return; }
+  AI_LAST=P;
+  try{ if(typeof closeImage==="function") closeImage(); }catch(e){}
   var s=document.getElementById("aiSheet"); if(s) s.classList.add("open");
-  var nm=document.getElementById("aiName"); if(nm) nm.textContent=(CURRENT.name||"")+(CURRENT.mktt?" · מק״ט "+CURRENT.mktt:"");
+  var nm=document.getElementById("aiName"); if(nm) nm.textContent=(P.name||"")+(P.mktt?" · מק״ט "+P.mktt:"");
   var body=document.getElementById("aiBody"), src=document.getElementById("aiSources");
-  if(body) body.innerHTML='<span class="spin"></span> מחפש מידע ממקורות רשמיים…';
+  if(body) body.innerHTML='<div class="ai-loading"><div class="ai-spinner"></div><div class="ai-loading-txt">מחפש מידע ממקורות רשמיים…</div></div>';
   if(src) src.innerHTML="";
+  if(typeof CLOUD==="undefined"||!CLOUD||!sb){ if(body) body.textContent="נדרש חיבור לענן."; return; }
+  /* 1) מטמון — אם כבר יש מידע שמור למק״ט, מציגים אותו בחינם */
+  if(!forceRefresh && P.mktt){
+    try{
+      var c=await sb.from("product_ai_cache").select("text,sources").eq("mktt",String(P.mktt)).maybeSingle();
+      if(c && c.data && c.data.text){ showAIResult(body,src,c.data,true); return; }
+    }catch(e){ console.warn("ai cache read",e); }
+  }
+  /* 2) אין במטמון — קוראים ל-AI */
   try{
-    if(typeof CLOUD==="undefined"||!CLOUD||!sb){ if(body) body.textContent="נדרש חיבור לענן."; return; }
-    var res=await sb.functions.invoke("product-ai",{ body:{ name:CURRENT.name||"", mktt:CURRENT.mktt||"", barcode:CURRENT.barcode||"" } });
+    var res=await sb.functions.invoke("product-ai",{ body:{ name:P.name||"", mktt:P.mktt||"", barcode:P.barcode||"" } });
     if(res.error) throw res.error;
     var data=res.data||{};
     if(data.error && !data.text){ throw new Error(data.error); }
-    if(body) body.textContent=data.text||"לא נמצא מידע רשמי מספק על מוצר זה.";
-    if(src && data.sources && data.sources.length){
-      src.innerHTML='<div class="ai-src-title">מקורות:</div>'+data.sources.map(function(x){ return '<a class="ai-src" href="'+esc(x.url)+'" target="_blank" rel="noopener">'+esc(x.title||x.url)+'</a>'; }).join("");
+    showAIResult(body,src,data,false);
+    /* 3) שומרים למטמון לפעם הבאה */
+    if(data.text && P.mktt){
+      try{ sb.from("product_ai_cache").upsert({mktt:String(P.mktt), text:data.text, sources:data.sources||[], updated_at:new Date().toISOString()}).then(function(){},function(){}); }catch(e){}
     }
   }catch(e){
     console.error("product-ai",e);
     if(body) body.textContent="לא הצלחתי לקבל מידע כרגע. ודא שפונקציית product-ai פרוסה בשרת ושמפתח ה-API הוגדר.";
   }
 }
+function openAI(mktt){
+  var p=(typeof PRODMAP!=="undefined"&&PRODMAP.get(String(mktt)))||(typeof CLEARANCE_MAP!=="undefined"&&CLEARANCE_MAP.get(String(mktt)))||null;
+  if(!p){ toast("מוצר לא נמצא"); return; }
+  askProductAI(p);
+}
+document.addEventListener("click", function(e){
+  var b=e.target && e.target.closest ? e.target.closest(".ai-btn") : null;
+  if(b){ e.preventDefault(); e.stopPropagation(); openAI(b.getAttribute("data-mktt")); }
+}, true);
 function wireProductAI(){
-  var b=document.getElementById("aiInSheet"); if(b) b.addEventListener("click", askProductAI);
+  var b=document.getElementById("aiInSheet"); if(b) b.addEventListener("click", function(){ askProductAI(); });
+  document.addEventListener("click", function(e){ var r=e.target&&e.target.closest?e.target.closest(".ai-refresh"):null; if(r&&AI_LAST){ e.preventDefault(); askProductAI(AI_LAST, true); } });
   var c=document.getElementById("aiClose"); if(c) c.addEventListener("click", function(){ var s=document.getElementById("aiSheet"); if(s) s.classList.remove("open"); });
   var s=document.getElementById("aiSheet"); if(s) s.addEventListener("click", function(e){ if(e.target.id==="aiSheet") s.classList.remove("open"); });
 }
