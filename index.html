@@ -865,6 +865,19 @@ body.m-count #calcFab{display:inline-flex}
 .ai-refresh{border:1px solid var(--line);background:var(--bg);color:var(--pine);border-radius:8px;padding:4px 11px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer}
 .ai-refresh:active{background:var(--line)}
 
+
+/* ===== חלון AI: כותרת קבועה + עיצוב תוכן ===== */
+#aiSheet .card{max-height:88vh;overflow-y:auto;position:relative;-webkit-overflow-scrolling:touch}
+#aiSheet .chat-head{position:sticky;top:0;background:var(--card);z-index:3;padding-top:4px}
+#aiSheet #aiClose{width:38px;height:38px;font-size:19px}
+.ai-h{font-weight:800;color:var(--ink);font-size:16px;margin:14px 0 5px}
+.ai-p{margin:5px 0;line-height:1.6}
+.ai-li{position:relative;padding-right:18px;margin:4px 0;line-height:1.55}
+.ai-li::before{content:"•";position:absolute;right:2px;color:var(--pine);font-weight:800}
+.ai-qa{margin:7px 0;line-height:1.55}
+.ai-qa-k{font-weight:800;color:var(--pine)}
+.ai-gap{height:7px}
+
 </style>
 </head>
 <body>
@@ -3657,8 +3670,25 @@ function wireClrCards(){ var b=document.getElementById("clrCardsBtn"); if(b) b.a
 
 /* ================= מידע מוצר מ-AI ================= */
 var AI_LAST=null;
+function mdToHtml(t){
+  var s=esc(String(t||""));
+  s=s.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  var lines=s.split(/\n/), out=[];
+  for(var i=0;i<lines.length;i++){
+    var ln=lines[i].trim();
+    if(!ln){ out.push('<div class="ai-gap"></div>'); continue; }
+    var mh=ln.match(/^#{1,4}\s*(.+)$/);
+    if(mh){ out.push('<div class="ai-h">'+mh[1].replace(/[:\uFF1A]\s*$/,"")+'</div>'); continue; }
+    var mb=ln.match(/^[-\u2022*]\s*(.+)$/);
+    if(mb){ out.push('<div class="ai-li">'+mb[1]+'</div>'); continue; }
+    var mq=ln.match(/^(שאלה|תשובה)\s*[:\uFF1A]\s*(.*)$/);
+    if(mq){ out.push('<div class="ai-qa"><span class="ai-qa-k">'+mq[1]+':</span> '+mq[2]+'</div>'); continue; }
+    out.push('<div class="ai-p">'+ln+'</div>');
+  }
+  return out.join("");
+}
 function showAIResult(body,src,data,cached){
-  if(body) body.textContent=data.text||"לא נמצא מידע רשמי מספק על מוצר זה.";
+  if(body) body.innerHTML=data.text?mdToHtml(data.text):"לא נמצא מידע רשמי מספק על מוצר זה.";
   if(!src) return;
   var h="";
   if(data.sources && data.sources.length){
