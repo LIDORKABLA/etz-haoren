@@ -832,6 +832,15 @@ body.m-count #calcFab{display:inline-flex}
 
 .price-tag.clr{background:#E5484D!important;color:#fff!important}
 .clr-cheapest{display:block;font-size:12px;color:#9a9a9a;font-weight:600;text-decoration:line-through;margin-top:2px}
+
+/* ===== מידע מוצר מ-AI ===== */
+.ai-body{font-size:15.5px;line-height:1.6;color:var(--ink);white-space:pre-wrap;min-height:60px;padding:4px 2px}
+.ai-body .spin{display:inline-block;vertical-align:middle;margin-left:8px}
+.ai-sources{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.ai-src-title{font-size:13px;font-weight:700;color:#777;margin-bottom:2px}
+.ai-src{font-size:13.5px;color:var(--pine);text-decoration:none;word-break:break-all;padding:6px 10px;background:var(--bg);border-radius:9px;display:block}
+.ai-note{margin-top:16px;font-size:11.5px;color:#a0a4a8;line-height:1.4;text-align:center}
+
 </style>
 </head>
 <body>
@@ -1106,6 +1115,15 @@ body.m-count #calcFab{display:inline-flex}
     <button class="btn ghost" id="clrXlsxCancel" type="button" style="margin-top:8px">ביטול</button>
   </div>
 </div>
+<div class="sheet" id="aiSheet">
+  <div class="card">
+    <div class="chat-head"><span>✨ מידע על המוצר</span><button id="aiClose" type="button" aria-label="סגור">✕</button></div>
+    <div id="aiName" class="meta" style="margin:6px 0 12px"></div>
+    <div id="aiBody" class="ai-body"></div>
+    <div id="aiSources" class="ai-sources"></div>
+    <div class="ai-note">המידע נאסף מהאינטרנט לצורך עזר בלבד — מומלץ לאמת נתונים קריטיים מול מקור רשמי.</div>
+  </div>
+</div>
 <div class="sheet" id="sheet">
   <div class="card">
     <h3 id="eName">—</h3>
@@ -1119,6 +1137,7 @@ body.m-count #calcFab{display:inline-flex}
       <button id="plus" type="button">+</button>
     </div>
     <button id="calcInSheet" class="calc-sheet-btn" type="button"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="16" y1="14" x2="16" y2="18"/><line x1="8" y1="18" x2="12" y2="18"/></svg> מחשבון</button>
+    <button id="aiInSheet" class="calc-sheet-btn" type="button" style="color:#7c3aed"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4z"/><path d="M19 14l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg> מידע מהאינטרנט</button>
     <div class="loc"><input id="eLoc" placeholder="מיקום / מדף (לא חובה)" autocomplete="off"></div>
     <button class="btn primary" id="addBtn">הוסף ספירה</button>
     <button class="btn ghost" id="cancelBtn">ביטול</button>
@@ -3614,6 +3633,37 @@ async function exportClearanceCards(){
 function wireClrCards(){ var b=document.getElementById("clrCardsBtn"); if(b) b.addEventListener("click", exportClearanceCards); }
 /* ================= סוף תמונות חיסול ================= */
 
+
+/* ================= מידע מוצר מ-AI ================= */
+async function askProductAI(){
+  if(typeof CURRENT==="undefined"||!CURRENT){ toast("פתח מוצר קודם"); return; }
+  var s=document.getElementById("aiSheet"); if(s) s.classList.add("open");
+  var nm=document.getElementById("aiName"); if(nm) nm.textContent=(CURRENT.name||"")+(CURRENT.mktt?" · מק״ט "+CURRENT.mktt:"");
+  var body=document.getElementById("aiBody"), src=document.getElementById("aiSources");
+  if(body) body.innerHTML='<span class="spin"></span> מחפש מידע ממקורות רשמיים…';
+  if(src) src.innerHTML="";
+  try{
+    if(typeof CLOUD==="undefined"||!CLOUD||!sb){ if(body) body.textContent="נדרש חיבור לענן."; return; }
+    var res=await sb.functions.invoke("product-ai",{ body:{ name:CURRENT.name||"", mktt:CURRENT.mktt||"", barcode:CURRENT.barcode||"" } });
+    if(res.error) throw res.error;
+    var data=res.data||{};
+    if(data.error && !data.text){ throw new Error(data.error); }
+    if(body) body.textContent=data.text||"לא נמצא מידע רשמי מספק על מוצר זה.";
+    if(src && data.sources && data.sources.length){
+      src.innerHTML='<div class="ai-src-title">מקורות:</div>'+data.sources.map(function(x){ return '<a class="ai-src" href="'+esc(x.url)+'" target="_blank" rel="noopener">'+esc(x.title||x.url)+'</a>'; }).join("");
+    }
+  }catch(e){
+    console.error("product-ai",e);
+    if(body) body.textContent="לא הצלחתי לקבל מידע כרגע. ודא שפונקציית product-ai פרוסה בשרת ושמפתח ה-API הוגדר.";
+  }
+}
+function wireProductAI(){
+  var b=document.getElementById("aiInSheet"); if(b) b.addEventListener("click", askProductAI);
+  var c=document.getElementById("aiClose"); if(c) c.addEventListener("click", function(){ var s=document.getElementById("aiSheet"); if(s) s.classList.remove("open"); });
+  var s=document.getElementById("aiSheet"); if(s) s.addEventListener("click", function(e){ if(e.target.id==="aiSheet") s.classList.remove("open"); });
+}
+/* ================= סוף מידע מוצר מ-AI ================= */
+
 boot();
 wireWedgeSettings();
 wireCalc();
@@ -3621,6 +3671,7 @@ wireCartXlsx();
 wireChat();
 wireImportCart();
 wireBulk();
+wireProductAI();
 wireClrXlsx();
 wireClrCards();
 </script>
