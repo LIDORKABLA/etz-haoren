@@ -3697,6 +3697,19 @@ function showAIResult(body,src,data,cached){
   if(cached){ h+='<div class="ai-cached">✓ מידע שמור (ללא עלות) · <button class="ai-refresh" type="button">רענן מהאינטרנט</button></div>'; }
   src.innerHTML=h;
 }
+var AI_MEM={};
+function aiCacheGet(mktt){
+  var k=String(mktt); if(!k) return null;
+  if(AI_MEM[k]) return AI_MEM[k];
+  try{ var s=localStorage.getItem("etz_ai_"+k); if(s){ var o=JSON.parse(s); AI_MEM[k]=o; return o; } }catch(e){}
+  return null;
+}
+function aiCacheSet(mktt,data){
+  var k=String(mktt); if(!k||!data||!data.text) return;
+  var o={text:data.text, sources:data.sources||[]};
+  AI_MEM[k]=o;
+  try{ localStorage.setItem("etz_ai_"+k, JSON.stringify(o)); }catch(e){}
+}
 async function askProductAI(prod, forceRefresh){
   var P=prod||(typeof CURRENT!=="undefined"?CURRENT:null);
   if(!P){ toast("פתח מוצר קודם"); return; }
@@ -3705,25 +3718,30 @@ async function askProductAI(prod, forceRefresh){
   var s=document.getElementById("aiSheet"); if(s) s.classList.add("open");
   var nm=document.getElementById("aiName"); if(nm) nm.textContent=(P.name||"")+(P.mktt?" · מק״ט "+P.mktt:"");
   var body=document.getElementById("aiBody"), src=document.getElementById("aiSources");
+  /* 1) מטמון מקומי — מיידי, בלי נסיעה לשרת ובלי אנימציית טעינה */
+  if(!forceRefresh && P.mktt){
+    var local=aiCacheGet(P.mktt);
+    if(local && local.text){ showAIResult(body,src,local,true); return; }
+  }
   if(body) body.innerHTML='<div class="ai-loading"><div class="ai-spinner"></div><div class="ai-loading-txt">מחפש מידע ממקורות רשמיים…</div></div>';
   if(src) src.innerHTML="";
   if(typeof CLOUD==="undefined"||!CLOUD||!sb){ if(body) body.textContent="נדרש חיבור לענן."; return; }
-  /* 1) מטמון — אם כבר יש מידע שמור למק״ט, מציגים אותו בחינם */
+  /* 2) מטמון בענן — אם כבר נשלף בעבר (ממכשיר אחר), בלי קריאה ל-AI */
   if(!forceRefresh && P.mktt){
     try{
       var c=await sb.from("product_ai_cache").select("text,sources").eq("mktt",String(P.mktt)).maybeSingle();
-      if(c && c.data && c.data.text){ showAIResult(body,src,c.data,true); return; }
+      if(c && c.data && c.data.text){ aiCacheSet(P.mktt,c.data); showAIResult(body,src,c.data,true); return; }
     }catch(e){ console.warn("ai cache read",e); }
   }
-  /* 2) אין במטמון — קוראים ל-AI */
+  /* 3) אין בשום מטמון — קוראים ל-AI */
   try{
     var res=await sb.functions.invoke("product-ai",{ body:{ name:P.name||"", mktt:P.mktt||"", barcode:P.barcode||"" } });
     if(res.error) throw res.error;
     var data=res.data||{};
     if(data.error && !data.text){ throw new Error(data.error); }
     showAIResult(body,src,data,false);
-    /* 3) שומרים למטמון לפעם הבאה */
     if(data.text && P.mktt){
+      aiCacheSet(P.mktt,data);
       try{ sb.from("product_ai_cache").upsert({mktt:String(P.mktt), text:data.text, sources:data.sources||[], updated_at:new Date().toISOString()}).then(function(){},function(){}); }catch(e){}
     }
   }catch(e){
@@ -3742,7 +3760,7 @@ document.addEventListener("click", function(e){
 }, true);
 function wireProductAI(){
   var b=document.getElementById("aiInSheet"); if(b) b.addEventListener("click", function(){ askProductAI(); });
-  document.addEventListener("click", function(e){ var r=e.target&&e.target.closest?e.target.closest(".ai-refresh"):null; if(r&&AI_LAST){ e.preventDefault(); askProductAI(AI_LAST, true); } });
+  document.addEventListener("click", function(e){ var r=e.target&&e.target.closest?e.target.closest(".ai-refresh"):null; if(r&&AI_LAST){ e.preventDefault(); try{ if(AI_LAST.mktt){ delete AI_MEM[String(AI_LAST.mktt)]; localStorage.removeItem("etz_ai_"+String(AI_LAST.mktt)); } }catch(_){} askProductAI(AI_LAST, true); } });
   var c=document.getElementById("aiClose"); if(c) c.addEventListener("click", function(){ var s=document.getElementById("aiSheet"); if(s) s.classList.remove("open"); });
   var s=document.getElementById("aiSheet"); if(s) s.addEventListener("click", function(e){ if(e.target.id==="aiSheet") s.classList.remove("open"); });
 }
