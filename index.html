@@ -1074,6 +1074,7 @@ body.m-count #calcFab{display:inline-flex}
     </div>
     <button class="btn primary" id="waQuoteBtn" style="margin-top:8px;background:#25D366"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg> שיתוף פירוט מוצרים בוואטסאפ</button>
     <button class="btn" id="exportCartXlsxBtn" style="margin-top:8px"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> ייצוא לאקסל</button>
+    <button class="btn" id="exportCartPdfBtn" style="margin-top:8px"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 18h6M9 12h2"/></svg> ייצוא PDF (עם תמונות)</button>
     <button class="btn danger" id="delCartBtn" style="margin-top:8px">מחק עגלה (שולם בקופה)</button>
   </div>
 </main>
@@ -2301,6 +2302,61 @@ async function confirmGeneralProduct(){
     closeGeneralProduct();
   }catch(e){ console.error("general product",e); pulseFX(false,"✗ לא נוסף — נסה שוב"); }
 }
+function buildCartPdfHTML(items, cart){
+  var rows=items.map(function(i){
+    var p=(typeof PRODMAP!=="undefined")?PRODMAP.get(String(i.mktt)):null;
+    var img=(p&&p.image_url)?esc(p.image_url):"";
+    var qty=Number(i.qty)||0, up=Number(i.unit_price)||0, tot=qty*up;
+    return '<div class="it">'+
+      (img?'<img src="'+img+'" alt="">':'<div class="noimg">—</div>')+
+      '<div class="inf"><div class="nm">'+esc(i.name||"")+'</div>'+
+      '<div class="sub">מק״ט '+esc(String(i.mktt))+' · '+qty+' יח׳ × '+fmtNis(up)+'</div></div>'+
+      '<div class="pr">'+fmtNis(tot)+'</div></div>';
+  }).join("");
+  var total=items.reduce(function(s,i){return s+(Number(i.qty)||0)*(Number(i.unit_price)||0);},0);
+  var d=new Date(), pad=function(n){return String(n).padStart(2,"0");};
+  var dateStr=pad(d.getDate())+"/"+pad(d.getMonth()+1)+"/"+d.getFullYear();
+  var cust=(cart&&cart.customer)?esc(String(cart.customer)):"";
+  var sp=(cart&&cart.salesperson)?esc(String(cart.salesperson)):"";
+  var S='<scr'+'ipt>window.onload=function(){var g=[].slice.call(document.images),n=g.length;function go(){setTimeout(function(){try{window.focus();}catch(e){}window.print();},350);}if(!n){go();return;}g.forEach(function(im){if(im.complete){if(--n===0)go();}else{im.onload=im.onerror=function(){if(--n===0)go();};}});setTimeout(go,8000);};</scr'+'ipt>';
+  return '<!doctype html><html dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>פירוט מוצרים — עץ האורן</title>'+
+  '<style>'+
+  '@page{size:A4;margin:12mm}'+
+  '*{box-sizing:border-box;font-family:Arial,"Heebo",sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}'+
+  'body{margin:0;color:#1a1f24}'+
+  '.hd{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #0B7D71;padding-bottom:12px;margin-bottom:16px}'+
+  '.hd img{height:62px;width:auto}'+
+  '.hd .t{font-size:23px;font-weight:800;color:#0B7D71;margin-bottom:4px}'+
+  '.hd .m{font-size:12.5px;color:#555;line-height:1.55;text-align:left}'+
+  '.it{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid #e6e6e6;border-radius:9px;margin-bottom:8px;page-break-inside:avoid;break-inside:avoid}'+
+  '.it img{width:60px;height:60px;object-fit:contain;background:#fff;border:1px solid #eee;border-radius:7px;flex:none}'+
+  '.it .noimg{width:60px;height:60px;border:1px solid #eee;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#ccc;flex:none;font-size:20px}'+
+  '.it .inf{flex:1;min-width:0}'+
+  '.it .nm{font-size:14.5px;font-weight:700;line-height:1.3}'+
+  '.it .sub{font-size:12px;color:#777;margin-top:3px}'+
+  '.it .pr{font-size:15px;font-weight:800;color:#0B7D71;white-space:nowrap}'+
+  '.sum{margin-top:14px;border-top:2px solid #0B7D71;padding-top:12px;display:flex;justify-content:space-between;align-items:center;page-break-inside:avoid}'+
+  '.sum .l{font-size:16px;font-weight:700}.sum .v{font-size:24px;font-weight:900;color:#0B7D71}'+
+  '.ft{margin-top:22px;text-align:center;font-size:11px;color:#999;line-height:1.6;page-break-inside:avoid}'+
+  '</style></head><body>'+
+  '<div class="hd"><img src="'+LOGO_B64+'" alt=""><div><div class="t">פירוט מוצרים</div>'+
+  '<div class="m">תאריך: '+dateStr+(cust?'<br>לקוח: '+cust:"")+(sp?'<br>נציג: '+sp:"")+'</div></div></div>'+
+  rows+
+  '<div class="sum"><span class="l">סה״כ לתשלום</span><span class="v">'+fmtNis(total)+'</span></div>'+
+  '<div class="ft">עץ האורן · המרכז לכלי עבודה · דרך השוקולד 1, צפת · 04-6156146</div>'+
+  S+'</body></html>';
+}
+function exportCartPdf(){
+  if(typeof CUR_CART==="undefined"||CUR_CART==null){ toast("אין עגלה פתוחה"); return; }
+  var items=cartItems(CUR_CART);
+  if(!items.length){ toast("העגלה ריקה"); return; }
+  var cart=((typeof CARTS!=="undefined"&&CARTS)||[]).find(function(c){return String(c.id)===String(CUR_CART);})||null;
+  var html=buildCartPdfHTML(items, cart);
+  var w=window.open("","_blank");
+  if(!w){ toast("יש לאפשר חלונות קופצים כדי לייצא PDF"); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+}
+function wireCartPdf(){ var b=document.getElementById("exportCartPdfBtn"); if(b) b.addEventListener("click", exportCartPdf); }
 function wireGeneralProduct(){
   var a=document.getElementById("genAdd"); if(a) a.addEventListener("click", confirmGeneralProduct);
   var c=document.getElementById("genClose"); if(c) c.addEventListener("click", closeGeneralProduct);
@@ -3819,6 +3875,7 @@ wireImportCart();
 wireBulk();
 wireProductAI();
 wireGeneralProduct();
+wireCartPdf();
 wireClrXlsx();
 wireClrCards();
 </script>
