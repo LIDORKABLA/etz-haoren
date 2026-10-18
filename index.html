@@ -1067,6 +1067,7 @@ body.m-count #calcFab{display:inline-flex}
     </div>
     <div class="search"><input id="qSale" placeholder="הוסף פריט — שם או מק״ט…" autocomplete="off" inputmode="search"></div>
     <button class="scanbtn" id="saleScanBtn"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h8l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg> סריקת ברקוד</button>
+    <button class="scanbtn" id="genProdBtn" style="background:#f5f0ff;color:#7c3aed;border-color:#d9c9f5"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg> מוצר כללי (תיאור ומחיר חופשי)</button>
     <ul id="saleResults" class="list"></ul>
     <div id="cartItems" style="margin-top:8px"></div>
     <div class="panel" style="display:flex;justify-content:space-between;align-items:center;font-size:18px;font-weight:700">
@@ -2302,7 +2303,7 @@ async function confirmGeneralProduct(){
     closeGeneralProduct();
   }catch(e){ console.error("general product",e); pulseFX(false,"✗ לא נוסף — נסה שוב"); }
 }
-function buildCartPdfHTML(items, cart){
+function buildCartPdfHTML(items, cart, note){
   var rows=items.map(function(i){
     var p=(typeof PRODMAP!=="undefined")?PRODMAP.get(String(i.mktt)):null;
     var img=(p&&p.image_url)?esc(p.image_url):"";
@@ -2327,7 +2328,7 @@ function buildCartPdfHTML(items, cart){
   '.hd{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #0B7D71;padding-bottom:12px;margin-bottom:16px}'+
   '.hd img{height:62px;width:auto}'+
   '.hd .t{font-size:23px;font-weight:800;color:#0B7D71;margin-bottom:4px}'+
-  '.hd .m{font-size:12.5px;color:#555;line-height:1.55;text-align:left}'+
+  '.hd .m{font-size:12.5px;color:#555;line-height:1.55;text-align:right}'+
   '.it{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid #e6e6e6;border-radius:9px;margin-bottom:8px;page-break-inside:avoid;break-inside:avoid}'+
   '.it img{width:60px;height:60px;object-fit:contain;background:#fff;border:1px solid #eee;border-radius:7px;flex:none}'+
   '.it .noimg{width:60px;height:60px;border:1px solid #eee;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#ccc;flex:none;font-size:20px}'+
@@ -2337,13 +2338,20 @@ function buildCartPdfHTML(items, cart){
   '.it .pr{font-size:15px;font-weight:800;color:#0B7D71;white-space:nowrap}'+
   '.sum{margin-top:14px;border-top:2px solid #0B7D71;padding-top:12px;display:flex;justify-content:space-between;align-items:center;page-break-inside:avoid}'+
   '.sum .l{font-size:16px;font-weight:700}.sum .v{font-size:24px;font-weight:900;color:#0B7D71}'+
-  '.ft{margin-top:22px;text-align:center;font-size:11px;color:#999;line-height:1.6;page-break-inside:avoid}'+
+  '.note{margin-top:14px;padding:11px 13px;background:#f6f4ec;border-right:3px solid #0B7D71;border-radius:7px;font-size:13px;color:#333;line-height:1.5;page-break-inside:avoid}'+'.terms{margin-top:18px;border-top:1px solid #e0e0e0;padding-top:12px;font-size:10.5px;color:#777;line-height:1.7;text-align:right;page-break-inside:avoid}'+'.terms div{margin-bottom:3px}'+
   '</style></head><body>'+
-  '<div class="hd"><img src="'+LOGO_B64+'" alt=""><div><div class="t">פירוט מוצרים</div>'+
-  '<div class="m">תאריך: '+dateStr+(cust?'<br>לקוח: '+cust:"")+(sp?'<br>נציג: '+sp:"")+'</div></div></div>'+
+  '<div class="hd"><div><div class="t">פירוט מוצרים</div>'+
+  '<div class="m">תאריך: '+dateStr+(cust?'<br>לקוח: '+cust:"")+(sp?'<br>נציג: '+sp:"")+'</div></div><img src="'+LOGO_B64+'" alt=""></div>'+
   rows+
   '<div class="sum"><span class="l">סה״כ לתשלום</span><span class="v">'+fmtNis(total)+'</span></div>'+
-  '<div class="ft">עץ האורן · המרכז לכלי עבודה · דרך השוקולד 1, צפת · 04-6156146</div>'+
+  (note?'<div class="note"><b>הערה:</b> '+esc(note)+'</div>':'')+
+  '<div class="terms">'+
+    '<div>• המחירים כוללים מע״מ.</div>'+
+    '<div>• מסמך זה נועד להצגת הפריטים המבוקשים בלבד ואינו מהווה הצעת מחיר רשמית / חשבונית מס או אישור הזמנה.</div>'+
+    '<div>• המחירים תקפים עד תום יום העסקים הנוכחי.</div>'+
+    '<div>• התמונות להמחשה בלבד.</div>'+
+    '<div>• ליצירת קשר עם נציג ניתן לפנות אלינו בוואטסאפ למספר 053-3224433 או לחילופין לחייג 04-6156146</div>'+
+  '</div>'+
   S+'</body></html>';
 }
 function exportCartPdf(){
@@ -2351,7 +2359,9 @@ function exportCartPdf(){
   var items=cartItems(CUR_CART);
   if(!items.length){ toast("העגלה ריקה"); return; }
   var cart=((typeof CARTS!=="undefined"&&CARTS)||[]).find(function(c){return String(c.id)===String(CUR_CART);})||null;
-  var html=buildCartPdfHTML(items, cart);
+  var note=prompt("הערה למסמך (אופציונלי — תופיע בקובץ):", "");
+  if(note===null) return;
+  var html=buildCartPdfHTML(items, cart, note.trim());
   var w=window.open("","_blank");
   if(!w){ toast("יש לאפשר חלונות קופצים כדי לייצא PDF"); return; }
   w.document.open(); w.document.write(html); w.document.close();
@@ -2359,6 +2369,7 @@ function exportCartPdf(){
 function wireCartPdf(){ var b=document.getElementById("exportCartPdfBtn"); if(b) b.addEventListener("click", exportCartPdf); }
 function wireGeneralProduct(){
   var a=document.getElementById("genAdd"); if(a) a.addEventListener("click", confirmGeneralProduct);
+  var gb=document.getElementById("genProdBtn"); if(gb) gb.addEventListener("click", openGeneralProduct);
   var c=document.getElementById("genClose"); if(c) c.addEventListener("click", closeGeneralProduct);
   var s=document.getElementById("genSheet"); if(s) s.addEventListener("click", function(e){ if(e.target.id==="genSheet") closeGeneralProduct(); });
 }
