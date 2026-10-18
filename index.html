@@ -1161,6 +1161,18 @@ body.m-count #calcFab{display:inline-flex}
     <div class="ai-note">המידע נאסף מהאינטרנט לצורך עזר בלבד — מומלץ לאמת נתונים קריטיים מול מקור רשמי.</div>
   </div>
 </div>
+<div class="sheet" id="genSheet">
+  <div class="card">
+    <div class="chat-head"><span>➕ מוצר כללי</span><button id="genClose" type="button" aria-label="סגור">✕</button></div>
+    <label style="display:block;font-size:13px;color:#777;font-weight:700;margin:14px 2px 5px">תיאור המוצר</label>
+    <textarea id="genDesc" rows="2" placeholder="מה המוצר? (טקסט חופשי)" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:11px;font-family:inherit;font-size:15.5px;background:var(--card);color:var(--ink);box-sizing:border-box;resize:vertical"></textarea>
+    <label style="display:block;font-size:13px;color:#777;font-weight:700;margin:14px 2px 5px">מחיר ליחידה (₪)</label>
+    <input id="genPrice" type="number" inputmode="decimal" placeholder="0" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:11px;font-family:inherit;font-size:15.5px;background:var(--card);color:var(--ink);box-sizing:border-box">
+    <label style="display:block;font-size:13px;color:#777;font-weight:700;margin:14px 2px 5px">כמות</label>
+    <input id="genQty" type="number" inputmode="numeric" value="1" min="1" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:11px;font-family:inherit;font-size:15.5px;background:var(--card);color:var(--ink);box-sizing:border-box">
+    <button id="genAdd" type="button" style="width:100%;margin-top:18px;padding:14px;background:var(--pine);color:#fff;border:none;border-radius:12px;font-family:inherit;font-size:16px;font-weight:800;cursor:pointer">הוסף לעגלה</button>
+  </div>
+</div>
 <div class="sheet" id="sheet">
   <div class="card">
     <h3 id="eName">—</h3>
@@ -2259,8 +2271,40 @@ async function addItemToCart(product, priceOverride){
 /* תור סדרתי: מונע התנגשות בהוספה מהירה */
 var CART_Q=Promise.resolve();
 function queueAddToCart(product, priceOverride){
+  if(product && String(product.mktt)==="1" && priceOverride==null){ openGeneralProduct(); return; }
   CART_Q=CART_Q.then(function(){ return addItemToCart(product, priceOverride); }).catch(function(e){ console.error(e); pulseFX(false,"✗ שגיאה"); });
   return CART_Q;
+}
+/* ===== מוצר כללי (מק"ט 1): תיאור ומחיר חופשיים, ללא סיסמה ===== */
+function openGeneralProduct(){
+  if(CUR_CART==null){ toast("פתח או צור עגלה קודם"); return; }
+  var d=document.getElementById("genDesc"); if(d) d.value="";
+  var p=document.getElementById("genPrice"); if(p) p.value="";
+  var q=document.getElementById("genQty"); if(q) q.value="1";
+  var s=document.getElementById("genSheet"); if(s) s.classList.add("open");
+  setTimeout(function(){ if(d) d.focus(); }, 120);
+}
+function closeGeneralProduct(){ var s=document.getElementById("genSheet"); if(s) s.classList.remove("open"); }
+async function confirmGeneralProduct(){
+  var desc=(document.getElementById("genDesc").value||"").trim();
+  var price=pnum(document.getElementById("genPrice").value);
+  var qty=parseInt(document.getElementById("genQty").value,10)||1;
+  if(!desc){ toast("יש להזין תיאור למוצר"); return; }
+  if(!(price>=0)){ toast("מחיר לא תקין"); return; }
+  if(qty<1) qty=1;
+  if(CUR_CART==null){ toast("אין עגלה פתוחה"); return; }
+  try{
+    var r=await sb.from("cart_items").insert({cart_id:CUR_CART, mktt:"1", name:desc, qty:qty, unit_price:price}).select();
+    if(r.error) throw r.error;
+    if(r.data && r.data[0] && !ITEMS.some(function(x){return x.id===r.data[0].id;})) ITEMS.push(r.data[0]);
+    touchCart(CUR_CART); feedback(true); pulseFX(true,"✓ "+desc); renderCart(); renderCartList();
+    closeGeneralProduct();
+  }catch(e){ console.error("general product",e); pulseFX(false,"✗ לא נוסף — נסה שוב"); }
+}
+function wireGeneralProduct(){
+  var a=document.getElementById("genAdd"); if(a) a.addEventListener("click", confirmGeneralProduct);
+  var c=document.getElementById("genClose"); if(c) c.addEventListener("click", closeGeneralProduct);
+  var s=document.getElementById("genSheet"); if(s) s.addEventListener("click", function(e){ if(e.target.id==="genSheet") closeGeneralProduct(); });
 }
 async function updateItem(item,patch){
   try{
@@ -3774,6 +3818,7 @@ wireChat();
 wireImportCart();
 wireBulk();
 wireProductAI();
+wireGeneralProduct();
 wireClrXlsx();
 wireClrCards();
 </script>
