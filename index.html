@@ -1010,6 +1010,13 @@ body.m-count #calcFab{display:inline-flex}
     </div>
 
     <div class="panel">
+      <h4>כלים נוספים</h4>
+      <p>מחוללי מדבקות ושילוט — נפתחים במסך מלא בתוך האפליקציה.</p>
+      <button class="btn" id="modBarcodeBtn" type="button" style="margin-bottom:8px"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:17px;height:17px;vertical-align:-3px;margin-left:6px"><path d="M3 5v14M8 5v14M13 5v14M18 5v14M21 5v14"/></svg> מחולל מדבקות ברקוד</button>
+      <button class="btn" id="modSignageBtn" type="button"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:17px;height:17px;vertical-align:-3px;margin-left:6px"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 20h10M8 9h8M8 13h5"/></svg> מחולל שילוט מחיר</button>
+    </div>
+
+    <div class="panel">
       <h4>איפוס ספירה</h4>
       <p>מוחק את כל רישומי הספירה הנוכחיים (הקטלוג נשאר). השתמשו לפני ספירה חדשה.</p>
       <button class="btn danger" id="clearBtn">מחיקת כל הספירות</button>
@@ -3886,9 +3893,40 @@ wireImportCart();
 wireBulk();
 wireProductAI();
 wireGeneralProduct();
+
+/* ================= מודולים חיצוניים (מדבקות / שילוט) ================= */
+function openModule(file, title){
+  var ov=document.getElementById("modOverlay"), fr=document.getElementById("modFrame"), t=document.getElementById("modTitle");
+  if(!ov||!fr) return;
+  if(t) t.textContent=title||"כלי";
+  fr.src=file;
+  ov.style.display="flex";
+  document.body.style.overflow="hidden";
+}
+function closeModule(){
+  var ov=document.getElementById("modOverlay"), fr=document.getElementById("modFrame");
+  if(ov) ov.style.display="none";
+  if(fr) fr.src="about:blank";
+  document.body.style.overflow="";
+}
+function wireModules(){
+  var b=document.getElementById("modBarcodeBtn"); if(b) b.addEventListener("click", function(){ openModule("barcode.html","מחולל מדבקות ברקוד"); });
+  var s=document.getElementById("modSignageBtn"); if(s) s.addEventListener("click", function(){ openModule("signage.html","מחולל שילוט מחיר"); });
+  var c=document.getElementById("modClose"); if(c) c.addEventListener("click", closeModule);
+}
+/* ================= סוף מודולים ================= */
+
 wireCartPdf();
+wireModules();
 wireClrXlsx();
 wireClrCards();
 </script>
+<div id="modOverlay" style="position:fixed;inset:0;z-index:300;background:#fff;display:none;flex-direction:column">
+  <div style="flex:none;display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--pine,#0B7D71);color:#fff;padding-top:calc(10px + env(safe-area-inset-top))">
+    <button id="modClose" type="button" aria-label="חזרה" style="background:rgba(255,255,255,.2);border:none;color:#fff;width:38px;height:38px;border-radius:9px;font-size:20px;cursor:pointer;flex:none">→</button>
+    <span id="modTitle" style="font-weight:800;font-size:16px">כלי</span>
+  </div>
+  <iframe id="modFrame" style="flex:1;width:100%;border:0;background:#fff" title="כלי"></iframe>
+</div>
 </body>
 </html>
