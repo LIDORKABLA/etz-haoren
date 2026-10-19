@@ -151,7 +151,7 @@ details.foot summary { cursor: pointer; }
           <span class="x" aria-hidden="true">×</span>
           <label class="f"><span class="lbl">גובה</span><input type="text" id="hcm" class="num" inputmode="decimal" value="10" placeholder="אוטומטי"></label>
         </div>
-        <div class="presets" id="presets"><button type="button" data-w="10" data-h="10" aria-pressed="true">10×10</button><button type="button" data-w="5" data-h="2.5" aria-pressed="false">5×2.5</button><button type="button" data-w="10" data-h="15" aria-pressed="false">10×15</button><button type="button" data-w="10" data-h="5" aria-pressed="false">10×5</button><button type="button" data-w="7" data-h="5" aria-pressed="false">7×5</button><button type="button" data-w="5" data-h="3" aria-pressed="false">5×3</button><button type="button" data-w="10" data-h="" aria-pressed="false">10 · אוטו׳</button></div>
+        <div class="presets" id="presets"></div>
         <span class="hint">גובה ריק = לפי התוכן. גובה קבוע = התוכן מתכווץ או מתרווח כדי להתאים.</span>
       </div>
 
@@ -563,7 +563,7 @@ details.foot summary { cursor: pointer; }
   $("disc").addEventListener("change", render);
 
   // common label sizes (width × height, cm)
-  const sizes = [["10", ""], ["10", "15"], ["10", "10"], ["10", "5"], ["7", "5"], ["5", "3"]];
+  const sizes = [["10", "10"], ["5", "2.5"]];
   const pre = $("presets");
   function markPreset() {
     pre.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed",
