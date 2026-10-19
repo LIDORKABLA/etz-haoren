@@ -729,19 +729,18 @@ details.foot summary { cursor: pointer; }
     $("res").value = "4"; render();
     var png = cv.toDataURL("image/png");
     $("res").value = prev; render();
-    // גודל פיזי מדויק להדפסה (אם הוזן); אחרת ממדי הקנבס
-    var sizeCss = "";
-    if(cm.w && !Number.isNaN(cm.h)){
-      var wmm = cm.w*10, hmm = (cm.h? cm.h*10 : wmm*H/W);
-      sizeCss = "width:"+wmm+"mm;height:"+hmm+"mm;";
-    } else {
-      sizeCss = "width:100%;max-width:100%;height:auto;";
-    }
+    // גודל פיזי מדויק להדפסה — עמוד אחד בדיוק בגודל המדבקה (מונע פיזור על 2 מדבקות)
+    var wmm, hmm;
+    if(cm.w){ wmm = cm.w*10; hmm = (cm.h && !Number.isNaN(cm.h)) ? cm.h*10 : wmm*H/W; }
+    else { wmm = 100; hmm = 100*H/W; } // גיבוי אם לא הוזן גודל
+    wmm = Math.round(wmm*100)/100; hmm = Math.round(hmm*100)/100;
     var w = window.open("", "_blank");
     if(!w){ say("יש לאפשר חלונות קופצים כדי להדפיס."); return; }
     var html = '<!doctype html><html><head><meta charset="utf-8"><title>הדפסת מדבקה</title>'+
-      '<style>@page{margin:0}html,body{margin:0;padding:0}'+
-      'img{display:block;'+sizeCss+'object-fit:contain}'+
+      '<style>'+
+      '@page{size:'+wmm+'mm '+hmm+'mm;margin:0}'+
+      'html,body{margin:0;padding:0;width:'+wmm+'mm;height:'+hmm+'mm}'+
+      'img{display:block;width:'+wmm+'mm;height:'+hmm+'mm;object-fit:fill}'+
       '@media screen{body{background:#eee;display:flex;align-items:center;justify-content:center;min-height:100vh}img{box-shadow:0 4px 20px rgba(0,0,0,.2)}}'+
       '</style></head><body><img src="'+png+'" alt="">'+
       '<scr'+'ipt>window.onload=function(){var i=document.images[0];function go(){setTimeout(function(){window.focus();window.print();},250);}if(i.complete)go();else{i.onload=go;i.onerror=go;}};</scr'+'ipt>'+
