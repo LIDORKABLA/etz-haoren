@@ -382,15 +382,27 @@ details.foot summary { cursor: pointer; }
 
   const DISC = "התמונה להמחשה בלבד";
 
+  function labelMetrics(){
+    var cm = sizeCm();
+    var compact = false;
+    if(cm.w){
+      var h = (cm.h && !Number.isNaN(cm.h)) ? cm.h : cm.w*H/W;
+      if(h && (h < cm.w*0.75 || h <= 4)) compact = true;
+    }
+    return compact
+      ? {nameStart:58, nameMin:26, sku:40, skuLbl:30, footFont:34, footLH:42, footPad:26, bcBoost:1.6, bcMin:200}
+      : {nameStart:88, nameMin:30, sku:46, skuLbl:34, footFont:25, footLH:32, footPad:30, bcBoost:1,   bcMin:110};
+  }
   function layout(Wl, t, name, wantImg, wantBc) {
+    const met = labelMetrics();
     const innerW = Wl - 2*t - 80;
     ctx.setTransform(1,0,0,1,0,0); ctx.direction = "rtl";
-    let size = 88, lines;
+    let size = met.nameStart, lines;
     do {
       ctx.font = `800 ${size}px Rubik, Arial, sans-serif`;
       lines = wrapLines(name || "שם המוצר", innerW, 2);
       if (lines) break; size -= 4;
-    } while (size > 30);
+    } while (size > met.nameMin);
     if (!lines) lines = [name];
     const nameH = lines.length * size * 1.12;
 
@@ -400,14 +412,14 @@ details.foot summary { cursor: pointer; }
       ["טלפון", $("fTel").value.trim()], ["ארץ הייצור", $("fOrig").value.trim()]
     ].filter(f => f[1]).map(f => f[0] + ": " + f[1]);
     if (disc && !photo) items.push(DISC);
-    ctx.font = `500 25px Rubik, Arial, sans-serif`;
+    ctx.font = `500 ${met.footFont}px Rubik, Arial, sans-serif`;
     const footLines = packLines(items, innerW);
-    const footerH = footLines.length ? 30 + footLines.length * 32 : 0;
+    const footerH = footLines.length ? met.footPad + footLines.length * met.footLH : 0;
     const discH = disc && photo ? 36 : 0;
 
     const fixed = 2*t + 50 + nameH + 90 + (photo ? 26 + discH : 0) + 26 + 44 + footerH;
-    return { innerW, size, lines, nameH, footLines, footerH, discH, disc, fixed,
-             flexNat: (photo ? wantImg : 0) + wantBc, flexMin: (photo ? 100 : 0) + 110 };
+    return { innerW, size, lines, nameH, footLines, footerH, discH, disc, fixed, met,
+             flexNat: (photo ? wantImg : 0) + wantBc, flexMin: (photo ? 100 : 0) + met.bcMin };
   }
 
   function render() {
@@ -420,7 +432,8 @@ details.foot summary { cursor: pointer; }
     S = +$("res").value;
     const wantImg = +$("imgSize").value;
     const bcScale = +$("bcSize").value / 100;
-    const wantBc = Math.round(380 * bcScale);
+    const _met0 = labelMetrics();
+    const wantBc = Math.round(380 * bcScale * _met0.bcBoost);
     const cm = sizeCm();
     const fixedH = cm.w && cm.h && cm.h > 0;   // NaN or null -> automatic
 
@@ -476,11 +489,12 @@ details.foot summary { cursor: pointer; }
 
     // SKU
     y += 18;
+    const _met = L.met || labelMetrics();
     const skuLabel = "מק״ט";
-    ctx.font = `600 46px "IBM Plex Mono", monospace`;
+    ctx.font = `600 ${_met.sku}px "IBM Plex Mono", monospace`;
     ctx.direction = "ltr";
     const skuW = ctx.measureText(sku || "—").width;
-    ctx.font = `500 34px Rubik, Arial, sans-serif`;
+    ctx.font = `500 ${_met.skuLbl}px Rubik, Arial, sans-serif`;
     ctx.direction = "rtl";
     const lblW = ctx.measureText(skuLabel + ":").width;
     const total = lblW + 18 + skuW;
@@ -488,7 +502,7 @@ details.foot summary { cursor: pointer; }
     ctx.textAlign = "right"; ctx.textBaseline = "alphabetic";
     ctx.fillText(skuLabel + ":", startR, y + 42);
     ctx.direction = "ltr"; ctx.textAlign = "left";
-    ctx.font = `600 46px "IBM Plex Mono", monospace`;
+    ctx.font = `600 ${_met.sku}px "IBM Plex Mono", monospace`;
     ctx.fillText(sku || "—", startR - lblW - 18 - skuW, y + 42);
     y += 72 + gapAdd;
 
@@ -524,9 +538,9 @@ details.foot summary { cursor: pointer; }
     // importer details, small print at the bottom
     if (L.footLines.length) {
       ctx.fillStyle = "#000"; ctx.fillRect(innerX, footTop + 22, innerW, 1.5);
-      ctx.font = `500 25px Rubik, Arial, sans-serif`;
+      ctx.font = `500 ${_met.footFont}px Rubik, Arial, sans-serif`;
       ctx.direction = "rtl"; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
-      L.footLines.forEach((l, i) => ctx.fillText(l, W/2, footTop + 56 + i*32, innerW));
+      L.footLines.forEach((l, i) => ctx.fillText(l, W/2, footTop + 56 + i*_met.footLH, innerW));
     }
     if (!code) { err.textContent = "חסר ברקוד."; }
     else if (!/^\d+$/.test(code)) { err.textContent = "הברקוד חייב להכיל ספרות בלבד."; }
