@@ -603,7 +603,11 @@ details.foot summary { cursor: pointer; }
     });
     pre.appendChild(b);
   });
-  ["wcm","hcm"].forEach(id => $(id).addEventListener("input", markPreset));
+  function frameDefaultForSize(){
+    var wv = parseFloat($("wcm").value), hv = parseFloat($("hcm").value);
+    if(wv && hv && (hv < wv*0.75 || hv <= 4)) $("frameOn").checked = false; else $("frameOn").checked = true;
+  }
+  ["wcm","hcm"].forEach(id => $(id).addEventListener("input", function(){ markPreset(); frameDefaultForSize(); }));
   markPreset();
 
   let srcImg = null;
