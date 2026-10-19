@@ -3895,14 +3895,32 @@ wireProductAI();
 wireGeneralProduct();
 
 /* ================= מודולים חיצוניים (מדבקות / שילוט) ================= */
+function moduleProducts(){
+  try{
+    return (PRODUCTS||[]).map(function(p){
+      return { mktt:String(p.mktt||""), name:p.name||"", barcode:p.barcode||"",
+               price:(p.price!=null?String(p.price):""), image_url:p.image_url||"",
+               unit:p.unit||"", stock:(p.stock!=null?String(p.stock):"") };
+    });
+  }catch(e){ return []; }
+}
+function sendProductsToModule(){
+  var fr=document.getElementById("modFrame");
+  if(fr&&fr.contentWindow){ try{ fr.contentWindow.postMessage({type:"etz-products", products:moduleProducts()}, "*"); }catch(e){} }
+}
 function openModule(file, title){
   var ov=document.getElementById("modOverlay"), fr=document.getElementById("modFrame"), t=document.getElementById("modTitle");
   if(!ov||!fr) return;
   if(t) t.textContent=title||"כלי";
+  fr.onload=function(){ sendProductsToModule(); };
   fr.src=file;
   ov.style.display="flex";
   document.body.style.overflow="hidden";
 }
+/* מודול מבקש את המוצרים ביוזמתו */
+window.addEventListener("message", function(e){
+  if(e&&e.data&&e.data.type==="etz-request-products"){ sendProductsToModule(); }
+});
 function closeModule(){
   var ov=document.getElementById("modOverlay"), fr=document.getElementById("modFrame");
   if(ov) ov.style.display="none";

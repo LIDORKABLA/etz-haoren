@@ -195,6 +195,8 @@
     <div class="card">
       <h2>העלאת בסיס הנתונים</h2>
       <p class="sub">קובץ אקסל עם העמודות: מק"ט, תיאור, מחיר, וקישור לתמונה. הקובץ נשמר במכשיר שלך ולא צריך להעלות אותו שוב.</p>
+      <button class="btn" id="loadFromSystem" style="width:100%;margin-bottom:12px;background:#0B7D71;color:#fff">⇄ טען מוצרים ממערכת התפעול</button>
+      <div class="hint" id="sysHint" style="display:none;font-size:13px;color:#0B7D71;margin-bottom:10px;font-weight:600"></div>
       <div class="drop" id="dropDb">
         <div class="ic">📂</div>
         <div><b>לחץ לבחירת קובץ</b> או גרור לכאן</div>
@@ -2671,4 +2673,44 @@ window.addEventListener('load', ()=>{
 </script><input type="file" accept=".xlsx,.xls,.csv" style="display: none;"><input type="file" accept=".xlsx,.xls,.csv" style="display: none;">
 
 
+
+<script>
+/* ===== חיבור למערכת התפעול: קבלת מוצרים ===== */
+(function(){
+  var SYS=[];
+  function applySystem(auto){
+    if(!SYS.length){ if(!auto&&typeof toast==="function") toast("לא התקבלו מוצרים מהמערכת","err"); return; }
+    try{
+      DB = SYS.map(function(p){ return {
+        sku:  String(p.mktt||""),
+        barcode: String(p.barcode||""),
+        desc: String(p.name||""),
+        price: String(p.price||""),
+        img:  String(p.image_url||"")
+      }; }).filter(function(p){ return p.desc; });
+      if(typeof saveDB==="function") saveDB();
+      if(typeof SELECTED!=="undefined"&&SELECTED.clear) SELECTED.clear();
+      var cw=document.getElementById("colmapWrap"); if(cw) cw.style.display="none";
+      if(typeof refreshDbSummary==="function") refreshDbSummary();
+      if(typeof enableTabs==="function") enableTabs();
+      var h=document.getElementById("sysHint"); if(h){ h.style.display="block"; h.textContent="✓ נטענו "+DB.length+" מוצרים ממערכת התפעול"; }
+      if(typeof toast==="function") toast("נטענו "+DB.length+" מוצרים מהמערכת","ok");
+      if(auto && typeof setTab==="function"){ try{ setTab("pick"); }catch(_){} }
+    }catch(e){ console.error(e); if(typeof toast==="function") toast("שגיאה בטעינת מוצרים","err"); }
+  }
+  var autoLoaded=false;
+  window.addEventListener("message", function(e){
+    if(e&&e.data&&e.data.type==="etz-products"&&Array.isArray(e.data.products)){
+      SYS=e.data.products;
+      var h=document.getElementById("sysHint"); if(h){ h.style.display="block"; h.textContent="מערכת התפעול מחוברת · "+SYS.length+" מוצרים זמינים."; }
+      /* טעינה אוטומטית בפעם הראשונה — חוויה של מערכת אחת */
+      if(!autoLoaded && SYS.length){ autoLoaded=true; applySystem(true); }
+    }
+  });
+  function wireBtn(){ var b=document.getElementById("loadFromSystem"); if(b) b.addEventListener("click", applySystem); }
+  if(document.readyState!=="loading") wireBtn(); else document.addEventListener("DOMContentLoaded", wireBtn);
+  // בקש מההורה את המוצרים (אם כבר נפתחנו)
+  try{ if(window.parent&&window.parent!==window) window.parent.postMessage({type:"etz-request-products"},"*"); }catch(e){}
+})();
+</script>
 </body></html>
