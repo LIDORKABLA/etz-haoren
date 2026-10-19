@@ -182,6 +182,7 @@ details.foot summary { cursor: pointer; }
         <div class="swatches" id="swatches"><button type="button" class="sw" aria-label="צבע #111111" data-c="#111111" style="background: rgb(17, 17, 17);" aria-pressed="false"></button><button type="button" class="sw" aria-label="צבע #c2410c" data-c="#c2410c" style="background: rgb(194, 65, 12);" aria-pressed="true"></button><button type="button" class="sw" aria-label="צבע #d92d20" data-c="#d92d20" style="background: rgb(217, 45, 32);" aria-pressed="false"></button><button type="button" class="sw" aria-label="צבע #e8a317" data-c="#e8a317" style="background: rgb(232, 163, 23);" aria-pressed="false"></button><button type="button" class="sw" aria-label="צבע #15803d" data-c="#15803d" style="background: rgb(21, 128, 61);" aria-pressed="false"></button><button type="button" class="sw" aria-label="צבע #0e7490" data-c="#0e7490" style="background: rgb(14, 116, 144);" aria-pressed="false"></button><button type="button" class="sw" aria-label="צבע #1d4ed8" data-c="#1d4ed8" style="background: rgb(29, 78, 216);" aria-pressed="false"></button><button type="button" class="sw" aria-label="צבע #7c3aed" data-c="#7c3aed" style="background: rgb(124, 58, 237);" aria-pressed="false"></button><button type="button" class="sw" aria-label="צבע #be185d" data-c="#be185d" style="background: rgb(190, 24, 93);" aria-pressed="false"></button><button type="button" class="sw" aria-label="צבע #6b7280" data-c="#6b7280" style="background: rgb(107, 114, 128);" aria-pressed="false"></button></div>
       </div>
 
+      <label class="chk"><input type="checkbox" id="frameOn" checked> מסגרת מסביב למדבקה</label>
       <label class="f">
         <span class="lbl">עובי המסגרת</span>
         <input type="range" class="thick" id="thick" min="10" max="70" value="10">
@@ -426,7 +427,8 @@ details.foot summary { cursor: pointer; }
     const name = $("name").value.trim();
     const sku = $("sku").value.trim();
     const code = $("code").value.replace(/\s/g, "");
-    const t = +$("thick").value;
+    const frameOn = $("frameOn").checked;
+    const t = frameOn ? +$("thick").value : 6;
     const err = $("codeErr");
 
     S = +$("res").value;
@@ -455,8 +457,9 @@ details.foot summary { cursor: pointer; }
     if (fixedH) {
       if (avail >= L.flexNat) {
         let extra = avail - L.flexNat;
-        if (photo) { const g = extra * 0.6; imgA += g; extra -= g; }
-        gapAdd = extra / 4;
+        if (photo) { const g = extra * 0.35; imgA += g; extra -= g; }
+        bcA += extra * 0.82;        // הברקוד מנצל את רוב הגובה הפנוי
+        gapAdd = (extra * 0.18) / 4; // רווחים קטנים — המלל נשאר צמוד לתחתית
       } else {
         const f = Math.max(0, (avail - L.flexMin) / Math.max(1, L.flexNat - L.flexMin));
         if (photo) imgA = 100 + (wantImg - 100) * f;
@@ -475,10 +478,14 @@ details.foot summary { cursor: pointer; }
     ctx.setTransform(1,0,0,1,0,0);
     ctx.clearRect(0,0,cv.width,cv.height);
     ctx.setTransform(K,0,0,K,0,0);
-    ctx.fillStyle = color; roundRect(0,0,W,H,28); ctx.fill();
-    ctx.fillStyle = "#ffffff"; roundRect(t, t, W - 2*t, H - 2*t, 14); ctx.fill();
-    ctx.strokeStyle = "#000000"; ctx.lineWidth = 3;
-    roundRect(t + 12, t + 12, W - 2*t - 24, H - 2*t - 24, 8); ctx.stroke();
+    if (frameOn) {
+      ctx.fillStyle = color; roundRect(0,0,W,H,28); ctx.fill();
+      ctx.fillStyle = "#ffffff"; roundRect(t, t, W - 2*t, H - 2*t, 14); ctx.fill();
+      ctx.strokeStyle = "#000000"; ctx.lineWidth = 3;
+      roundRect(t + 12, t + 12, W - 2*t - 24, H - 2*t - 24, 8); ctx.stroke();
+    } else {
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(0,0,W,H);
+    }
 
     let y = t + 50 + gapAdd;
 
@@ -538,7 +545,7 @@ details.foot summary { cursor: pointer; }
     // importer details, small print at the bottom
     if (L.footLines.length) {
       ctx.fillStyle = "#000"; ctx.fillRect(innerX, footTop + 22, innerW, 1.5);
-      ctx.font = `500 ${_met.footFont}px Rubik, Arial, sans-serif`;
+      ctx.font = `700 ${_met.footFont}px Rubik, Arial, sans-serif`;
       ctx.direction = "rtl"; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
       L.footLines.forEach((l, i) => ctx.fillText(l, W/2, footTop + 56 + i*_met.footLH, innerW));
     }
@@ -575,6 +582,7 @@ details.foot summary { cursor: pointer; }
   $("res").addEventListener("change", render);
   $("qz").addEventListener("change", render);
   $("disc").addEventListener("change", render);
+  $("frameOn").addEventListener("change", render);
 
   // common label sizes (width × height, cm)
   const sizes = [["10", "10"], ["5", "2.5"]];
@@ -587,7 +595,12 @@ details.foot summary { cursor: pointer; }
     const b = document.createElement("button");
     b.type = "button"; b.dataset.w = w; b.dataset.h = h;
     b.textContent = h ? w + "×" + h : w + " · אוטו׳";
-    b.addEventListener("click", () => { $("wcm").value = w; $("hcm").value = h; markPreset(); render(); });
+    b.addEventListener("click", () => {
+      $("wcm").value = w; $("hcm").value = h;
+      var hv = parseFloat(h), wv = parseFloat(w);
+      if(wv && hv && (hv < wv*0.75 || hv <= 4)) $("frameOn").checked = false; else $("frameOn").checked = true;
+      markPreset(); render();
+    });
     pre.appendChild(b);
   });
   ["wcm","hcm"].forEach(id => $(id).addEventListener("input", markPreset));
