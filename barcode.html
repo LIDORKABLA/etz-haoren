@@ -98,7 +98,7 @@ details.foot summary { cursor: pointer; }
 </head><body><div class="wrap" dir="rtl">
   <header>
     <h1>מחולל מדבקות ברקוד</h1>
-    <p>מכניסים פרטי מוצר. מקבלים מדבקה מוכנה להדפסה. <span style="opacity:.5;font-size:11px">גרסה 19/10</span></p>
+    <p>מכניסים פרטי מוצר. מקבלים מדבקה מוכנה להדפסה. <span style="opacity:.5;font-size:11px">גרסה 20/10 ב׳</span></p>
   </header>
 
   <div class="grid">
@@ -391,8 +391,8 @@ details.foot summary { cursor: pointer; }
       if(h && (h < cm.w*0.75 || h <= 4)) compact = true;
     }
     return compact
-      ? {nameStart:58, nameMin:26, sku:40, skuLbl:30, footFont:34, footLH:42, footPad:26, bcBoost:1.6, bcMin:200}
-      : {nameStart:88, nameMin:30, sku:46, skuLbl:34, footFont:25, footLH:32, footPad:30, bcBoost:1,   bcMin:110};
+      ? {nameStart:54, nameMin:26, sku:40, skuLbl:30, footFont:36, footLH:44, footPad:26, bcBoost:1.6, bcMin:220, wBoost:1.5}
+      : {nameStart:88, nameMin:30, sku:46, skuLbl:34, footFont:25, footLH:32, footPad:30, bcBoost:1,   bcMin:110, wBoost:1};
   }
   function layout(Wl, t, name, wantImg, wantBc) {
     const met = labelMetrics();
@@ -436,6 +436,7 @@ details.foot summary { cursor: pointer; }
     const bcScale = +$("bcSize").value / 100;
     const _met0 = labelMetrics();
     const wantBc = Math.round(380 * bcScale * _met0.bcBoost);
+    const wScaleEff = Math.min(1, bcScale * (_met0.wBoost || 1));
     const cm = sizeCm();
     const fixedH = cm.w && cm.h && cm.h > 0;   // NaN or null -> automatic
 
@@ -539,13 +540,26 @@ details.foot summary { cursor: pointer; }
 
     // barcode area
     err.textContent = ""; lastOk = false;
-    const bcTop = y, bottom = y + bcA;
-    const footTop = bottom + gapAdd;
+    let bcTop = y, bottom = y + bcA;
+    let footTop = bottom + gapAdd;
+
+    // גובה קבוע: מצמידים את המלל התחתון לתחתית המדבקה, והברקוד ממלא את כל המרווח שנפתח מעליו
+    if (fixedH) {
+      const nL = L.footLines.length;
+      if (nL) {
+        const bottomPad = Math.round(_met.footLH * 0.45);
+        footTop = H - bottomPad - 56 - (nL - 1) * _met.footLH;
+        bottom = footTop - 16;
+      } else {
+        bottom = H - 16;
+      }
+      if (bottom < bcTop + _met.bcMin) bottom = bcTop + _met.bcMin;
+    }
 
     // importer details, small print at the bottom
     if (L.footLines.length) {
       ctx.fillStyle = "#000"; ctx.fillRect(innerX, footTop + 22, innerW, 1.5);
-      ctx.font = `700 ${_met.footFont}px Rubik, Arial, sans-serif`;
+      ctx.font = `800 ${_met.footFont}px Rubik, Arial, sans-serif`;
       ctx.direction = "rtl"; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
       L.footLines.forEach((l, i) => ctx.fillText(l, W/2, footTop + 56 + i*_met.footLH, innerW));
     }
@@ -558,7 +572,7 @@ details.foot summary { cursor: pointer; }
         const enc = {};
         JsBarcode(enc, code, { format: fmt, displayValue: true, valid: v => { ok = v; } });
         if (!ok || !enc.encodings) throw new Error("invalid");
-        drawBarcode(enc.encodings, innerX, innerW, bcTop, bottom, fmt, bcScale);
+        drawBarcode(enc.encodings, innerX, innerW, bcTop, bottom, fmt, wScaleEff);
         lastOk = true;
         $("status").textContent = "סוג ברקוד: " + fmtNames[fmt] + " · גודל קובץ: " + cv.width + "×" + cv.height + " פיקסלים";
       } catch (e) {
