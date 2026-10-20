@@ -736,6 +736,11 @@ body.m-count #calcFab{display:inline-flex}
   border-radius:12px;margin-bottom:8px;cursor:pointer;font-weight:600;color:var(--ink);background:var(--card)}
 .xlsx-col input{width:20px;height:20px;accent-color:var(--pine);flex:0 0 auto}
 .xlsx-col:active{background:var(--bg)}
+.xlsx-fmt{display:flex;align-items:flex-start;gap:11px;padding:12px 13px;border:1px solid var(--line);
+  border-radius:12px;cursor:pointer;color:var(--ink);background:var(--card)}
+.xlsx-fmt input{width:20px;height:20px;accent-color:var(--pine);flex:0 0 auto;margin-top:2px}
+.xlsx-fmt small{color:var(--ink2);font-weight:400}
+.xlsx-fmt:has(input:checked){border-color:var(--pine);background:var(--bg)}
 
 
 /* ===== חיפוש מוצר מהיר ===== */
@@ -1092,8 +1097,17 @@ body.m-count #calcFab{display:inline-flex}
 <div class="sheet" id="cartXlsxSheet">
   <div class="card">
     <h3>ייצוא עגלה לאקסל</h3>
-    <div class="meta">בחר אילו עמודות לכלול בקובץ</div>
-    <div id="cartXlsxCols" style="margin:14px 0"></div>
+    <div class="meta">בחר פורמט ייצוא</div>
+    <div id="cartXlsxFormats" style="margin:12px 0;display:grid;gap:8px">
+      <label class="xlsx-fmt"><input type="radio" name="cartFmt" value="full" checked><span><b>אקסל רגיל (מלא)</b><br><small>כל העמודות לבחירתך — לשימוש פנימי</small></span></label>
+      <label class="xlsx-fmt"><input type="radio" name="cartFmt" value="quote"><span><b>הצעת מחיר לקומקס</b><br><small>מק״ט + כמות בלבד</small></span></label>
+      <label class="xlsx-fmt"><input type="radio" name="cartFmt" value="invoice"><span><b>חשבונית מס לקומקס</b><br><small>מק״ט + כמות + מחיר יחידה</small></span></label>
+    </div>
+    <div id="cartXlsxNote" class="clr-note" style="display:none;margin:4px 0 12px"></div>
+    <div id="cartXlsxColsWrap">
+      <div class="meta">בחר אילו עמודות לכלול בקובץ</div>
+      <div id="cartXlsxCols" style="margin:14px 0"></div>
+    </div>
     <button class="btn primary" id="doCartXlsxBtn">ייצא לאקסל</button>
     <button class="btn ghost" id="cartXlsxCancel" style="margin-top:8px">ביטול</button>
   </div>
@@ -3257,6 +3271,21 @@ var CART_XLSX_COLS=[
   {label:"יחידה",       w:12, def:false, get:function(it,p,cm){ return (p&&p.unit)||""; }},
   {label:"מיקום",       w:14, def:false, get:function(it,p,cm){ return (p&&p.loc)||""; }}
 ];
+var CART_FMT_NOTE={
+  quote:"שים לב: בפורמט “הצעת מחיר לקומקס” לא ניתן לקבוע מחירים. הקובץ כולל מק״ט וכמות בלבד.",
+  invoice:"שים לב: לצורך חשבונית מס‑קבלה — יש להפיק תחילה חשבונית מס, ולאחר מכן להפיק עליה קבלה. הקובץ כולל מק״ט, כמות ומחיר יחידה בלבד."
+};
+function cartFmtSel(){ var r=document.querySelector('input[name=cartFmt]:checked'); return r?r.value:"full"; }
+function cartXlsxSync(){
+  var fmt=cartFmtSel();
+  var wrap=document.getElementById("cartXlsxColsWrap");
+  var note=document.getElementById("cartXlsxNote");
+  if(wrap) wrap.style.display=(fmt==="full")?"":"none";
+  if(note){
+    if(CART_FMT_NOTE[fmt]){ note.textContent=CART_FMT_NOTE[fmt]; note.style.display=""; }
+    else { note.style.display="none"; note.textContent=""; }
+  }
+}
 function openCartXlsx(){
   if(typeof CUR_CART==="undefined"||CUR_CART==null){ toast("לא נבחרה עגלה"); return; }
   if(!cartItems(CUR_CART).length){ toast("העגלה ריקה"); return; }
@@ -3266,36 +3295,58 @@ function openCartXlsx(){
       return '<label class="xlsx-col"><input type="checkbox" data-i="'+i+'"'+(c.def?" checked":"")+'><span>'+c.label+'</span></label>';
     }).join("");
   }
+  var full=document.querySelector('input[name=cartFmt][value=full]'); if(full) full.checked=true;
+  cartXlsxSync();
   var s=document.getElementById("cartXlsxSheet"); if(s) s.classList.add("open");
 }
 function closeCartXlsx(){ var s=document.getElementById("cartXlsxSheet"); if(s) s.classList.remove("open"); }
 function doCartXlsx(){
-  var box=document.getElementById("cartXlsxCols"); if(!box) return;
-  var chosen=[];
-  box.querySelectorAll('input[type=checkbox]').forEach(function(cb){ if(cb.checked) chosen.push(CART_XLSX_COLS[+cb.getAttribute("data-i")]); });
-  if(!chosen.length){ toast("בחר לפחות עמודה אחת"); return; }
+  if(typeof CUR_CART==="undefined"||CUR_CART==null){ toast("לא נבחרה עגלה"); return; }
   var items=cartItems(CUR_CART);
   if(!items.length){ toast("העגלה ריקה"); return; }
-  var aoa=[chosen.map(function(c){ return c.label; })];
-  items.forEach(function(it){
-    var p=PRODMAP.get(String(it.mktt));
-    var cm=(typeof CLEARANCE_MAP!=="undefined")?CLEARANCE_MAP.get(String(it.mktt)):null;
-    aoa.push(chosen.map(function(c){ return c.get(it,p,cm); }));
-  });
-  var ws=XLSX.utils.aoa_to_sheet(aoa);
-  ws["!cols"]=chosen.map(function(c){ return {wch:c.w}; });
-  var wb=XLSX.utils.book_new(); wb.Workbook={Views:[{RTL:true}]};
-  XLSX.utils.book_append_sheet(wb,ws,"עגלה");
-  var c=(typeof CARTS!=="undefined")?CARTS.find(function(x){ return String(x.id)===String(CUR_CART); }):null;
-  var who=(c&&c.customer)?String(c.customer).replace(/[\\/:*?"<>|]/g,"_"):"עגלה";
+  var fmt=cartFmtSel();
   var d=new Date(), pad=function(n){ return String(n).padStart(2,"0"); };
-  XLSX.writeFile(wb, who+"_"+d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+".xlsx");
+  var stamp=d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+  var aoa, wch, sheetName, fname;
+  if(fmt==="quote"){
+    /* הצעת מחיר לקומקס — מק״ט + כמות בלבד, שורות פריטים בלבד */
+    aoa=[["מק״ט","כמות"]];
+    items.forEach(function(it){ aoa.push([it.mktt, Number(it.qty)||0]); });
+    wch=[{wch:16},{wch:10}]; sheetName="הצעת מחיר"; fname="הצעת-מחיר-קומקס_"+stamp+".xlsx";
+  } else if(fmt==="invoice"){
+    /* חשבונית מס לקומקס — מק״ט + כמות + מחיר יחידה, שורות פריטים בלבד */
+    aoa=[["מק״ט","כמות","מחיר יחידה"]];
+    items.forEach(function(it){ aoa.push([it.mktt, Number(it.qty)||0, Number(it.unit_price)||0]); });
+    wch=[{wch:16},{wch:10},{wch:12}]; sheetName="חשבונית מס"; fname="חשבונית-מס-קומקס_"+stamp+".xlsx";
+  } else {
+    var box=document.getElementById("cartXlsxCols"); if(!box) return;
+    var chosen=[];
+    box.querySelectorAll('input[type=checkbox]').forEach(function(cb){ if(cb.checked) chosen.push(CART_XLSX_COLS[+cb.getAttribute("data-i")]); });
+    if(!chosen.length){ toast("בחר לפחות עמודה אחת"); return; }
+    aoa=[chosen.map(function(c){ return c.label; })];
+    items.forEach(function(it){
+      var p=PRODMAP.get(String(it.mktt));
+      var cm=(typeof CLEARANCE_MAP!=="undefined")?CLEARANCE_MAP.get(String(it.mktt)):null;
+      aoa.push(chosen.map(function(c){ return c.get(it,p,cm); }));
+    });
+    wch=chosen.map(function(c){ return {wch:c.w}; });
+    sheetName="עגלה";
+    var c=(typeof CARTS!=="undefined")?CARTS.find(function(x){ return String(x.id)===String(CUR_CART); }):null;
+    var who=(c&&c.customer)?String(c.customer).replace(/[\\/:*?"<>|]/g,"_"):"עגלה";
+    fname=who+"_"+stamp+".xlsx";
+  }
+  var ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws["!cols"]=wch;
+  var wb=XLSX.utils.book_new(); wb.Workbook={Views:[{RTL:true}]};
+  XLSX.utils.book_append_sheet(wb,ws,sheetName);
+  XLSX.writeFile(wb, fname);
   closeCartXlsx();
 }
 function wireCartXlsx(){
   var b=document.getElementById("exportCartXlsxBtn"); if(b) b.addEventListener("click", openCartXlsx);
   var d=document.getElementById("doCartXlsxBtn"); if(d) d.addEventListener("click", doCartXlsx);
   var c=document.getElementById("cartXlsxCancel"); if(c) c.addEventListener("click", closeCartXlsx);
+  document.querySelectorAll('input[name=cartFmt]').forEach(function(r){ r.addEventListener("change", cartXlsxSync); });
   var s=document.getElementById("cartXlsxSheet"); if(s) s.addEventListener("click", function(e){ if(e.target.id==="cartXlsxSheet") closeCartXlsx(); });
 }
 /* ================= סוף ייצוא עגלה ================= */
