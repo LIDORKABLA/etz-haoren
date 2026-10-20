@@ -3907,7 +3907,7 @@ function openModule(file, title){
   if(!ov||!fr) return;
   if(t) t.textContent=title||"כלי";
   fr.onload=function(){ sendProductsToModule(); };
-  fr.src=file;
+  fr.src=file+(file.indexOf("?")>=0?"&":"?")+"v="+Date.now();
   ov.style.display="flex";
   document.body.style.overflow="hidden";
 }
