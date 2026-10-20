@@ -1101,7 +1101,7 @@ body.m-count #calcFab{display:inline-flex}
     <div id="cartXlsxFormats" style="margin:12px 0;display:grid;gap:8px">
       <label class="xlsx-fmt"><input type="radio" name="cartFmt" value="full" checked><span><b>אקסל רגיל (מלא)</b><br><small>כל העמודות לבחירתך — לשימוש פנימי</small></span></label>
       <label class="xlsx-fmt"><input type="radio" name="cartFmt" value="quote"><span><b>הצעת מחיר לקומקס</b><br><small>מק״ט + כמות בלבד</small></span></label>
-      <label class="xlsx-fmt"><input type="radio" name="cartFmt" value="invoice"><span><b>חשבונית מס לקומקס</b><br><small>מק״ט + כמות + מחיר יחידה</small></span></label>
+      <label class="xlsx-fmt"><input type="radio" name="cartFmt" value="invoice"><span><b>חשבונית מס לקומקס</b><br><small>מק״ט + כמות + סה״כ שורה</small></span></label>
     </div>
     <div id="cartXlsxNote" class="clr-note" style="display:none;margin:4px 0 12px"></div>
     <div id="cartXlsxColsWrap">
@@ -3273,7 +3273,7 @@ var CART_XLSX_COLS=[
 ];
 var CART_FMT_NOTE={
   quote:"שים לב: בפורמט “הצעת מחיר לקומקס” לא ניתן לקבוע מחירים. הקובץ כולל מק״ט וכמות בלבד.",
-  invoice:"שים לב: לצורך חשבונית מס‑קבלה — יש להפיק תחילה חשבונית מס, ולאחר מכן להפיק עליה קבלה. הקובץ כולל מק״ט, כמות ומחיר יחידה בלבד."
+  invoice:"שים לב: לצורך חשבונית מס‑קבלה — יש להפיק תחילה חשבונית מס, ולאחר מכן להפיק עליה קבלה. הקובץ כולל מק״ט, כמות וסה״כ שורה בלבד."
 };
 function cartFmtSel(){ var r=document.querySelector('input[name=cartFmt]:checked'); return r?r.value:"full"; }
 function cartXlsxSync(){
@@ -3314,10 +3314,10 @@ function doCartXlsx(){
     items.forEach(function(it){ aoa.push([it.mktt, Number(it.qty)||0]); });
     wch=[{wch:16},{wch:10}]; sheetName="הצעת מחיר"; fname="הצעת-מחיר-קומקס_"+stamp+".xlsx";
   } else if(fmt==="invoice"){
-    /* חשבונית מס לקומקס — מק״ט + כמות + מחיר יחידה, שורות פריטים בלבד */
-    aoa=[["מק״ט","כמות","מחיר יחידה"]];
-    items.forEach(function(it){ aoa.push([it.mktt, Number(it.qty)||0, Number(it.unit_price)||0]); });
-    wch=[{wch:16},{wch:10},{wch:12}]; sheetName="חשבונית מס"; fname="חשבונית-מס-קומקס_"+stamp+".xlsx";
+    /* חשבונית מס לקומקס — מק״ט + כמות + סה״כ שורה, שורות פריטים בלבד */
+    aoa=[["מק״ט","כמות","סה״כ שורה"]];
+    items.forEach(function(it){ aoa.push([it.mktt, Number(it.qty)||0, Math.round((Number(it.qty)||0)*(Number(it.unit_price)||0)*100)/100]); });
+    wch=[{wch:16},{wch:10},{wch:13}]; sheetName="חשבונית מס"; fname="חשבונית-מס-קומקס_"+stamp+".xlsx";
   } else {
     var box=document.getElementById("cartXlsxCols"); if(!box) return;
     var chosen=[];
