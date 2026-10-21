@@ -4047,10 +4047,10 @@ async function enablePush(){
       label: pushLabel(),
       ua: navigator.userAgent
     }, { onConflict:"endpoint" });
-    if(r && r.error) throw r.error;
+    if(r && r.error){ console.error("push upsert",r.error); toast("שמירת מנוי נכשלה: "+(r.error.message||r.error.hint||r.error.code||"הרשאות")); return false; }
     toast("✅ התראות הופעלו במכשיר הזה");
     return true;
-  }catch(e){ console.error("enablePush",e); toast("שגיאה בהפעלת התראות"); return false; }
+  }catch(e){ console.error("enablePush",e); toast("רישום נכשל: "+(e&&(e.message||e.name)||e)); return false; }
 }
 function maybePromptPush(){
   try{
