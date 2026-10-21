@@ -131,6 +131,7 @@
   .sheet .card{background:var(--card);width:100%;max-width:680px;border-radius:24px 24px 0 0;
     padding:10px 20px calc(24px + env(safe-area-inset-bottom));box-shadow:0 -10px 44px rgba(0,0,0,.24);
     animation:sheetUp .3s cubic-bezier(.2,.8,.2,1)}
+  .sheet .card:not(.chat-card){max-height:92vh;max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
   .sheet .card::before{content:"";display:block;width:40px;height:4px;border-radius:999px;
     background:var(--border-strong);margin:0 auto 16px}
   @keyframes sheetUp{from{transform:translateY(16px);opacity:.5}to{transform:translateY(0);opacity:1}}
@@ -3048,6 +3049,9 @@ function saveAppPwd(){
 function initAppLock(){
   const lock=$("#appLock"), inp=$("#appLockInput"), btn=$("#appLockBtn"), err=$("#appLockErr");
   if(lock){ lock.classList.add("hide"); lock.setAttribute("aria-hidden","true"); lock.style.display="none"; }
+  /* מסך הסיסמה מבוטל — בודקים התראות בכל כניסה לאפליקציה ובכל חזרה אליה */
+  setTimeout(function(){ try{ if(typeof ensureSW==="function") ensureSW(); if(typeof maybePromptPush==="function") maybePromptPush(); }catch(e){} }, 1200);
+  document.addEventListener("visibilitychange", function(){ if(!document.hidden){ try{ if(typeof maybePromptPush==="function") maybePromptPush(); }catch(e){} } });
   return;
   if(!lock||!inp||!btn) return;
   function unlock(){ lock.classList.add("hide"); lock.setAttribute("aria-hidden","true"); setTimeout(()=>{ lock.style.display="none"; },420); try{ if(typeof ensureSW==="function") ensureSW(); if(typeof maybePromptPush==="function") maybePromptPush(); }catch(e){} }
