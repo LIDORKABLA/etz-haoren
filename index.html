@@ -4039,15 +4039,11 @@ async function enablePush(){
     var sub = await reg.pushManager.getSubscription();
     if(!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:urlB64ToUint8(VAPID_PUBLIC) });
     var raw = sub.toJSON();
-    var r = await sb.from("push_subscriptions").upsert({
-      endpoint: sub.endpoint,
-      p256dh: (raw.keys&&raw.keys.p256dh)||"",
-      auth: (raw.keys&&raw.keys.auth)||"",
-      sub: raw,
-      label: pushLabel(),
-      ua: navigator.userAgent
-    }, { onConflict:"endpoint" });
-    if(r && r.error){ console.error("push upsert",r.error); toast("שמירת מנוי נכשלה: "+(r.error.message||r.error.hint||r.error.code||"הרשאות")); return false; }
+    /* רישום דרך ה-Edge Function (service role) — עוקף RLS לגמרי */
+    var r = await sb.functions.invoke("push", { body:{ action:"register", sub:raw, label:pushLabel(), ua:navigator.userAgent } });
+    if(r && r.error){ console.error("push register",r.error); toast("שמירת מנוי נכשלה: "+(r.error.message||r.error.name||"שרת")); return false; }
+    var rd=(r&&r.data)||{};
+    if(rd.error){ console.error("push register data",rd); toast("שמירת מנוי נכשלה: "+(rd.detail||rd.error)); return false; }
     toast("✅ התראות הופעלו במכשיר הזה");
     return true;
   }catch(e){ console.error("enablePush",e); toast("רישום נכשל: "+(e&&(e.message||e.name)||e)); return false; }
