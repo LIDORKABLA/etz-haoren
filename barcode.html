@@ -98,7 +98,7 @@ details.foot summary { cursor: pointer; }
 </head><body><div class="wrap" dir="rtl">
   <header>
     <h1>מחולל מדבקות ברקוד</h1>
-    <p>מכניסים פרטי מוצר. מקבלים מדבקה מוכנה להדפסה. <span style="opacity:.5;font-size:11px">גרסה 20/10 ב׳</span></p>
+    <p>מכניסים פרטי מוצר. מקבלים מדבקה מוכנה להדפסה. <span style="opacity:.5;font-size:11px">גרסה 27/10</span></p>
   </header>
 
   <div class="grid">
@@ -136,6 +136,7 @@ details.foot summary { cursor: pointer; }
           <button type="button" class="ghost" id="imgClear" hidden="">הסרה</button>
           <span class="status" id="imgName"></span>
         </div>
+        <label class="chk"><input type="checkbox" id="showImg" checked> להציג תמונה במדבקה</label>
         <label class="chk"><input type="checkbox" id="gray" checked=""> להמיר לשחור-לבן</label>
         <label class="chk"><input type="checkbox" id="disc"> להדפיס ״התמונה להמחשה בלבד״</label>
         <label class="f">
@@ -182,7 +183,8 @@ details.foot summary { cursor: pointer; }
         <div class="swatches" id="swatches"><button type="button" class="sw" aria-label="צבע #111111" data-c="#111111" style="background: rgb(17, 17, 17);" aria-pressed="false"></button><button type="button" class="sw" aria-label="צבע #c2410c" data-c="#c2410c" style="background: rgb(194, 65, 12);" aria-pressed="true"></button><button type="button" class="sw" aria-label="צבע #d92d20" data-c="#d92d20" style="background: rgb(217, 45, 32);" aria-pressed="false"></button><button type="button" class="sw" aria-label="צבע #e8a317" data-c="#e8a317" style="background: rgb(232, 163, 23);" aria-pressed="false"></button><button type="button" class="sw" aria-label="צבע #15803d" data-c="#15803d" style="background: rgb(21, 128, 61);" aria-pressed="false"></button><button type="button" class="sw" aria-label="צבע #0e7490" data-c="#0e7490" style="background: rgb(14, 116, 144);" aria-pressed="false"></button><button type="button" class="sw" aria-label="צבע #1d4ed8" data-c="#1d4ed8" style="background: rgb(29, 78, 216);" aria-pressed="false"></button><button type="button" class="sw" aria-label="צבע #7c3aed" data-c="#7c3aed" style="background: rgb(124, 58, 237);" aria-pressed="false"></button><button type="button" class="sw" aria-label="צבע #be185d" data-c="#be185d" style="background: rgb(190, 24, 93);" aria-pressed="false"></button><button type="button" class="sw" aria-label="צבע #6b7280" data-c="#6b7280" style="background: rgb(107, 114, 128);" aria-pressed="false"></button></div>
       </div>
 
-      <label class="chk"><input type="checkbox" id="frameOn" checked> מסגרת מסביב למדבקה</label>
+      <label class="chk"><input type="checkbox" id="qtyOn" checked> שורת ״כמות: ______״ במרכז המדבקה (לסדר במחסן)</label>
+      <label class="chk"><input type="checkbox" id="frameOn"> מסגרת מסביב למדבקה</label>
       <label class="f">
         <span class="lbl">עובי המסגרת</span>
         <input type="range" class="thick" id="thick" min="10" max="70" value="10">
@@ -219,7 +221,8 @@ details.foot summary { cursor: pointer; }
   const $ = id => document.getElementById(id);
   let W = 1200; const H0 = 760;
   let H = H0;
-  let photo = null; // grayscale canvas of the uploaded image
+  let photo = null;    // התמונה שמוצגת בפועל במדבקה (null כשמוסתרת)
+  let photoAll = null; // התמונה שנטענה, גם אם מוסתרת
   const cv = $("cv");
   const ctx = cv.getContext("2d");
   let S = 4;
@@ -412,18 +415,21 @@ details.foot summary { cursor: pointer; }
       ["היבואן", $("fImp").value.trim()], ["כתובת", $("fAddr").value.trim()],
       ["טלפון", $("fTel").value.trim()], ["ארץ הייצור", $("fOrig").value.trim()]
     ].filter(f => f[1]).map(f => f[0] + ": " + f[1]);
-    if (disc && !photo) items.push(DISC);
+    if (disc && !photo && !photoAll) items.push(DISC);
     ctx.font = `500 ${met.footFont}px Rubik, Arial, sans-serif`;
     const footLines = packLines(items, innerW);
     const footerH = footLines.length ? met.footPad + footLines.length * met.footLH : 0;
     const discH = disc && photo ? 36 : 0;
 
-    const fixed = 2*t + 50 + nameH + 90 + (photo ? 26 + discH : 0) + 26 + 44 + footerH;
-    return { innerW, size, lines, nameH, footLines, footerH, discH, disc, fixed, met,
+    const qty = $("qtyOn").checked;
+    const qtyH = qty ? 96 : 0;
+    const fixed = 2*t + 50 + nameH + 90 + (photo ? 26 + discH : 0) + qtyH + 26 + 44 + footerH;
+    return { innerW, size, lines, nameH, footLines, footerH, discH, disc, qty, qtyH, fixed, met,
              flexNat: (photo ? wantImg : 0) + wantBc, flexMin: (photo ? 100 : 0) + met.bcMin };
   }
 
   function render() {
+    photo = $("showImg").checked ? photoAll : null;
     const name = $("name").value.trim();
     const sku = $("sku").value.trim();
     const code = $("code").value.replace(/\s/g, "");
@@ -533,6 +539,20 @@ details.foot summary { cursor: pointer; }
       y += 20;
     }
 
+    // שורת כמות לכתיבה ידנית — לסדר במחסן
+    if (L.qty) {
+      const qLbl = "כמות:";
+      ctx.fillStyle = "#000"; ctx.direction = "rtl"; ctx.textBaseline = "alphabetic";
+      ctx.font = `800 52px Rubik, Arial, sans-serif`;
+      const qW = ctx.measureText(qLbl).width;
+      const lineW = Math.min(innerW * 0.5, 460), gap = 18;
+      const qTotal = qW + gap + lineW;
+      const qR = W/2 + qTotal/2, base = y + 64;
+      ctx.textAlign = "right"; ctx.fillText(qLbl, qR, base);
+      ctx.fillRect(qR - qW - gap - lineW, base + 6, lineW, 4);
+      y += L.qtyH;
+    }
+
     // divider
     y += gapAdd;
     ctx.fillStyle = "#000"; ctx.fillRect(innerX + innerW*0.2, y, innerW*0.6, 2);
@@ -611,17 +631,22 @@ details.foot summary { cursor: pointer; }
     b.textContent = h ? w + "×" + h : w + " · אוטו׳";
     b.addEventListener("click", () => {
       $("wcm").value = w; $("hcm").value = h;
-      var hv = parseFloat(h), wv = parseFloat(w);
-      if(wv && hv && (hv < wv*0.75 || hv <= 4)) $("frameOn").checked = false; else $("frameOn").checked = true;
+      sizeDefaults();
       markPreset(); render();
     });
     pre.appendChild(b);
   });
-  function frameDefaultForSize(){
-    var wv = parseFloat($("wcm").value), hv = parseFloat($("hcm").value);
-    if(wv && hv && (hv < wv*0.75 || hv <= 4)) $("frameOn").checked = false; else $("frameOn").checked = true;
+  /* ברירות מחדל לפי גודל: בלי מסגרת תמיד · ״כמות״ רק ב-10×10 · בלי תמונה במדבקה קטנה */
+  function sizeDefaults(){
+    var wv = parseFloat(String($("wcm").value).replace(",", ".")), hv = parseFloat(String($("hcm").value).replace(",", "."));
+    var compact = !!(wv && hv && (hv < wv*0.75 || hv <= 4));
+    $("frameOn").checked = false;
+    $("qtyOn").checked = (wv === 10 && hv === 10);
+    $("showImg").checked = !compact;
   }
-  ["wcm","hcm"].forEach(id => $(id).addEventListener("input", function(){ markPreset(); frameDefaultForSize(); }));
+  ["wcm","hcm"].forEach(id => $(id).addEventListener("input", function(){ markPreset(); sizeDefaults(); }));
+  ["showImg","qtyOn"].forEach(id => $(id).addEventListener("change", render));
+  sizeDefaults();
   markPreset();
 
   let srcImg = null;
@@ -653,7 +678,7 @@ details.foot summary { cursor: pointer; }
     }catch(e){ return src; }
   }
   function buildPhoto() {
-    if (!srcImg) { photo = null; return; }
+    if (!srcImg) { photoAll = null; return; }
     const max = 1600, k = Math.min(1, max / Math.max(srcImg.naturalWidth, srcImg.naturalHeight));
     let c = document.createElement("canvas");
     c.width = Math.round(srcImg.naturalWidth * k); c.height = Math.round(srcImg.naturalHeight * k);
@@ -669,7 +694,7 @@ details.foot summary { cursor: pointer; }
       }
       g.putImageData(px, 0, 0);
     }
-    photo = c;
+    photoAll = c;
   }
   $("img").addEventListener("change", e => {
     const f = e.target.files && e.target.files[0];
@@ -681,7 +706,7 @@ details.foot summary { cursor: pointer; }
     im.src = url;
   });
   $("imgClear").addEventListener("click", () => {
-    srcImg = null; photo = null; $("img").value = ""; $("imgName").textContent = ""; $("imgClear").hidden = true; $("disc").checked = false; render();
+    srcImg = null; photo = null; photoAll = null; $("img").value = ""; $("imgName").textContent = ""; $("imgClear").hidden = true; $("disc").checked = false; render();
   });
   $("gray").addEventListener("change", () => { buildPhoto(); render(); });
   $("hue").addEventListener("input", e => setColor(hslToHex(+e.target.value, 85, 45), true));
