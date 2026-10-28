@@ -2079,7 +2079,7 @@ let MODE="sale";
 let CARTS=[], ITEMS=[], CUR_CART=null;
 
 /* ===== מעקב פעילות עגלה + מחיקה אוטומטית (נוסף) ===== */
-const CART_INACTIVITY_MS=3*60*60*1000; /* מחיקה אוטומטית אחרי 3 שעות ללא פעילות */
+const CART_INACTIVITY_MS=48*60*60*1000; /* מחיקה אוטומטית אחרי 48 שעות ללא פעילות */
 let HAS_UPDATED_AT=false;
 let LOCAL_ACT={};
 try{ LOCAL_ACT=JSON.parse(localStorage.getItem(LS.cartAct)||"{}")||{}; }catch(e){ LOCAL_ACT={}; }
@@ -3994,8 +3994,7 @@ function wireModules(){
     if(el.closest("#toolsBtn")){ e.preventDefault(); openToolsSheet(); return; }
     if(el.closest("#toolsClose")){ e.preventDefault(); closeToolsSheet(); return; }
     if(el.closest("#modBarcodeBtn")){ e.preventDefault(); closeToolsSheet(); openModule("barcode.html","מחולל מדבקות ברקוד"); return; }
-    if(el.closest("#modSignageBtn")){ e.preventDefault(); closeToolsSheet(); openModule("signage.html","מחולל שילוט מחיר"); return; }
-    if(el.closest("#modNotifyBtn")){ e.preventDefault(); closeToolsSheet(); enablePush(); return; }
+    if(el.closest("#modSignageBtn")){ e.preventDefault(); closeToolsSheet(); openModule("signage.html","מחולל שילוט מחיר"); return; }    if(el.closest("#modNotifyBtn")){ e.preventDefault(); closeToolsSheet(); enablePush(); return; }
     if(el.closest("#pushSendBtn")){ e.preventDefault(); adminSendPush(); return; }
     if(el.closest("#pushPromptBtn")){ e.preventDefault(); enablePush().then(function(ok){ if(ok){ var o=document.getElementById("pushPrompt"); if(o) o.style.display="none"; } }); return; }
     if(el.closest("#pushPromptLater")){ e.preventDefault(); var o=document.getElementById("pushPrompt"); if(o) o.style.display="none"; return; }
@@ -4039,7 +4038,7 @@ async function enablePush(){
   if(typeof CLOUD==="undefined" || !CLOUD || !sb){ toast("התראות זמינות רק עם חיבור לענן"); return false; }
   try{
     var perm = await Notification.requestPermission();
-    if(perm!=="granted"){ toast("ההתראות לא אושרו במכשיר"); return false; }
+    if(perm!=="granted"){ showPushPrompt("denied"); return false; }
     var reg = await ensureSW(); if(!reg){ toast("שגיאה ברישום השירות"); return false; }
     await navigator.serviceWorker.ready;
     var sub = await reg.pushManager.getSubscription();
@@ -4070,7 +4069,7 @@ function showPushPrompt(mode){
     if(msg) msg.innerHTML="כדי לקבל התראות באייפון:<br>לחצו על <b>שיתוף ⬆︎</b> ואז <b>הוסף למסך הבית</b>, ופתחו את האפליקציה מהמסך הבית.";
     if(btn) btn.style.display="none";
   } else if(mode==="denied"){
-    if(msg) msg.textContent="ההתראות חסומות במכשיר הזה. יש לאפשר אותן בהגדרות הטלפון עבור האפליקציה.";
+    if(msg) msg.innerHTML="ההתראות חסומות במכשיר הזה.<br><br><b>אייפון:</b> הגדרות ➜ עדכונים ➜ עץ האורן ➜ הדליקו <b>אפשר עדכונים</b>.<br><br>אם עץ האורן לא מופיע שם — מחקו את האפליקציה ממסך הבית, הוסיפו אותה שוב מספארי, ופתחו מהמסך הבית.";
     if(btn) btn.style.display="none";
   } else {
     if(msg) msg.textContent="קבל עדכונים חשובים מהחנות ישירות למכשיר.";
@@ -4124,8 +4123,7 @@ async function adminSendPush(){
   <div style="background:var(--surface,#fff);width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.2)">
     <div style="display:flex;align-items:center;margin-bottom:12px"><b style="flex:1;font-size:17px">כלים</b><button id="toolsClose" type="button" style="border:none;background:var(--surface-2,#eee);width:34px;height:34px;border-radius:9px;font-size:18px;cursor:pointer">✕</button></div>
     <button class="btn" id="modBarcodeBtn" type="button" style="width:100%;margin-bottom:10px"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:17px;height:17px;vertical-align:-3px;margin-left:6px"><path d="M3 5v14M8 5v14M13 5v14M18 5v14M21 5v14"/></svg> מחולל מדבקות ברקוד</button>
-    <button class="btn" id="modSignageBtn" type="button" style="width:100%"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:17px;height:17px;vertical-align:-3px;margin-left:6px"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 20h10M8 9h8M8 13h5"/></svg> מחולל שילוט מחיר</button>
-    <button class="btn" id="modNotifyBtn" type="button" style="width:100%;margin-top:10px"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:17px;height:17px;vertical-align:-3px;margin-left:6px"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg> הפעלת התראות במכשיר הזה</button>
+    <button class="btn" id="modSignageBtn" type="button" style="width:100%"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:17px;height:17px;vertical-align:-3px;margin-left:6px"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 20h10M8 9h8M8 13h5"/></svg> מחולל שילוט מחיר</button>    <button class="btn" id="modNotifyBtn" type="button" style="width:100%;margin-top:10px"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:17px;height:17px;vertical-align:-3px;margin-left:6px"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg> הפעלת התראות במכשיר הזה</button>
   </div>
 </div>
 <div id="modOverlay" style="position:fixed;inset:0;z-index:300;background:#fff;display:none;flex-direction:column">
