@@ -274,7 +274,6 @@
   #dnScanWrap.idle{border-color:#e0a030;background:#fff8ec}
   #dnScan{flex:1;min-width:0;border:0;outline:0;background:transparent;font-size:22px;font-weight:800;padding:12px 8px;letter-spacing:.5px}
   #dnScan::placeholder{font-size:18px;font-weight:700;letter-spacing:0;color:#6b7a77}
-  #dnKbd{flex:none;width:54px;height:54px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-size:22px;cursor:pointer}
   #dnScanState{font-size:14.5px;font-weight:800;margin:7px 4px 0;color:var(--pine)}
   #dnScanState.idle{color:#a86200}
   .dnq{position:fixed;inset:0;z-index:250;background:rgba(10,20,18,.55);display:none;align-items:flex-start;justify-content:center;padding:calc(10px + env(safe-area-inset-top)) 10px 0}
@@ -1116,8 +1115,7 @@ body.m-count #calcFab{display:inline-flex}
     </div>
     <div id="dnScanBar" class="dn-only">
       <div id="dnScanWrap" class="idle">
-        <input id="dnScan" type="text" inputmode="none" enterkeyhint="go" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="סרוק ברקוד…" aria-label="סריקת ברקוד">
-        <button id="dnKbd" type="button" aria-label="הקלדה ידנית של ברקוד או מק״ט">⌨️</button>
+        <input id="dnScan" type="text" inputmode="search" enterkeyhint="go" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="סרוק ברקוד או הקלד מק״ט…" aria-label="סריקת ברקוד">
       </div>
       <div id="dnScanState" class="idle">👆 הקש על השדה כדי לסרוק</div>
     </div>
@@ -2433,7 +2431,7 @@ function dnScanState(){
   const focused=(a===$("#dnScan")) || (typeof _trap!=="undefined" && _trap && a===_trap);
   const ready=focused && _dnArmed;
   w.classList.toggle("idle",!ready); st.classList.toggle("idle",!ready);
-  st.textContent=ready?"● מוכן לסריקה":(focused?"👆 הקש על השדה פעם אחת והתחל לסרוק":"👆 הקש על השדה כדי לסרוק");
+  st.textContent=ready?"● מוכן לסריקה":"👆 הקש על השדה כדי לסרוק";
 }
 function dnHandleCode(code){
   code=String(code||"").replace(/[\r\n\t]/g,"").trim(); if(!code) return;
@@ -2475,21 +2473,20 @@ function wireDN(){
   ds.addEventListener("keydown",e=>{
     if(e.key==="Enter"||e.key==="Tab"){ e.preventDefault(); clearTimeout(ds._t); const v=ds.value; ds.value=""; dnHandleCode(v); }
   });
-  ds.addEventListener("input",()=>{                       /* סורק ששולח בלי Enter — מעבדים כשהקלט נרגע */
+  ds.addEventListener("input",()=>{                       /* סורק בלי Enter: ברקוד/מק״ט מדויק נקלט כשהקלט נרגע */
     clearTimeout(ds._t);
-    if(ds.getAttribute("inputmode")!=="none") return;
-    ds._t=setTimeout(()=>{ const v=ds.value; if(v.trim().length>=3){ ds.value=""; dnHandleCode(v); } },220);
+    ds._t=setTimeout(()=>{ const v=String(ds.value||"").trim(); if(v.length>=4 && findByCode(v)){ ds.value=""; dnHandleCode(v); } },160);
   });
   ds.addEventListener("focus",dnScanState);
-  ds.addEventListener("blur",()=>{ ds.setAttribute("inputmode","none"); setTimeout(dnScanState,40); });
-  $("#dnScanWrap").addEventListener("click",e=>{ if(e.target.id!=="dnKbd") dnFocusScan(true); });
+  ds.addEventListener("blur",()=>setTimeout(dnScanState,40));
+  $("#dnScanWrap").addEventListener("click",()=>dnFocusScan(true));
   ["pointerdown","touchstart","mousedown"].forEach(ev=>$("#dnScanWrap").addEventListener(ev,e=>{
-    if(!e.isTrusted||e.target.id==="dnKbd") return; _dnArmed=true; dnFocusScan(true); setTimeout(dnScanState,30);
+    if(!e.isTrusted) return; _dnArmed=true; setTimeout(dnScanState,30);
   },{passive:true}));
   /* הקשה על אזור ריק במסך התעודה מחברת מחדש את שדה הסריקה — בתוך ההקשה עצמה */
   $("#saleCartView").addEventListener("click",e=>{
     if(!DN_MODE||!e.isTrusted) return;
-    if(e.target.closest("input,textarea,select,button,a,[data-act],.item,#dnKbd")) return;
+    if(e.target.closest("input,textarea,select,button,a,[data-act],.item")) return;
     _dnArmed=true; dnFocusScan(true); setTimeout(dnScanState,30);
   });
   /* סריקה לשדה "הוסף פריט": ברקוד/מק״ט מדויק פותח מיד את חלון הכמות (כמו בספירת מלאי) */
@@ -2519,7 +2516,6 @@ function wireDN(){
       }
     },true);
   })();
-  $("#dnKbd").addEventListener("click",()=>{ ds.setAttribute("inputmode","numeric"); ds.blur(); setTimeout(()=>{ ds.setAttribute("inputmode","numeric"); ds.focus(); },40); });
   const qi=$("#dnqInput");
   qi.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); dnConfirmQty(); } });
   $("#dnqOk").addEventListener("click",dnConfirmQty);
