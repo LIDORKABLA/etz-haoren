@@ -1119,7 +1119,7 @@ body.m-count #calcFab{display:inline-flex}
         <input id="dnScan" type="text" inputmode="none" enterkeyhint="go" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="סרוק ברקוד…" aria-label="סריקת ברקוד">
         <button id="dnKbd" type="button" aria-label="הקלדה ידנית של ברקוד או מק״ט">⌨️</button>
       </div>
-      <div id="dnScanState" class="idle">לחץ על השדה כדי לסרוק</div>
+      <div id="dnScanState" class="idle">👆 הקש על השדה כדי לסרוק</div>
     </div>
     <div class="search"><input id="qSale" placeholder="הוסף פריט — שם או מק״ט…" autocomplete="off" inputmode="search"></div>
     <button class="scanbtn" id="saleScanBtn"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h8l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg> סריקת ברקוד</button>
@@ -2277,7 +2277,7 @@ async function newCart(){
     openCart(data[0].id);
   }catch(e){ console.error(e); toast("שגיאה ביצירת עגלה (בדוק חיבור)"); }
 }
-function openCart(id){ CUR_CART=id; document.body.classList.add("cart-open"); $("#qSale").value=""; renderSaleResults([]); syncCartLabels(); renderCart(); if(DN_MODE) setTimeout(function(){ dnFocusScan(true); dnScanState(); },80); }
+function openCart(id){ CUR_CART=id; document.body.classList.add("cart-open"); $("#qSale").value=""; renderSaleResults([]); syncCartLabels(); renderCart(); if(DN_MODE){ dnFocusScan(true); dnScanState(); setTimeout(function(){ dnFocusScan(true); dnScanState(); },80); } }
 function closeCart(){
   if(DN_MODE){ CUR_CART=null; document.body.classList.remove("cart-open"); setMode("count"); gotoTab("dn"); return; }
   CUR_CART=null; document.body.classList.remove("cart-open"); renderCartList();
@@ -2376,6 +2376,7 @@ function queueAddToCart(product, priceOverride){
    תעודת משלוח היא עגלה עם kind="dn". היא משתמשת באותו מסך ובאותן פונקציות של העגלה
    (כמות, מחיר, מחיקה, אקסל, PDF, וואטסאפ, מוצר כללי). ההבדל: סריקה רציפה + חלון כמות. */
 var _dnProd=null;
+var _dnArmed=false;   /* הסורק הוכח כמחובר: הייתה הקשה אמיתית על השדה או שנקלטה סריקה */
 function renderDNList(){
   const box=$("#dnList"); if(!box) return;
   const _q=$("#qDn"); const term=_q?_q.value.trim().toLowerCase():"";
@@ -2429,18 +2430,20 @@ function dnFocusScan(force){
 function dnScanState(){
   const w=$("#dnScanWrap"), st=$("#dnScanState"); if(!w||!st) return;
   const a=document.activeElement;
-  const on=(a===$("#dnScan")) || (typeof _trap!=="undefined" && _trap && a===_trap);
-  w.classList.toggle("idle",!on); st.classList.toggle("idle",!on);
-  st.textContent=on?"● מוכן לסריקה":"לחץ על השדה כדי לסרוק";
+  const focused=(a===$("#dnScan")) || (typeof _trap!=="undefined" && _trap && a===_trap);
+  const ready=focused && _dnArmed;
+  w.classList.toggle("idle",!ready); st.classList.toggle("idle",!ready);
+  st.textContent=ready?"● מוכן לסריקה":(focused?"👆 הקש על השדה פעם אחת והתחל לסרוק":"👆 הקש על השדה כדי לסרוק");
 }
 function dnHandleCode(code){
   code=String(code||"").replace(/[\r\n\t]/g,"").trim(); if(!code) return;
+  _dnArmed=true;
   if(dnQtyOpen()){ $("#dnQty").classList.remove("open"); _dnProd=null; feedback(false); toast("⚠ המוצר הקודם לא נקלט"); }
   const p=findByCode(code);
   if(p && String(p.mktt)!=="1"){ feedback(true); dnOpenQty(p); return; }
   feedback(false); pulseFX(false,"✗ לא נמצא: "+code);
   $("#qSale").value=code; renderSaleResults(search(code));
-  setTimeout(()=>dnFocusScan(true),60);
+  dnFocusScan(true); setTimeout(()=>{ dnFocusScan(true); dnScanState(); },60);
 }
 function dnOpenQty(p){
   if(CUR_CART==null) return;
@@ -2454,7 +2457,7 @@ function dnOpenQty(p){
   $("#dnQty").classList.add("open");
   setTimeout(()=>{ try{ inp.focus(); inp.select(); }catch(e){} },40);
 }
-function dnCloseQty(){ const q=$("#dnQty"); if(q) q.classList.remove("open"); _dnProd=null; setTimeout(()=>dnFocusScan(true),60); }
+function dnCloseQty(){ const q=$("#dnQty"); if(q) q.classList.remove("open"); _dnProd=null; dnFocusScan(true); setTimeout(()=>{ dnFocusScan(true); dnScanState(); },60); }
 function dnStep(d){ const inp=$("#dnqInput"); inp.value=String(Math.max(1,(parseInt(String(inp.value).replace(/\D/g,""),10)||0)+d)); try{ inp.focus(); }catch(e){} }
 function dnConfirmQty(){
   const inp=$("#dnqInput"); const raw=String(inp.value||"").replace(/\D/g,"");
@@ -2463,8 +2466,9 @@ function dnConfirmQty(){
   if(!(qty>0)){ feedback(false); toast("הזן כמות"); try{ inp.focus(); }catch(e){} return; }
   const p=_dnProd; if(!p){ dnCloseQty(); return; }
   $("#dnQty").classList.remove("open"); _dnProd=null;
+  dnFocusScan(true);
   CART_Q=CART_Q.then(function(){ return addItemToCart(p, null, qty); }).catch(function(e){ console.error(e); pulseFX(false,"✗ שגיאה"); });
-  setTimeout(()=>dnFocusScan(true),60);
+  setTimeout(()=>{ dnFocusScan(true); dnScanState(); },60);
 }
 function wireDN(){
   const ds=$("#dnScan"); if(!ds) return;
@@ -2479,6 +2483,42 @@ function wireDN(){
   ds.addEventListener("focus",dnScanState);
   ds.addEventListener("blur",()=>{ ds.setAttribute("inputmode","none"); setTimeout(dnScanState,40); });
   $("#dnScanWrap").addEventListener("click",e=>{ if(e.target.id!=="dnKbd") dnFocusScan(true); });
+  ["pointerdown","touchstart","mousedown"].forEach(ev=>$("#dnScanWrap").addEventListener(ev,e=>{
+    if(!e.isTrusted||e.target.id==="dnKbd") return; _dnArmed=true; dnFocusScan(true); setTimeout(dnScanState,30);
+  },{passive:true}));
+  /* הקשה על אזור ריק במסך התעודה מחברת מחדש את שדה הסריקה — בתוך ההקשה עצמה */
+  $("#saleCartView").addEventListener("click",e=>{
+    if(!DN_MODE||!e.isTrusted) return;
+    if(e.target.closest("input,textarea,select,button,a,[data-act],.item,#dnKbd")) return;
+    _dnArmed=true; dnFocusScan(true); setTimeout(dnScanState,30);
+  });
+  /* סריקה לשדה "הוסף פריט": ברקוד/מק״ט מדויק פותח מיד את חלון הכמות (כמו בספירת מלאי) */
+  (function(){
+    const qs=$("#qSale"); let st2=null;
+    function direct(){
+      if(!DN_MODE||CUR_CART==null) return false;
+      clearTimeout(st2); const v=String(qs.value||"").trim(); if(v.length<4) return false;
+      const p=findByCode(v); if(!p||String(p.mktt)==="1") return false;
+      qs.value=""; renderSaleResults([]); dnHandleCode(v); return true;
+    }
+    qs.addEventListener("keydown",e=>{ if(DN_MODE&&e.key==="Enter"){ e.preventDefault(); direct(); } });
+    qs.addEventListener("input",()=>{ if(!DN_MODE) return; clearTimeout(st2); st2=setTimeout(direct,160); });
+  })();
+  /* רשת ביטחון: סורק ששולח הקשות כשאף שדה לא בפוקוס — נקלט ברמת המסך */
+  (function(){
+    let buf="", last=0, tm=null;
+    document.addEventListener("keydown",e=>{
+      if(!DN_MODE||CUR_CART==null||dnQtyOpen()) return;
+      const a=document.activeElement;
+      if(a && (a.tagName==="INPUT"||a.tagName==="TEXTAREA"||a.tagName==="SELECT"||a.isContentEditable)) return;
+      if(document.querySelector(".sheet.open")) return;
+      if(e.key==="Enter"){ if(buf.length>=3){ e.preventDefault(); const v=buf; buf=""; clearTimeout(tm); dnHandleCode(v); } return; }
+      if(e.key && e.key.length===1 && !e.ctrlKey && !e.metaKey && !e.altKey){
+        const now=Date.now(); if(now-last>150) buf=""; last=now; buf+=e.key;
+        clearTimeout(tm); tm=setTimeout(()=>{ const v=buf; buf=""; if(v.length>=6) dnHandleCode(v); },220);
+      }
+    },true);
+  })();
   $("#dnKbd").addEventListener("click",()=>{ ds.setAttribute("inputmode","numeric"); ds.blur(); setTimeout(()=>{ ds.setAttribute("inputmode","numeric"); ds.focus(); },40); });
   const qi=$("#dnqInput");
   qi.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); dnConfirmQty(); } });
