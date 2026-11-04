@@ -265,6 +265,32 @@
   #saleCartView{display:none}
   body.cart-open #saleListView{display:none}
   body.cart-open #saleCartView{display:block}
+  /* ===== תעודת משלוח — מצב מסופון ===== */
+  .dn-only{display:none}
+  body.dn-mode .dn-only{display:block}
+  body.dn-mode #clearanceFab{display:none!important}
+  #dnScanBar{margin:0 0 12px}
+  #dnScanWrap{display:flex;align-items:center;gap:8px;border:3px solid var(--pine);border-radius:16px;background:#fff;padding:6px 6px 6px 8px;transition:border-color .2s,background .2s}
+  #dnScanWrap.idle{border-color:#e0a030;background:#fff8ec}
+  #dnScan{flex:1;min-width:0;border:0;outline:0;background:transparent;font-size:22px;font-weight:800;padding:12px 8px;letter-spacing:.5px}
+  #dnScan::placeholder{font-size:18px;font-weight:700;letter-spacing:0;color:#6b7a77}
+  #dnKbd{flex:none;width:54px;height:54px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-size:22px;cursor:pointer}
+  #dnScanState{font-size:14.5px;font-weight:800;margin:7px 4px 0;color:var(--pine)}
+  #dnScanState.idle{color:#a86200}
+  .dnq{position:fixed;inset:0;z-index:250;background:rgba(10,20,18,.55);display:none;align-items:flex-start;justify-content:center;padding:calc(10px + env(safe-area-inset-top)) 10px 0}
+  .dnq.open{display:flex}
+  .dnq-card{width:100%;max-width:560px;background:#fff;border-radius:18px;padding:14px;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+  .dnq-prod{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+  .dnq-prod img{width:64px;height:64px;object-fit:contain;border-radius:10px;border:1px solid #eee;background:#fff;flex:none}
+  .dnq-name{font-size:18px;font-weight:800;line-height:1.25}
+  .dnq-meta{font-size:13.5px;color:var(--ink2);margin-top:3px}
+  .dnq-have{font-size:14.5px;font-weight:800;color:var(--pine);margin-top:4px}
+  .dnq-row{display:flex;gap:8px;align-items:stretch}
+  .dnq-row button{flex:none;width:58px;height:66px;border-radius:14px;border:1px solid var(--line);background:var(--bg);font-size:30px;font-weight:800;color:var(--pine);cursor:pointer}
+  #dnqInput{flex:1;min-width:0;height:66px;border:3px solid var(--pine);border-radius:14px;font-size:34px;font-weight:900;text-align:center;font-family:inherit}
+  .dnq-row .dnq-ok{width:74px;background:var(--pine);border-color:var(--pine);color:#fff;font-size:36px}
+  #dnqConfirm{margin-top:10px;min-height:62px;font-size:20px;font-weight:800}
+  #dnqCancel{margin-top:6px}
   .cartrow{background:var(--card);border:1px solid var(--border);border-radius:14px;
     padding:13px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;
     box-shadow:var(--shadow-sm);cursor:pointer;margin-bottom:9px;transition:border-color .14s,box-shadow .14s}
@@ -953,6 +979,13 @@ body.m-count #calcFab{display:inline-flex}
     </div>
   </section>
 
+  <!-- DELIVERY NOTES TAB -->
+  <section id="tab-dn" class="tab">
+    <button class="btn primary" id="newDnBtn" style="margin-bottom:12px;min-height:56px;font-size:17px">+ תעודת משלוח חדשה</button>
+    <div class="search" style="margin-bottom:10px"><input id="qDn" placeholder="חיפוש לפי שם לקוח…" autocomplete="off" inputmode="search"></div>
+    <div id="dnList"></div>
+  </section>
+
   <!-- PRODUCT EDIT TAB -->
   <section id="tab-edit" class="tab">
     <div class="search">
@@ -1076,10 +1109,17 @@ body.m-count #calcFab{display:inline-flex}
   </div>
 
   <div id="saleCartView">
-    <button class="btn ghost" id="backToList" style="text-align:right;padding:6px 0"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg> חזרה לרשימת העגלות</button>
+    <button class="btn ghost" id="backToList" style="text-align:right;padding:6px 0"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg> <span id="backToListTxt">חזרה לרשימת העגלות</span></button>
     <div class="panel" style="padding:12px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:8px">
       <div><b id="cartCustomer" style="font-size:17px">—</b><div class="cmeta" id="cartWho" style="color:var(--ink2);font-size:12.5px"></div></div>
       <button class="mini" id="editCustomer" type="button"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+    </div>
+    <div id="dnScanBar" class="dn-only">
+      <div id="dnScanWrap" class="idle">
+        <input id="dnScan" type="text" inputmode="none" enterkeyhint="go" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="סרוק ברקוד…" aria-label="סריקת ברקוד">
+        <button id="dnKbd" type="button" aria-label="הקלדה ידנית של ברקוד או מק״ט">⌨️</button>
+      </div>
+      <div id="dnScanState" class="idle">לחץ על השדה כדי לסרוק</div>
     </div>
     <div class="search"><input id="qSale" placeholder="הוסף פריט — שם או מק״ט…" autocomplete="off" inputmode="search"></div>
     <button class="scanbtn" id="saleScanBtn"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h8l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg> סריקת ברקוד</button>
@@ -1089,15 +1129,30 @@ body.m-count #calcFab{display:inline-flex}
     <div class="panel" style="display:flex;justify-content:space-between;align-items:center;font-size:18px;font-weight:700">
       <span>סה״כ</span><span id="cartSum">0 ₪</span>
     </div>
-    <button class="btn primary" id="waQuoteBtn" style="margin-top:8px;background:#25D366"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg> שיתוף פירוט מוצרים בוואטסאפ</button>
+    <button class="btn primary" id="waQuoteBtn" style="margin-top:8px;background:#25D366"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg> <span id="waQuoteTxt">שיתוף פירוט מוצרים בוואטסאפ</span></button>
     <button class="btn" id="exportCartXlsxBtn" style="margin-top:8px"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> ייצוא לאקסל</button>
     <button class="btn" id="exportCartPdfBtn" style="margin-top:8px"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 18h6M9 12h2"/></svg> ייצוא PDF (עם תמונות)</button>
     <button class="btn danger" id="delCartBtn" style="margin-top:8px">מחק עגלה (שולם בקופה)</button>
   </div>
 </main>
 
+<div id="dnQty" class="dnq" role="dialog" aria-modal="true" aria-label="הזנת כמות">
+  <div class="dnq-card">
+    <div class="dnq-prod"><img id="dnqImg" alt=""><div style="min-width:0"><div class="dnq-name" id="dnqName"></div><div class="dnq-meta" id="dnqMeta"></div><div class="dnq-have" id="dnqHave"></div></div></div>
+    <label for="dnqInput" style="display:block;font-size:13.5px;font-weight:800;color:var(--ink2);margin:0 2px 6px">כמות</label>
+    <div class="dnq-row">
+      <button type="button" id="dnqMinus" aria-label="הפחת אחד">−</button>
+      <input id="dnqInput" type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" autocomplete="off">
+      <button type="button" id="dnqPlus" aria-label="הוסף אחד">+</button>
+      <button type="button" id="dnqOk" class="dnq-ok" aria-label="אישור כמות">✓</button>
+    </div>
+    <button type="button" class="btn primary" id="dnqConfirm">קליטה לתעודה</button>
+    <button type="button" class="btn ghost" id="dnqCancel">ביטול</button>
+  </div>
+</div>
 <nav id="countNav">
   <button data-tab="count" class="active"><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg></span>ספירת מלאי</button>
+  <button data-tab="dn"><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 4h14v12H1z"/><path d="M15 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.2"/><circle cx="18.5" cy="18.5" r="2.2"/></svg></span>תעודות משלוח</button>
   <button data-tab="edit"><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span>עדכון מוצרים</button>
   <button data-tab="summary"><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V11M12 21V4M19 21v-6M3 21h18"/></svg></span>סיכום</button>
   <button data-tab="admin"><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-6M4 11V3M12 21v-9M12 7V3M20 21v-4M20 13V3M1 15h6M9 7h6M17 17h6"/></svg></span>ניהול</button>
@@ -1432,6 +1487,7 @@ function gotoTab(tab){
   $("#tab-"+tab).classList.add("active");
   if(tab==="summary") renderSummary();
   if(tab==="edit") refreshEditResults();
+  if(tab==="dn") renderDNList();
 }
 let PIN_CB=null;
 function askPin(cb){ PIN_CB=cb||null; $("#pinInput").value=""; $("#pinSheet").classList.add("open"); setTimeout(()=>$("#pinInput").focus(),60); }
@@ -1975,7 +2031,7 @@ function refreshCatalogState(){
 /* ---------- barcode scanner ---------- */
 let h5=null, scanLock=false, torchOn=false;
 async function openScanner(mode){
-  SCAN_MODE = (mode==="assign"||mode==="sale") ? mode : "count";
+  SCAN_MODE = (mode==="assign"||mode==="sale"||mode==="dn") ? mode : "count";
 
   // 1) ודא שספריית הסריקה נטענה
   if(!window.Html5Qrcode){
@@ -2058,6 +2114,10 @@ function onScan(code){
     closeScanner().then(()=>{ setTimeout(()=>{scanLock=false;},900); $("#bcInput").value=c; });
     return;
   }
+  if(SCAN_MODE==="dn"){
+    closeScanner().then(()=>{ setTimeout(()=>{scanLock=false;},900); dnHandleCode(c); });
+    return;
+  }
   const p=findByCode(c);
   if(SCAN_MODE==="sale"){
     closeScanner().then(()=>{
@@ -2077,6 +2137,7 @@ function onScan(code){
 /* ================= SALES MODULE ================= */
 let MODE="sale";
 let CARTS=[], ITEMS=[], CUR_CART=null;
+let DN_MODE=false;   /* תעודת משלוח פתוחה (מסך העגלה במצב לוגיסטיקה/מסופון) */
 
 /* ===== מעקב פעילות עגלה + מחיקה אוטומטית (נוסף) ===== */
 const CART_INACTIVITY_MS=48*60*60*1000; /* מחיקה אוטומטית אחרי 48 שעות ללא פעילות */
@@ -2134,7 +2195,7 @@ async function expireCart(id){
     else if(MODE==="sale") renderCartList();
   }catch(e){ console.error("expireCart",e); }
 }
-function cartMaintenance(){ sweepInactiveCarts(); if(MODE==="sale" && CUR_CART==null) renderCartList(); }
+function cartMaintenance(){ sweepInactiveCarts(); if(MODE==="sale" && CUR_CART==null) renderCartList(); if(MODE==="count") renderDNList(); }
 
 
 function pnum(v){ if(v==null) return 0; const n=parseFloat(String(v).replace(/[^\d.\-]/g,"")); return isNaN(n)?0:n; }
@@ -2152,10 +2213,10 @@ function shareCartQuote(){
   const SEP="——————————";
   const L=[];
   L.push("*עץ האורן — המרכז לכלי עבודה*");
-  L.push("*פירוט מוצרים*");
+  L.push(c.kind==="dn"?"*תעודת משלוח*":"*פירוט מוצרים*");
   L.push("");
   L.push("לקוח: "+(c.customer||"—"));
-  if(c.salesperson) L.push("איש מכירות: "+c.salesperson);
+  if(c.salesperson) L.push((c.kind==="dn"?"הופק ע״י: ":"איש מכירות: ")+c.salesperson);
   L.push(SEP);
   items.forEach((i,idx)=>{
     const qty=Number(i.qty)||0, unit=Number(i.unit_price)||0, sub=qty*unit;
@@ -2171,14 +2232,17 @@ function shareCartQuote(){
   L.push("*סה״כ: "+fmtNis(cartTotal(c.id))+"*");
   L.push("");
   L.push("• המחירים כוללים מע״מ.");
-  L.push("• מסמך זה נועד להצגת הפריטים המבוקשים בלבד ואינו מהווה הצעת מחיר רשמית / חשבונית מס או אישור הזמנה.");
-  L.push("• המחירים תקפים עד תום יום העסקים הנוכחי.");
+  if(c.kind!=="dn"){
+    L.push("• מסמך זה נועד להצגת הפריטים המבוקשים בלבד ואינו מהווה הצעת מחיר רשמית / חשבונית מס או אישור הזמנה.");
+    L.push("• המחירים תקפים עד תום יום העסקים הנוכחי.");
+  }
   L.push("• התמונות להמחשה בלבד.");
   const text=L.join("\n");
   window.open("https://wa.me/?text="+encodeURIComponent(text), "_blank", "noopener");
 }
 
 function setMode(mode){
+  if(DN_MODE){ DN_MODE=false; document.body.classList.remove("dn-mode"); var _q=document.getElementById("dnQty"); if(_q) _q.classList.remove("open"); _dnProd=null; if(CUR_CART!=null){ CUR_CART=null; document.body.classList.remove("cart-open"); } }
   MODE=mode;
   document.body.classList.toggle("m-sale", mode==="sale");
   document.body.classList.toggle("m-count", mode==="count");
@@ -2213,12 +2277,15 @@ async function newCart(){
     openCart(data[0].id);
   }catch(e){ console.error(e); toast("שגיאה ביצירת עגלה (בדוק חיבור)"); }
 }
-function openCart(id){ CUR_CART=id; document.body.classList.add("cart-open"); $("#qSale").value=""; renderSaleResults([]); renderCart(); }
-function closeCart(){ CUR_CART=null; document.body.classList.remove("cart-open"); renderCartList(); }
+function openCart(id){ CUR_CART=id; document.body.classList.add("cart-open"); $("#qSale").value=""; renderSaleResults([]); syncCartLabels(); renderCart(); if(DN_MODE) setTimeout(function(){ dnFocusScan(true); dnScanState(); },80); }
+function closeCart(){
+  if(DN_MODE){ CUR_CART=null; document.body.classList.remove("cart-open"); setMode("count"); gotoTab("dn"); return; }
+  CUR_CART=null; document.body.classList.remove("cart-open"); renderCartList();
+}
 
 function renderCartList(){
   const _qc=$("#qCart"); const term=_qc?_qc.value.trim().toLowerCase():"";
-  const list=CARTS.filter(c=>!term||String(c.customer||"").toLowerCase().includes(term));
+  const list=CARTS.filter(c=>c.kind!=="dn" && (!term||String(c.customer||"").toLowerCase().includes(term)));
   const box=$("#cartList");
   if(!list.length){ box.innerHTML='<div class="empty">אין עגלות פתוחות. לחץ "עגלה חדשה".</div>'; return; }
   box.innerHTML=list.map(c=>{
@@ -2231,7 +2298,7 @@ function renderCartList(){
 function renderCart(){
   const c=CARTS.find(x=>String(x.id)===String(CUR_CART)); if(!c){ closeCart(); return; }
   $("#cartCustomer").textContent=c.customer||"לקוח";
-  $("#cartWho").textContent="איש מכירות: "+(displayName(c.salesperson)||"—")+" · עודכן "+timeAgo(cartActivity(c));
+  $("#cartWho").textContent=(c.kind==="dn"?"הופק ע״י: ":"איש מכירות: ")+(displayName(c.salesperson)||"—")+" · עודכן "+timeAgo(cartActivity(c));
   const items=cartItems(c.id), box=$("#cartItems");
   box.innerHTML = items.length ? items.map(i=>{
     const sub=(Number(i.qty)||0)*(Number(i.unit_price)||0);
@@ -2253,7 +2320,7 @@ function renderCart(){
         ${isClearance(i.mktt)?`<span class="cprice locked" title="מחיר חיסול נעול">${ic("lock")} ${fmtNis(Number(i.unit_price)||0)}</span>`:`<span class="cprice" data-act="price">${fmtNis(Number(i.unit_price)||0)}</span>`}
         <button class="mini del" data-act="del" type="button">${ic("trash")}</button>
       </div></div>`;
-  }).join("") : emptyState('cart','העגלה ריקה','הוסף פריטים מהחיפוש למעלה');
+  }).join("") : (c.kind==="dn" ? emptyState('box','התעודה ריקה','סרוק ברקוד כדי להוסיף פריטים') : emptyState('cart','העגלה ריקה','הוסף פריטים מהחיפוש למעלה'));
   {const _s=$("#cartSum"),_v=String(cartTotal(c.id));if(_s.dataset.v!==undefined&&_s.dataset.v!==_v){_s.classList.remove("pulse");void _s.offsetWidth;_s.classList.add("pulse");}_s.dataset.v=_v;_s.textContent=fmtNis(cartTotal(c.id));}
 }
 
@@ -2265,16 +2332,17 @@ function pulseFX(ok,text){
   clearTimeout(el._t); el._t=setTimeout(function(){ el.classList.remove("show"); }, ok?750:1600);
 }
 /* כתיבה לעגלה עם ניסיונות חוזרים */
-async function cartWrite(existing, product, price, forcePrice){
+async function cartWrite(existing, product, price, forcePrice, qty){
+  var add=Math.max(1, Number(qty)||1);
   for(var a=0;a<3;a++){
     try{
       if(existing){
-        var patch={qty:(Number(existing.qty)||0)+1}; if(forcePrice) patch.unit_price=price;
+        var patch={qty:(Number(existing.qty)||0)+add}; if(forcePrice) patch.unit_price=price;
         var u=await sb.from("cart_items").update(patch).eq("id",existing.id);
         if(u.error) throw u.error;
         Object.assign(existing,patch);
       } else {
-        var r=await sb.from("cart_items").insert({cart_id:CUR_CART,mktt:String(product.mktt),name:product.name||"",qty:1,unit_price:price}).select();
+        var r=await sb.from("cart_items").insert({cart_id:CUR_CART,mktt:String(product.mktt),name:product.name||"",qty:add,unit_price:price}).select();
         if(r.error) throw r.error;
         if(!ITEMS.some(function(x){return x.id===r.data[0].id;})) ITEMS.push(r.data[0]);
       }
@@ -2283,7 +2351,7 @@ async function cartWrite(existing, product, price, forcePrice){
   }
   return false;
 }
-async function addItemToCart(product, priceOverride){
+async function addItemToCart(product, priceOverride, qty){
   if(CUR_CART==null){ pulseFX(false,"אין עגלה פתוחה"); return; }
   let price;
   if(priceOverride!=null) price=pnum(priceOverride);
@@ -2291,16 +2359,135 @@ async function addItemToCart(product, priceOverride){
   else price=pnum(product.price);
   const forcePrice=(priceOverride!=null)||isClearance(product.mktt);
   const existing=cartItems(CUR_CART).find(i=>String(i.mktt)===String(product.mktt));
-  const ok=await cartWrite(existing, product, price, forcePrice);
-  if(ok){ touchCart(CUR_CART); feedback(true); pulseFX(true,"✓ "+(product.name||product.mktt)); renderCart(); renderCartList(); }
+  const ok=await cartWrite(existing, product, price, forcePrice, qty);
+  if(ok){ touchCart(CUR_CART); feedback(true); pulseFX(true,"✓ "+((Number(qty)||1)>1?qty+" × ":"")+(product.name||product.mktt)); renderCart(); renderCartList(); if(DN_MODE) renderDNList(); }
   else{ feedback(false); pulseFX(false,"✗ לא נוסף — נסה שוב"); }
 }
 /* תור סדרתי: מונע התנגשות בהוספה מהירה */
 var CART_Q=Promise.resolve();
 function queueAddToCart(product, priceOverride){
+  if(DN_MODE && priceOverride==null && product && String(product.mktt)!=="1"){ dnOpenQty(product); return Promise.resolve(); }
   if(product && String(product.mktt)==="1" && priceOverride==null){ openGeneralProduct(); return; }
   CART_Q=CART_Q.then(function(){ return addItemToCart(product, priceOverride); }).catch(function(e){ console.error(e); pulseFX(false,"✗ שגיאה"); });
   return CART_Q;
+}
+
+/* ================= תעודות משלוח — לוגיסטיקה, מותאם מסופון =================
+   תעודת משלוח היא עגלה עם kind="dn". היא משתמשת באותו מסך ובאותן פונקציות של העגלה
+   (כמות, מחיר, מחיקה, אקסל, PDF, וואטסאפ, מוצר כללי). ההבדל: סריקה רציפה + חלון כמות. */
+var _dnProd=null;
+function renderDNList(){
+  const box=$("#dnList"); if(!box) return;
+  const _q=$("#qDn"); const term=_q?_q.value.trim().toLowerCase():"";
+  const list=CARTS.filter(c=>c.kind==="dn" && (!term||String(c.customer||"").toLowerCase().includes(term)));
+  if(!list.length){ box.innerHTML=emptyState('box','אין תעודות משלוח פתוחות','לחץ "תעודת משלוח חדשה"'); return; }
+  box.innerHTML=list.map(c=>{
+    const n=cartItems(c.id).reduce((s,i)=>s+(Number(i.qty)||0),0);
+    return `<div class="cartrow" data-dn="${c.id}">
+      <div><b>${esc(c.customer||"לקוח")}</b><div class="cmeta">${esc(displayName(c.salesperson))} · ${n} פריטים · עודכן ${timeAgo(cartActivity(c))}</div></div>
+      <div class="ctot">${fmtNis(cartTotal(c.id))}</div></div>`;
+  }).join("");
+}
+async function newDN(){
+  const who=$("#counter").value.trim();
+  if(!who){ toast("יש להזין את שמך למעלה"); nameReq(); $("#counter").focus(); return; }
+  const cust=(prompt("שם הלקוח / היעד:")||"").trim();
+  if(!cust) return;
+  try{
+    const {data,error}=await sb.from("carts").insert({customer:cust,salesperson:who,status:"open",kind:"dn"}).select();
+    if(error) throw error;
+    if(!CARTS.some(c=>c.id===data[0].id)) CARTS.unshift(data[0]);
+    openDeliveryNote(data[0].id);
+  }catch(e){
+    console.error(e);
+    toast(/kind/i.test(String((e&&e.message)||"")) ? "חסרה עמודה בטבלה — הרץ את dn-setup.sql ב-Supabase" : "שגיאה ביצירת תעודה (בדוק חיבור)");
+  }
+}
+function openDeliveryNote(id){
+  setMode("sale");                                   /* מציג את מסך העגלה */
+  DN_MODE=true; document.body.classList.add("dn-mode");
+  document.querySelectorAll("#modebar button").forEach(b=>b.classList.toggle("active", b.dataset.mode==="count"));
+  $("#nameLabel").textContent="סופר/ת:";
+  openCart(id);
+}
+function syncCartLabels(){
+  const b=$("#backToListTxt"); if(b) b.textContent=DN_MODE?"חזרה לתעודות המשלוח":"חזרה לרשימת העגלות";
+  const d=$("#delCartBtn"); if(d) d.textContent=DN_MODE?"מחק תעודת משלוח":"מחק עגלה (שולם בקופה)";
+  const w=$("#waQuoteTxt"); if(w) w.textContent=DN_MODE?"שיתוף תעודת משלוח בוואטסאפ":"שיתוף פירוט מוצרים בוואטסאפ";
+}
+function dnQtyOpen(){ const q=$("#dnQty"); return !!(q && q.classList.contains("open")); }
+function dnFocusScan(force){
+  if(!DN_MODE||CUR_CART==null||dnQtyOpen()) return;
+  const s=$("#dnScan"); if(!s) return;
+  const a=document.activeElement;
+  if(!force){
+    if(a && a!==s && (a.tagName==="INPUT"||a.tagName==="TEXTAREA"||a.tagName==="SELECT")) return;
+    if(document.querySelector(".sheet.open")) return;
+  }
+  try{ s.focus({preventScroll:true}); }catch(e){ try{ s.focus(); }catch(_){} }
+}
+function dnScanState(){
+  const w=$("#dnScanWrap"), st=$("#dnScanState"); if(!w||!st) return;
+  const a=document.activeElement;
+  const on=(a===$("#dnScan")) || (typeof _trap!=="undefined" && _trap && a===_trap);
+  w.classList.toggle("idle",!on); st.classList.toggle("idle",!on);
+  st.textContent=on?"● מוכן לסריקה":"לחץ על השדה כדי לסרוק";
+}
+function dnHandleCode(code){
+  code=String(code||"").replace(/[\r\n\t]/g,"").trim(); if(!code) return;
+  if(dnQtyOpen()){ $("#dnQty").classList.remove("open"); _dnProd=null; feedback(false); toast("⚠ המוצר הקודם לא נקלט"); }
+  const p=findByCode(code);
+  if(p && String(p.mktt)!=="1"){ feedback(true); dnOpenQty(p); return; }
+  feedback(false); pulseFX(false,"✗ לא נמצא: "+code);
+  $("#qSale").value=code; renderSaleResults(search(code));
+  setTimeout(()=>dnFocusScan(true),60);
+}
+function dnOpenQty(p){
+  if(CUR_CART==null) return;
+  _dnProd=p;
+  const have=cartItems(CUR_CART).filter(i=>String(i.mktt)===String(p.mktt)).reduce((s,i)=>s+(Number(i.qty)||0),0);
+  $("#dnqName").textContent=p.name||p.mktt;
+  $("#dnqMeta").textContent="מק״ט "+p.mktt+(p.barcode?" · ברקוד "+p.barcode:"");
+  $("#dnqHave").textContent=have?("כבר בתעודה: "+have):"";
+  const img=$("#dnqImg"); if(p.image_url){ img.src=p.image_url; img.style.display=""; } else { img.removeAttribute("src"); img.style.display="none"; }
+  const inp=$("#dnqInput"); inp.value="1";
+  $("#dnQty").classList.add("open");
+  setTimeout(()=>{ try{ inp.focus(); inp.select(); }catch(e){} },40);
+}
+function dnCloseQty(){ const q=$("#dnQty"); if(q) q.classList.remove("open"); _dnProd=null; setTimeout(()=>dnFocusScan(true),60); }
+function dnStep(d){ const inp=$("#dnqInput"); inp.value=String(Math.max(1,(parseInt(String(inp.value).replace(/\D/g,""),10)||0)+d)); try{ inp.focus(); }catch(e){} }
+function dnConfirmQty(){
+  const inp=$("#dnqInput"); const raw=String(inp.value||"").replace(/\D/g,"");
+  if(raw.length>=6){ dnHandleCode(raw); return; }        /* ברקוד נסרק לתוך שדה הכמות */
+  const qty=parseInt(raw,10);
+  if(!(qty>0)){ feedback(false); toast("הזן כמות"); try{ inp.focus(); }catch(e){} return; }
+  const p=_dnProd; if(!p){ dnCloseQty(); return; }
+  $("#dnQty").classList.remove("open"); _dnProd=null;
+  CART_Q=CART_Q.then(function(){ return addItemToCart(p, null, qty); }).catch(function(e){ console.error(e); pulseFX(false,"✗ שגיאה"); });
+  setTimeout(()=>dnFocusScan(true),60);
+}
+function wireDN(){
+  const ds=$("#dnScan"); if(!ds) return;
+  ds.addEventListener("keydown",e=>{
+    if(e.key==="Enter"||e.key==="Tab"){ e.preventDefault(); clearTimeout(ds._t); const v=ds.value; ds.value=""; dnHandleCode(v); }
+  });
+  ds.addEventListener("input",()=>{                       /* סורק ששולח בלי Enter — מעבדים כשהקלט נרגע */
+    clearTimeout(ds._t);
+    if(ds.getAttribute("inputmode")!=="none") return;
+    ds._t=setTimeout(()=>{ const v=ds.value; if(v.trim().length>=3){ ds.value=""; dnHandleCode(v); } },220);
+  });
+  ds.addEventListener("focus",dnScanState);
+  ds.addEventListener("blur",()=>{ ds.setAttribute("inputmode","none"); setTimeout(dnScanState,40); });
+  $("#dnScanWrap").addEventListener("click",e=>{ if(e.target.id!=="dnKbd") dnFocusScan(true); });
+  $("#dnKbd").addEventListener("click",()=>{ ds.setAttribute("inputmode","numeric"); ds.blur(); setTimeout(()=>{ ds.setAttribute("inputmode","numeric"); ds.focus(); },40); });
+  const qi=$("#dnqInput");
+  qi.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); dnConfirmQty(); } });
+  $("#dnqOk").addEventListener("click",dnConfirmQty);
+  $("#dnqConfirm").addEventListener("click",dnConfirmQty);
+  $("#dnqCancel").addEventListener("click",dnCloseQty);
+  $("#dnqMinus").addEventListener("click",()=>dnStep(-1));
+  $("#dnqPlus").addEventListener("click",()=>dnStep(1));
+  setInterval(()=>{ if(DN_MODE&&CUR_CART!=null){ dnFocusScan(false); dnScanState(); } },1000);
 }
 /* ===== מוצר כללי (מק"ט 1): תיאור ומחיר חופשיים, ללא סיסמה ===== */
 function openGeneralProduct(){
@@ -2329,6 +2516,10 @@ async function confirmGeneralProduct(){
   }catch(e){ console.error("general product",e); pulseFX(false,"✗ לא נוסף — נסה שוב"); }
 }
 function buildCartPdfHTML(items, cart, note){
+  var dn=!!(cart&&cart.kind==="dn");
+  var DN_TAIL='<div class="sign"><div>שם המקבל: ______________________</div><div>חתימה: ______________________</div><div>תאריך קבלה: ______________</div></div>'+
+    '<div class="terms"><div>• המחירים כוללים מע״מ.</div><div>• התמונות להמחשה בלבד.</div>'+
+    '<div>• ליצירת קשר עם נציג ניתן לפנות אלינו בוואטסאפ למספר 053-3224433 או לחילופין לחייג 04-6156146</div></div>';
   var rows=items.map(function(i){
     var p=(typeof PRODMAP!=="undefined")?PRODMAP.get(String(i.mktt)):null;
     var img=(p&&p.image_url)?esc(p.image_url):"";
@@ -2345,7 +2536,7 @@ function buildCartPdfHTML(items, cart, note){
   var cust=(cart&&cart.customer)?esc(String(cart.customer)):"";
   var sp=(cart&&cart.salesperson)?esc(String(cart.salesperson)):"";
   var S='<scr'+'ipt>window.onload=function(){var g=[].slice.call(document.images),n=g.length;function go(){setTimeout(function(){try{window.focus();}catch(e){}window.print();},350);}if(!n){go();return;}g.forEach(function(im){if(im.complete){if(--n===0)go();}else{im.onload=im.onerror=function(){if(--n===0)go();};}});setTimeout(go,8000);};</scr'+'ipt>';
-  return '<!doctype html><html dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>פירוט מוצרים — עץ האורן</title>'+
+  return '<!doctype html><html dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+(dn?'תעודת משלוח':'פירוט מוצרים')+' — עץ האורן</title>'+
   '<style>'+
   '@page{size:A4;margin:12mm}'+
   '*{box-sizing:border-box;font-family:Arial,"Heebo",sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}'+
@@ -2363,20 +2554,20 @@ function buildCartPdfHTML(items, cart, note){
   '.it .pr{font-size:15px;font-weight:800;color:#0B7D71;white-space:nowrap}'+
   '.sum{margin-top:14px;border-top:2px solid #0B7D71;padding-top:12px;display:flex;justify-content:space-between;align-items:center;page-break-inside:avoid}'+
   '.sum .l{font-size:16px;font-weight:700}.sum .v{font-size:24px;font-weight:900;color:#0B7D71}'+
-  '.note{margin-top:14px;padding:11px 13px;background:#f6f4ec;border-right:3px solid #0B7D71;border-radius:7px;font-size:13px;color:#333;line-height:1.5;page-break-inside:avoid}'+'.terms{margin-top:18px;border-top:1px solid #e0e0e0;padding-top:12px;font-size:10.5px;color:#777;line-height:1.7;text-align:right;page-break-inside:avoid}'+'.terms div{margin-bottom:3px}'+
+  '.note{margin-top:14px;padding:11px 13px;background:#f6f4ec;border-right:3px solid #0B7D71;border-radius:7px;font-size:13px;color:#333;line-height:1.5;page-break-inside:avoid}'+'.terms{margin-top:18px;border-top:1px solid #e0e0e0;padding-top:12px;font-size:10.5px;color:#777;line-height:1.7;text-align:right;page-break-inside:avoid}'+'.terms div{margin-bottom:3px}'+'.sign{margin-top:26px;display:flex;gap:18px;flex-wrap:wrap;font-size:13.5px;color:#222;page-break-inside:avoid}.sign div{flex:1;min-width:190px}'+
   '</style></head><body>'+
-  '<div class="hd"><div><div class="t">פירוט מוצרים</div>'+
-  '<div class="m">תאריך: '+dateStr+(cust?'<br>לקוח: '+cust:"")+(sp?'<br>נציג: '+sp:"")+'</div></div><img src="'+LOGO_B64+'" alt=""></div>'+
+  '<div class="hd"><div><div class="t">'+(dn?'תעודת משלוח':'פירוט מוצרים')+'</div>'+
+  '<div class="m">תאריך: '+dateStr+(cust?'<br>לקוח: '+cust:"")+(sp?'<br>'+(dn?'הופק ע״י: ':'נציג: ')+sp:"")+'</div></div><img src="'+LOGO_B64+'" alt=""></div>'+
   rows+
   '<div class="sum"><span class="l">סה״כ לתשלום</span><span class="v">'+fmtNis(total)+'</span></div>'+
   (note?'<div class="note"><b>הערה:</b> '+esc(note)+'</div>':'')+
-  '<div class="terms">'+
+  (dn?DN_TAIL:'<div class="terms">'+
     '<div>• המחירים כוללים מע״מ.</div>'+
     '<div>• מסמך זה נועד להצגת הפריטים המבוקשים בלבד ואינו מהווה הצעת מחיר רשמית / חשבונית מס או אישור הזמנה.</div>'+
     '<div>• המחירים תקפים עד תום יום העסקים הנוכחי.</div>'+
     '<div>• התמונות להמחשה בלבד.</div>'+
     '<div>• ליצירת קשר עם נציג ניתן לפנות אלינו בוואטסאפ למספר 053-3224433 או לחילופין לחייג 04-6156146</div>'+
-  '</div>'+
+  '</div>')+
   S+'</body></html>';
 }
 function exportCartPdf(){
@@ -2418,7 +2609,7 @@ async function deleteCart(id){
     if(error) throw error;
     CARTS=CARTS.filter(c=>String(c.id)!==String(id));
     ITEMS=ITEMS.filter(i=>String(i.cart_id)!==String(id));
-    closeCart(); toast("העגלה נמחקה");
+    const _wasDN=DN_MODE; closeCart(); toast(_wasDN?"תעודת המשלוח נמחקה":"העגלה נמחקה");
   }catch(e){ console.error(e); toast("שגיאה במחיקת עגלה"); }
 }
 async function editProduct(mktt){
@@ -2521,11 +2712,13 @@ function subscribeSales(){
         if(row.status!=="open"){ CARTS=CARTS.filter(c=>String(c.id)!==String(row.id)); }
         else{ const ex=CARTS.find(c=>String(c.id)===String(row.id)); if(ex) Object.assign(ex,row); else CARTS.unshift(row); } }
       if(MODE==="sale"){ renderCartList(); if(CUR_CART!=null) renderCart(); }
+      if(MODE==="count") renderDNList();
     })
     .on("postgres_changes",{event:"*",schema:"public",table:"cart_items"},p=>{
       if(p.eventType==="DELETE"){ const id=p.old&&p.old.id; ITEMS=ITEMS.filter(i=>String(i.id)!==String(id)); }
       else{ const row=p.new; const ex=ITEMS.find(i=>String(i.id)===String(row.id)); if(ex) Object.assign(ex,row); else ITEMS.push(row); }
       if(MODE==="sale"){ renderCartList(); if(CUR_CART!=null) renderCart(); }
+      if(MODE==="count") renderDNList();
     })
     .subscribe();
 }
@@ -2988,7 +3181,7 @@ function bindUI(){
   $("#clrAddSearch").addEventListener("input",()=>{ clearTimeout(t); t=setTimeout(()=>renderClrAddResults(search($("#clrAddSearch").value)),120); });
   $("#clrAddResults").addEventListener("click",e=>{ const li=e.target.closest("[data-clr-pick]"); if(li) addProductToClearance(li.dataset.clrPick); });
   $("#clearanceList").addEventListener("click",e=>{ const a=e.target.closest("[data-clr-add]"); if(a){ addClearanceToCart(a.dataset.clrAdd); return; } const ed=e.target.closest("[data-clr-edit]"); if(ed){ editClearanceItem(ed.dataset.clrEdit); return; } const n=e.target.closest("[data-clr-note]"); if(n){ editClearanceNote(n.dataset.clrNote); return; } const d=e.target.closest("[data-clr-del]"); if(d){ removeFromClearance(d.dataset.clrDel); return; } });
-  $("#saleScanBtn").addEventListener("click",()=>openScanner("sale"));
+  $("#saleScanBtn").addEventListener("click",()=>openScanner(DN_MODE?"dn":"sale"));
   $("#cartItems").addEventListener("click",e=>{
     const btn=e.target.closest("[data-act]"); if(!btn) return;
     const card=e.target.closest(".citem"); if(!card) return;
@@ -3007,7 +3200,12 @@ function bindUI(){
     catch(e){ console.error(e); toast("שגיאה בעדכון שם"); }
   });
   $("#waQuoteBtn").addEventListener("click",shareCartQuote);
-  $("#delCartBtn").addEventListener("click",()=>{ if(CUR_CART!=null && confirm("למחוק את העגלה? (לאחר שהתשלום נגבה בקופה)")) deleteCart(CUR_CART); });
+  $("#delCartBtn").addEventListener("click",()=>{ if(CUR_CART!=null && confirm(DN_MODE?"למחוק את תעודת המשלוח?":"למחוק את העגלה? (לאחר שהתשלום נגבה בקופה)")) deleteCart(CUR_CART); });
+  // תעודות משלוח
+  $("#newDnBtn").addEventListener("click",newDN);
+  $("#qDn").addEventListener("input",()=>{ clearTimeout(t); t=setTimeout(renderDNList,120); });
+  $("#dnList").addEventListener("click",e=>{ const row=e.target.closest("[data-dn]"); if(row) openDeliveryNote(row.dataset.dn); });
+  wireDN();
 
   // scanner
   $("#scanBtn").addEventListener("click",()=>openScanner("count"));
@@ -3113,6 +3311,7 @@ function wedgeBlocked(){
 function wedgeContext(){
   var bc=document.getElementById("bcSheet");
   if(bc && bc.classList.contains("open")) return "assign";
+  if(typeof DN_MODE!=="undefined" && DN_MODE && typeof CUR_CART!=="undefined" && CUR_CART!=null) return "dn";
   if(typeof MODE!=="undefined" && MODE==="sale" && typeof CUR_CART!=="undefined" && CUR_CART!=null) return "sale";
   return "count";
 }
@@ -3123,6 +3322,7 @@ function wedgeHandle(code){
   if(code.length<3) return;
   if(wedgeBlocked()) return;
   SCAN_MODE=wedgeContext();
+  if(SCAN_MODE==="dn"){ try{ dnHandleCode(code); }catch(err){ console.error("wedge dn",err); } return; }
   try{ onScan(code); }catch(err){ console.error("wedge",err); }
 }
 
