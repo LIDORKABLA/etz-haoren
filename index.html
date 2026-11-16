@@ -1540,7 +1540,11 @@ function boot(){
   nameReq();
   setStatus();
 
-  loadProducts().then(refreshCatalogState).finally(function(){ if(window.dismissSplash) window.dismissSplash(); });
+  /* קודם המטמון במכשיר (מיידי), ואז רענון מהענן ברקע */
+  loadProductsCached().then(function(had){
+    if(had){ try{ refreshCatalogState(); }catch(e){} if(window.dismissSplash) window.dismissSplash(); }
+    return loadProducts().then(refreshCatalogState).finally(function(){ if(window.dismissSplash) window.dismissSplash(); });
+  });
   loadCounts().then(()=>{
     OUTBOX.forEach(it=>{ if(!byId(COUNTS,it.tmpId)) COUNTS.push({...it.entry,id:it.tmpId}); });
     renderSummary(); setStatus(); flushOutbox();
@@ -1566,23 +1570,70 @@ function setStatus(){
 }
 
 /* ---------- data: products ---------- */
+/* ---------- קטלוג: טעינה מיידית מהמטמון במכשיר, ורענון מהענן ברקע ---------- */
+const PCACHE={db:null,
+  open(){ if(this.db) return Promise.resolve(this.db); return new Promise((res,rej)=>{ try{ const r=indexedDB.open("etz_cache",1); r.onupgradeneeded=()=>{ r.result.createObjectStore("kv"); }; r.onsuccess=()=>{ this.db=r.result; res(r.result); }; r.onerror=()=>rej(r.error); }catch(e){ rej(e); } }); },
+  async get(k){ try{ const db=await this.open(); return await new Promise((res)=>{ const t=db.transaction("kv","readonly").objectStore("kv").get(k); t.onsuccess=()=>res(t.result); t.onerror=()=>res(null); }); }catch(e){ return null; } },
+  async set(k,v){ try{ const db=await this.open(); await new Promise((res)=>{ const tx=db.transaction("kv","readwrite"); tx.objectStore("kv").put(v,k); tx.oncomplete=res; tx.onerror=res; }); }catch(e){} }
+};
+function setProducts(list){
+  PRODUCTS=list||[];
+  PRODMAP=new Map(PRODUCTS.map(p=>[String(p.mktt),p]));
+  BARCODEMAP=new Map(PRODUCTS.filter(p=>p.barcode).map(p=>[String(p.barcode).trim(),p]));
+  try{ BARCODEMAP_NORM=null; }catch(e){}
+}
+function rerunSearches(){
+  ["q","qSale","qEdit","qSum"].forEach(id=>{ const el=document.getElementById(id); if(el&&el.value&&el.value.trim()) el.dispatchEvent(new Event("input",{bubbles:true})); });
+  try{ if(typeof CUR_CART!=="undefined"&&CUR_CART!=null) renderCart(); }catch(e){}
+}
+async function loadProductsCached(){
+  if(PRODUCTS.length) return true;
+  let list=await PCACHE.get("products");
+  if(!Array.isArray(list)||!list.length){ try{ list=JSON.parse(localStorage.getItem(LS.products)||"[]"); }catch(e){ list=[]; } }
+  if(list.length){ setProducts(list); rerunSearches(); return true; }
+  return false;
+}
+async function fetchAllProducts(){
+  const page=1000;
+  /* אם ידוע בערך כמה מוצרים יש — כל הדפים נמשכים במקביל בבת אחת */
+  const known=PRODUCTS.length;
+  if(known>page){
+    const n=Math.ceil(known/page)+1, jobs=[];
+    for(let i=0;i<n;i++) jobs.push(sb.from("products").select("*").range(i*page,i*page+page-1));
+    const res=await Promise.all(jobs); let all=[];
+    res.forEach(r=>{ if(r.error) throw r.error; all=all.concat(r.data||[]); });
+    let from=n*page, last=res[res.length-1].data||[];
+    while(last.length===page){ const r=await sb.from("products").select("*").range(from,from+page-1); if(r.error) throw r.error; last=r.data||[]; all=all.concat(last); from+=page; }
+    const seen=new Set(); return all.filter(p=>{ const k=String(p.mktt); if(seen.has(k)) return false; seen.add(k); return true; });
+  }
+  const first=await sb.from("products").select("*",{count:"exact"}).range(0,page-1);
+  if(first.error) throw first.error;
+  let all=first.data||[];
+  const total=first.count||all.length;
+  if(all.length===page&&total>page){
+    const jobs=[];
+    for(let from=page;from<total;from+=page) jobs.push(sb.from("products").select("*").range(from,from+page-1));
+    const res=await Promise.all(jobs);
+    res.forEach(r=>{ if(r.error) throw r.error; all=all.concat(r.data||[]); });
+    /* ביטחון: אם נוספו מוצרים תוך כדי — משיכת השארית (רק אם העמוד האחרון היה מלא) */
+    let from=total, last=res.length?res[res.length-1].data:null;
+    while(last&&last.length===page){ const r=await sb.from("products").select("*").range(from,from+page-1); if(r.error) throw r.error; last=r.data||[]; all=all.concat(last); from+=page; }
+  }
+  const seen=new Set(); return all.filter(p=>{ const k=String(p.mktt); if(seen.has(k)) return false; seen.add(k); return true; });
+}
 async function loadProducts(){
   if(CLOUD){
     try{
-      let all=[],from=0,page=1000;
-      while(true){
-        const {data,error}=await sb.from("products").select("*").range(from,from+page-1);
-        if(error) throw error;
-        all=all.concat(data); if(data.length<page) break; from+=page;
-      }
-      PRODUCTS=all;
-      try{ localStorage.setItem(LS.products,JSON.stringify(all)); }catch(e){}
-    }catch(e){ console.error(e); PRODUCTS=JSON.parse(localStorage.getItem(LS.products)||"[]"); }
+      const all=await fetchAllProducts();
+      setProducts(all);
+      PCACHE.set("products",all);
+      try{ localStorage.setItem(LS.products,JSON.stringify(all)); }catch(e){ try{ localStorage.removeItem(LS.products); }catch(_){} }
+    }catch(e){ console.error(e); if(!PRODUCTS.length) await loadProductsCached(); }
   } else {
-    PRODUCTS=JSON.parse(localStorage.getItem(LS.products)||"[]");
+    await loadProductsCached();
   }
-  PRODMAP=new Map(PRODUCTS.map(p=>[String(p.mktt),p]));
-  BARCODEMAP=new Map(PRODUCTS.filter(p=>p.barcode).map(p=>[String(p.barcode).trim(),p]));
+  setProducts(PRODUCTS);
+  rerunSearches();
 }
 async function saveProductsCloud(list){
   for(let i=0;i<list.length;i+=500){
@@ -1725,7 +1776,7 @@ function subscribe(){
         if(ex){ Object.assign(ex,p.new); if(ex.barcode) BARCODEMAP.set(String(ex.barcode).trim(),ex); }
         else { PRODUCTS.push(p.new); PRODMAP.set(mktt,p.new); if(p.new.barcode) BARCODEMAP.set(String(p.new.barcode).trim(),p.new); }
       }
-      try{ localStorage.setItem(LS.products,JSON.stringify(PRODUCTS)); }catch(e){}
+      try{ localStorage.setItem(LS.products,JSON.stringify(PRODUCTS)); try{ if(typeof PCACHE!=="undefined") PCACHE.set("products",PRODUCTS); }catch(_){} }catch(e){}
     })
     .subscribe();
 }
@@ -1825,7 +1876,7 @@ async function updateProductBarcode(mktt,val){
     if(val) BARCODEMAP.set(val,p);
     BARCODEMAP_NORM=null;
   }
-  try{ localStorage.setItem(LS.products,JSON.stringify(PRODUCTS)); }catch(e){}
+  try{ localStorage.setItem(LS.products,JSON.stringify(PRODUCTS)); try{ if(typeof PCACHE!=="undefined") PCACHE.set("products",PRODUCTS); }catch(_){} }catch(e){}
 }
 async function saveBarcode(){
   if(BC_MKTT==null) return;
@@ -2022,7 +2073,7 @@ async function doImport(){
     PRODUCTS=list;
     PRODMAP=new Map(list.map(p=>[String(p.mktt),p]));
     BARCODEMAP=new Map(list.filter(p=>p.barcode).map(p=>[String(p.barcode).trim(),p]));
-    try{ localStorage.setItem(LS.products,JSON.stringify(list)); }catch(e){}
+    try{ localStorage.setItem(LS.products,JSON.stringify(list)); }catch(e){} PCACHE.set("products",list);
     $("#mapArea").style.display="none"; $("#catalogFile").value="";
     refreshCatalogState();
     toast("✓ יובאו "+list.length+" מוצרים");
@@ -2791,7 +2842,7 @@ async function editProduct(mktt){
   if(!(price>=0)){ toast("מחיר לא תקין"); return; }
   p.name=nm; p.price=price;
   BARCODEMAP=new Map(PRODUCTS.filter(x=>x.barcode).map(x=>[String(x.barcode).trim(),x]));
-  try{ localStorage.setItem(LS.products,JSON.stringify(PRODUCTS)); }catch(e){}
+  try{ localStorage.setItem(LS.products,JSON.stringify(PRODUCTS)); try{ if(typeof PCACHE!=="undefined") PCACHE.set("products",PRODUCTS); }catch(_){} }catch(e){}
   try{
     if(CLOUD && sb){ const {error}=await sb.from("products").update({name:nm,price:price}).eq("mktt",String(mktt)); if(error) throw error; }
     toast("המוצר עודכן");
@@ -2849,7 +2900,7 @@ async function saveField(){
 async function updateProductField(mktt,field,val){
   const p=PRODMAP.get(String(mktt)); if(!p) return;
   if(field==="name") p.name=val; else if(field==="price") p.price=val;
-  try{ localStorage.setItem(LS.products,JSON.stringify(PRODUCTS)); }catch(e){}
+  try{ localStorage.setItem(LS.products,JSON.stringify(PRODUCTS)); try{ if(typeof PCACHE!=="undefined") PCACHE.set("products",PRODUCTS); }catch(_){} }catch(e){}
   if(CLOUD && sb){ const patch={}; patch[field]=val; const {error}=await sb.from("products").update(patch).eq("mktt",String(mktt)); if(error) throw error; }
   refreshEditResults();
   if(typeof renderSaleResults==="function" && $("#qSale")) renderSaleResults(search($("#qSale").value.trim()));
@@ -4058,7 +4109,7 @@ async function bulkApply(){
     res.forEach(function(r){ if(r) ok++; else fail++; });
     btn.innerHTML='<span class="spin"></span> מעדכן… '+Math.min(i+CHUNK,items.length)+"/"+items.length;
   }
-  try{ if(typeof LS!=="undefined"&&LS.products) localStorage.setItem(LS.products,JSON.stringify(PRODUCTS)); }catch(e){}
+  try{ if(typeof LS!=="undefined"&&LS.products) localStorage.setItem(LS.products,JSON.stringify(PRODUCTS)); try{ if(typeof PCACHE!=="undefined") PCACHE.set("products",PRODUCTS); }catch(_){} }catch(e){}
   btn.disabled=false; btn.textContent=old;
   closeBulk();
   toast("עודכנו "+ok+" מוצרים"+(fail?" · "+fail+" נכשלו":""));
@@ -4975,7 +5026,7 @@ async function adminSendPush(){
     BARCODEMAP=new Map(PRODUCTS.filter(function(x){ return x.barcode; }).map(function(x){ return [String(x.barcode).trim(),x]; }));
     try{ BARCODEMAP_NORM=null; }catch(_){}
     AG.hay=null;
-    try{ localStorage.setItem(LS.products,JSON.stringify(PRODUCTS)); }catch(_){}
+    try{ localStorage.setItem(LS.products,JSON.stringify(PRODUCTS)); try{ if(typeof PCACHE!=="undefined") PCACHE.set("products",PRODUCTS); }catch(_){} }catch(_){}
     try{ refreshEditResults(); if($id("qSale")) renderSaleResults(search($id("qSale").value.trim())); if(CUR_CART!=null) renderCart(); refreshCatalogState(); }catch(_){}
   }
   async function upsertUniform(rows){
