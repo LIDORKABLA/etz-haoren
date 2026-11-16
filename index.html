@@ -173,6 +173,12 @@
     font-size:15px;cursor:pointer;color:var(--text-2);flex:none;transition:background .12s}
   .mini:active{background:var(--surface-2)}
   .mini.del{color:var(--red);border-color:#F0C4BF}
+  .mini.cdisc{min-width:40px;font-weight:800;color:var(--ink2)}
+  .mini.cdisc.on{color:#9a5b00;background:#fff4e2;border-color:#f2c98a}
+  .cprice s.cpo{color:var(--ink2);font-weight:500;font-size:.85em;margin-inline-end:2px}
+  .cci{display:flex;flex-wrap:wrap;gap:3px 10px;margin-top:5px;font-size:12.5px;color:var(--ink);cursor:pointer}
+  .cci span{white-space:nowrap}
+  .cci .cci-add{color:var(--pine,#0B7D71);font-weight:700}
   .pend{font-size:12px;color:var(--amber)}
 
   /* ---------- summary cards / table ---------- */
@@ -1110,7 +1116,7 @@ body.m-count #calcFab{display:inline-flex}
   <div id="saleCartView">
     <button class="btn ghost" id="backToList" style="text-align:right;padding:6px 0"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg> <span id="backToListTxt">חזרה לרשימת העגלות</span></button>
     <div class="panel" style="padding:12px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:8px">
-      <div><b id="cartCustomer" style="font-size:17px">—</b><div class="cmeta" id="cartWho" style="color:var(--ink2);font-size:12.5px"></div></div>
+      <div><b id="cartCustomer" style="font-size:17px">—</b><div class="cmeta" id="cartWho" style="color:var(--ink2);font-size:12.5px"></div><div id="cartCustInfo" class="cci" role="button" tabindex="0"></div></div>
       <button class="mini" id="editCustomer" type="button"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
     </div>
     <div id="dnScanBar" class="dn-only">
@@ -1240,6 +1246,16 @@ body.m-count #calcFab{display:inline-flex}
     <div id="aiBody" class="ai-body"></div>
     <div id="aiSources" class="ai-sources"></div>
     <div class="ai-note">המידע נאסף מהאינטרנט לצורך עזר בלבד — מומלץ לאמת נתונים קריטיים מול מקור רשמי.</div>
+  </div>
+</div>
+<div class="sheet" id="custSheet">
+  <div class="card">
+    <div class="chat-head"><span>👤 פרטי לקוח</span><button id="custClose" type="button" aria-label="סגור">✕</button></div>
+    <style>#custSheet .cf{display:block;margin-top:11px}#custSheet .cf span{display:block;font-size:12.5px;color:var(--ink2);font-weight:700;margin:0 2px 4px}#custSheet input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:11px;font-family:inherit;font-size:15.5px;background:var(--card);color:var(--ink);box-sizing:border-box}#custSheet input[dir=ltr]{text-align:right}#custSheet .cgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}@media(max-width:420px){#custSheet .cgrid{grid-template-columns:1fr}}</style>
+    <label class="cf"><span>שם הלקוח *</span><input id="custName" type="text" autocomplete="off"></label>
+    <div class="cgrid"><label class="cf"><span>טלפון</span><input id="cust_phone" type="tel" inputmode="tel" dir="ltr" autocomplete="off"></label><label class="cf"><span>טלפון נוסף</span><input id="cust_phone2" type="tel" inputmode="tel" dir="ltr" autocomplete="off"></label><label class="cf"><span>איש קשר</span><input id="cust_contact" type="text"  autocomplete="off"></label><label class="cf"><span>כתובת</span><input id="cust_address" type="text"  autocomplete="off"></label><label class="cf"><span>עיר</span><input id="cust_city" type="text"  autocomplete="off"></label><label class="cf"><span>ח.פ / ת.ז</span><input id="cust_company_id" type="text"  autocomplete="off"></label><label class="cf"><span>אימייל</span><input id="cust_email" type="email" dir="ltr" autocomplete="off"></label><label class="cf"><span>הערות</span><input id="cust_notes" type="text"  autocomplete="off"></label></div>
+    <div style="font-size:12px;color:var(--ink2);margin-top:10px">כל השדות לא חובה. הפרטים יופיעו ב-PDF, בוואטסאפ ובתעודת המשלוח.</div>
+    <button class="btn primary" id="custSave" type="button" style="margin-top:14px">שמירה</button>
   </div>
 </div>
 <div class="sheet" id="genSheet">
@@ -2202,7 +2218,15 @@ function stockOf(mktt){ let s=0; for(const c of COUNTS){ if(String(c.mktt)===Str
 function curStock(mktt){ const p=PRODMAP.get(String(mktt)); const s=p&&p.stock; return (s!=null&&String(s).trim()!=="")?String(s):"—"; }
 function fmtNis(n){ return (Math.round((Number(n)||0)*100)/100).toLocaleString("he-IL")+" ₪"; }
 function cartItems(id){ return ITEMS.filter(i=>String(i.cart_id)===String(id)); }
-function cartTotal(id){ return cartItems(id).reduce((s,i)=>s+(Number(i.qty)||0)*(Number(i.unit_price)||0),0); }
+/* הנחה לשורה (באחוזים) — לא חובה. unit_price נשאר מחיר המחירון, discount מחושב מעליו */
+function itemDisc(i){ if(!i||isClearance(i.mktt)) return 0; var d=Number(i.discount)||0; return (d>0&&d<100)?Math.round(d*100)/100:0; }
+function itemUnit(i){ var u=Number(i.unit_price)||0, d=itemDisc(i); return d?Math.round(u*(1-d/100)*100)/100:u; }
+function itemSub(i){ return Math.round((Number(i.qty)||0)*itemUnit(i)*100)/100; }
+function cartTotal(id){ return cartItems(id).reduce((s,i)=>s+itemSub(i),0); }
+/* פרטי לקוח (טלפון, כתובת וכו') — נשמרים ב-carts.cust_info */
+const CUST_FIELDS=[["phone","טלפון"],["phone2","טלפון נוסף"],["contact","איש קשר"],["address","כתובת"],["city","עיר"],["company_id","ח.פ / ת.ז"],["email","אימייל"],["notes","הערות"]];
+function custInfo(c){ var o=c&&c.cust_info; if(typeof o==="string"){ try{ o=JSON.parse(o); }catch(e){ o=null; } } return (o&&typeof o==="object")?o:{}; }
+function custLines(c){ var o=custInfo(c); return CUST_FIELDS.filter(function(f){ return o[f[0]]&&String(o[f[0]]).trim(); }).map(function(f){ return f[1]+": "+String(o[f[0]]).trim(); }); }
 
 function shareCartQuote(){
   const c=CARTS.find(x=>String(x.id)===String(CUR_CART));
@@ -2215,15 +2239,16 @@ function shareCartQuote(){
   L.push(c.kind==="dn"?"*תעודת משלוח*":"*פירוט מוצרים*");
   L.push("");
   L.push("לקוח: "+(c.customer||"—"));
+  custLines(c).forEach(x=>L.push(x));
   if(c.salesperson) L.push((c.kind==="dn"?"הופק ע״י: ":"איש מכירות: ")+c.salesperson);
   L.push(SEP);
   items.forEach((i,idx)=>{
-    const qty=Number(i.qty)||0, unit=Number(i.unit_price)||0, sub=qty*unit;
+    const qty=Number(i.qty)||0, unit=itemUnit(i), sub=itemSub(i), dsc=itemDisc(i);
     const _p=PRODMAP.get(String(i.mktt)), _cm=(typeof CLEARANCE_MAP!=="undefined")?CLEARANCE_MAP.get(String(i.mktt)):null;
     const img=(_p&&_p.image_url)||(_cm&&_cm.image_url)||"";
     L.push((idx+1)+". *"+(i.name||i.mktt)+"*");
     L.push("מק״ט "+i.mktt);
-    L.push("כמות: "+qty+" | מחיר ליחידה: "+fmtNis(unit)+" | סה״כ: "+fmtNis(sub));
+    L.push("כמות: "+qty+" | מחיר ליחידה: "+(dsc?fmtNis(Number(i.unit_price)||0)+" ← "+fmtNis(unit)+" (הנחה "+dsc+"%)":fmtNis(unit))+" | סה״כ: "+fmtNis(sub));
     if(img) L.push("תמונה: "+img);
     L.push("");
   });
@@ -2298,9 +2323,10 @@ function renderCart(){
   const c=CARTS.find(x=>String(x.id)===String(CUR_CART)); if(!c){ closeCart(); return; }
   $("#cartCustomer").textContent=c.customer||"לקוח";
   $("#cartWho").textContent=(c.kind==="dn"?"הופק ע״י: ":"איש מכירות: ")+(displayName(c.salesperson)||"—")+" · עודכן "+timeAgo(cartActivity(c));
+  { const ci=$("#cartCustInfo"), cl=custLines(c); if(ci){ ci.innerHTML=cl.length?cl.map(x=>`<span>${esc(x)}</span>`).join(""):`<span class="cci-add">+ הוספת טלפון, כתובת ופרטים</span>`; } }
   const items=cartItems(c.id), box=$("#cartItems");
   box.innerHTML = items.length ? items.map(i=>{
-    const sub=(Number(i.qty)||0)*(Number(i.unit_price)||0);
+    const sub=itemSub(i), dsc=itemDisc(i);
     const _p=PRODMAP.get(String(i.mktt)), _cm=CLEARANCE_MAP.get(String(i.mktt));
     const _img=(_p&&_p.image_url)||(_cm&&_cm.image_url)||"";
     return `<div class="citem" data-item="${i.id}">
@@ -2316,7 +2342,7 @@ function renderCart(){
         <button class="qbtn" data-act="dec" type="button">−</button>
         <button class="qnum" data-act="qty" type="button" title="שינוי כמות">${i.qty}</button>
         <button class="qbtn" data-act="inc" type="button">+</button>
-        ${isClearance(i.mktt)?`<span class="cprice locked" title="מחיר חיסול נעול">${ic("lock")} ${fmtNis(Number(i.unit_price)||0)}</span>`:`<span class="cprice" data-act="price">${fmtNis(Number(i.unit_price)||0)}</span>`}
+        ${isClearance(i.mktt)?`<span class="cprice locked" title="מחיר חיסול נעול">${ic("lock")} ${fmtNis(Number(i.unit_price)||0)}</span>`:`<button class="mini cdisc${dsc?" on":""}" data-act="disc" type="button" dir="ltr" title="הנחה לשורה">${dsc?"−"+dsc+"%":"%"}</button><span class="cprice" data-act="price">${dsc?`<s class="cpo">${fmtNis(Number(i.unit_price)||0)}</s> `:""}${fmtNis(itemUnit(i))}</span>`}
         <button class="mini del" data-act="del" type="button">${ic("trash")}</button>
       </div></div>`;
   }).join("") : (c.kind==="dn" ? emptyState('box','התעודה ריקה','סרוק ברקוד כדי להוסיף פריטים') : emptyState('cart','העגלה ריקה','הוסף פריטים מהחיפוש למעלה'));
@@ -2560,14 +2586,16 @@ function buildCartPdfHTML(items, cart, note){
   var rows=items.map(function(i){
     var p=(typeof PRODMAP!=="undefined")?PRODMAP.get(String(i.mktt)):null;
     var img=(p&&p.image_url)?esc(p.image_url):"";
-    var qty=Number(i.qty)||0, up=Number(i.unit_price)||0, tot=qty*up;
+    var qty=Number(i.qty)||0, up=itemUnit(i), tot=itemSub(i), dsc=itemDisc(i);
     return '<div class="it">'+
       (img?'<img src="'+img+'" alt="">':'<div class="noimg">—</div>')+
       '<div class="inf"><div class="nm">'+esc(i.name||"")+'</div>'+
-      '<div class="sub">מק״ט '+esc(String(i.mktt))+' · '+qty+' יח׳ × '+fmtNis(up)+'</div></div>'+
+      '<div class="sub">מק״ט '+esc(String(i.mktt))+' · '+qty+' יח׳ × '+(dsc?'<s>'+fmtNis(Number(i.unit_price)||0)+'</s> '+fmtNis(up)+' <b class="dsc">הנחה '+dsc+'%</b>':fmtNis(up))+'</div></div>'+
       '<div class="pr">'+fmtNis(tot)+'</div></div>';
   }).join("");
-  var total=items.reduce(function(s,i){return s+(Number(i.qty)||0)*(Number(i.unit_price)||0);},0);
+  var total=items.reduce(function(s,i){return s+itemSub(i);},0);
+  var saved=Math.round(items.reduce(function(s,i){return s+(Number(i.qty)||0)*(Number(i.unit_price)||0);},0)*100)/100-total;
+  var cinfo=custLines(cart).map(esc);
   var d=new Date(), pad=function(n){return String(n).padStart(2,"0");};
   var dateStr=pad(d.getDate())+"/"+pad(d.getMonth()+1)+"/"+d.getFullYear();
   var cust=(cart&&cart.customer)?esc(String(cart.customer)):"";
@@ -2587,16 +2615,17 @@ function buildCartPdfHTML(items, cart, note){
   '.it .noimg{width:60px;height:60px;border:1px solid #eee;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#ccc;flex:none;font-size:20px}'+
   '.it .inf{flex:1;min-width:0}'+
   '.it .nm{font-size:14.5px;font-weight:700;line-height:1.3}'+
-  '.it .sub{font-size:12px;color:#777;margin-top:3px}'+
+  '.saved{text-align:left;color:#b26a00;font-weight:700;font-size:13px;margin-top:4px}.it .sub{font-size:12px;color:#777;margin-top:3px}.it .sub s{color:#aaa}.it .sub .dsc{color:#b26a00}'+
   '.it .pr{font-size:15px;font-weight:800;color:#0B7D71;white-space:nowrap}'+
   '.sum{margin-top:14px;border-top:2px solid #0B7D71;padding-top:12px;display:flex;justify-content:space-between;align-items:center;page-break-inside:avoid}'+
   '.sum .l{font-size:16px;font-weight:700}.sum .v{font-size:24px;font-weight:900;color:#0B7D71}'+
   '.note{margin-top:14px;padding:11px 13px;background:#f6f4ec;border-right:3px solid #0B7D71;border-radius:7px;font-size:13px;color:#333;line-height:1.5;page-break-inside:avoid}'+'.terms{margin-top:18px;border-top:1px solid #e0e0e0;padding-top:12px;font-size:10.5px;color:#777;line-height:1.7;text-align:right;page-break-inside:avoid}'+'.terms div{margin-bottom:3px}'+'.sign{margin-top:26px;display:flex;gap:18px;flex-wrap:wrap;font-size:13.5px;color:#222;page-break-inside:avoid}.sign div{flex:1;min-width:190px}'+
   '</style></head><body>'+
   '<div class="hd"><div><div class="t">'+(dn?'תעודת משלוח':'פירוט מוצרים')+'</div>'+
-  '<div class="m">תאריך: '+dateStr+(cust?'<br>לקוח: '+cust:"")+(sp?'<br>'+(dn?'הופק ע״י: ':'נציג: ')+sp:"")+'</div></div><img src="'+LOGO_B64+'" alt=""></div>'+
+  '<div class="m">תאריך: '+dateStr+(cust?'<br>לקוח: '+cust:"")+(cinfo.length?'<br>'+cinfo.join(' · '):"")+(sp?'<br>'+(dn?'הופק ע״י: ':'נציג: ')+sp:"")+'</div></div><img src="'+LOGO_B64+'" alt=""></div>'+
   rows+
   '<div class="sum"><span class="l">סה״כ לתשלום</span><span class="v">'+fmtNis(total)+'</span></div>'+
+  (saved>0.004?'<div class="saved">כולל הנחה בסך '+fmtNis(saved)+'</div>':'')+
   (note?'<div class="note"><b>הערה:</b> '+esc(note)+'</div>':'')+
   (dn?DN_TAIL:'<div class="terms">'+
     '<div>• המחירים כוללים מע״מ.</div>'+
@@ -2669,8 +2698,7 @@ function exportDnTable(){
   if(!items.length){ toast("התעודה ריקה"); return; }
   var cart=((typeof CARTS!=="undefined"&&CARTS)||[]).find(function(c){return String(c.id)===String(CUR_CART);})||null;
   if(!cart||cart.kind!=="dn"){ toast("ייצוא זה זמין רק בתעודת משלוח"); return; }
-  var extra=prompt("כתובת / טלפון הלקוח (אופציונלי):", "");
-  if(extra===null) return;
+  var extra=custLines(cart).join("   ");
   var w=window.open("","_blank");
   if(!w){ toast("יש לאפשר חלונות קופצים כדי לייצא"); return; }
   w.document.open(); w.document.write(buildDnTableHTML(items, cart, extra.trim())); w.document.close();
@@ -2682,12 +2710,36 @@ function wireGeneralProduct(){
   var c=document.getElementById("genClose"); if(c) c.addEventListener("click", closeGeneralProduct);
   var s=document.getElementById("genSheet"); if(s) s.addEventListener("click", function(e){ if(e.target.id==="genSheet") closeGeneralProduct(); });
 }
+/* ===== פרטי לקוח לעגלה / תעודה ===== */
+function openCustSheet(){
+  const c=CARTS.find(x=>String(x.id)===String(CUR_CART)); if(!c) return;
+  const o=custInfo(c);
+  $("#custName").value=c.customer||"";
+  CUST_FIELDS.forEach(f=>{ const el=document.getElementById("cust_"+f[0]); if(el) el.value=o[f[0]]||""; });
+  $("#custSheet").classList.add("open");
+}
+function closeCustSheet(){ $("#custSheet").classList.remove("open"); }
+async function saveCustSheet(){
+  const c=CARTS.find(x=>String(x.id)===String(CUR_CART)); if(!c) return;
+  const name=$("#custName").value.trim(); if(!name){ toast("יש להזין שם לקוח"); return; }
+  const info={}; CUST_FIELDS.forEach(f=>{ const el=document.getElementById("cust_"+f[0]); const v=el?el.value.trim():""; if(v) info[f[0]]=v; });
+  const ok=await saveCartCustomer(c,name,info);
+  if(ok) closeCustSheet();
+}
+async function saveCartCustomer(c,name,info){
+  const patch={customer:name,cust_info:info};
+  try{
+    const {error}=await sb.from("carts").update(patch).eq("id",c.id); if(error) throw error;
+    Object.assign(c,patch); touchCart(c.id); if(String(CUR_CART)===String(c.id)) renderCart(); renderCartList(); try{ renderDNList(); }catch(_){}
+    return true;
+  }catch(e){ console.error(e); toast(/cust_info/i.test(String(e&&e.message))?"חסרה עמודה — הרץ את cart-extras.sql ב-Supabase":"שגיאה בשמירת פרטי לקוח"); return false; }
+}
 async function updateItem(item,patch){
   try{
     const {error}=await sb.from("cart_items").update(patch).eq("id",item.id);
     if(error) throw error;
     Object.assign(item,patch); touchCart(item.cart_id); renderCart(); renderCartList();
-  }catch(e){ console.error(e); toast("שגיאה בעדכון"); }
+  }catch(e){ console.error(e); toast(/discount/i.test(String(e&&e.message))?"חסרה עמודה — הרץ את cart-extras.sql ב-Supabase":"שגיאה בעדכון"); }
 }
 async function removeItem(item){
   try{
@@ -3284,14 +3336,14 @@ function bindUI(){
     else if(act==="qty"){ const v=prompt("כמות יחידות:", Number(item.qty)||1); if(v===null) return; const q=pnum(v); if(!(q>0)){ if(confirm("להסיר את הפריט?")) removeItem(item); return; } updateItem(item,{qty:q}); }
     else if(act==="dec"){ const q=(Number(item.qty)||0)-1; if(q<=0){ if(confirm("להסיר את הפריט?")) removeItem(item); } else updateItem(item,{qty:q}); }
     else if(act==="del"){ if(confirm("להסיר את הפריט?")) removeItem(item); }
+    else if(act==="disc"){ if(isClearance(item.mktt)){ toast("מוצר חיסול — מחיר נעול, ללא הנחה"); return; } const v=prompt("אחוז הנחה לשורה (0 = ללא הנחה):", itemDisc(item)||""); if(v===null) return; const d=pnum(v); if(!(d>=0&&d<100)){ toast("אחוז לא תקין (0–99)"); return; } updateItem(item,{discount:Math.round(d*100)/100}); }
     else if(act==="price"){ if(isClearance(item.mktt)){ toast("מחיר חיסול נעול — לא ניתן לשינוי"); return; } const v=prompt("מחיר ליחידה (לעגלה זו בלבד):", Number(item.unit_price)||0); if(v!==null) updateItem(item,{unit_price:pnum(v)}); }
   });
-  $("#editCustomer").addEventListener("click",async()=>{
-    const c=CARTS.find(x=>String(x.id)===String(CUR_CART)); if(!c) return;
-    const v=(prompt("שם הלקוח:",c.customer||"")||"").trim(); if(!v) return;
-    try{ const {error}=await sb.from("carts").update({customer:v}).eq("id",c.id); if(error) throw error; c.customer=v; touchCart(c.id); renderCart(); renderCartList(); }
-    catch(e){ console.error(e); toast("שגיאה בעדכון שם"); }
-  });
+  $("#editCustomer").addEventListener("click",openCustSheet);
+  $("#cartCustInfo").addEventListener("click",openCustSheet);
+  $("#custSave").addEventListener("click",saveCustSheet);
+  $("#custClose").addEventListener("click",closeCustSheet);
+  $("#custSheet").addEventListener("click",e=>{ if(e.target.id==="custSheet") closeCustSheet(); });
   $("#waQuoteBtn").addEventListener("click",shareCartQuote);
   $("#delCartBtn").addEventListener("click",()=>{ if(CUR_CART!=null && confirm(DN_MODE?"למחוק את תעודת המשלוח?":"למחוק את העגלה? (לאחר שהתשלום נגבה בקופה)")) deleteCart(CUR_CART); });
   // תעודות משלוח
@@ -3571,7 +3623,9 @@ var CART_XLSX_COLS=[
   {label:"ברקוד",       w:20, def:true,  get:function(it,p,cm){ return (p&&p.barcode)||""; }},
   {label:"כמות",        w:10, def:true,  get:function(it,p,cm){ return Number(it.qty)||0; }},
   {label:"מחיר יחידה",  w:12, def:true,  get:function(it,p,cm){ return Number(it.unit_price)||0; }},
-  {label:"סה״כ שורה",   w:13, def:true,  get:function(it,p,cm){ return (Number(it.qty)||0)*(Number(it.unit_price)||0); }},
+  {label:"הנחה %",      w:9,  def:true,  get:function(it,p,cm){ return itemDisc(it)||""; }},
+  {label:"מחיר אחרי הנחה", w:14, def:false, get:function(it,p,cm){ return itemUnit(it); }},
+  {label:"סה״כ שורה",   w:13, def:true,  get:function(it,p,cm){ return itemSub(it); }},
   {label:"קישור תמונה", w:48, def:true,  get:function(it,p,cm){ return (p&&(p.image_url||p.image))||(cm&&cm.image_url)||""; }},
   {label:"מלאי נוכחי",   w:12, def:false, get:function(it,p,cm){ return (p&&p.stock!=null&&p.stock!=="")?p.stock:""; }},
   {label:"יחידה",       w:12, def:false, get:function(it,p,cm){ return (p&&p.unit)||""; }},
@@ -3618,11 +3672,12 @@ function doCartXlsx(){
     /* הצעת מחיר לקומקס — מק״ט + כמות בלבד, שורות פריטים בלבד */
     aoa=[["מק״ט","כמות"]];
     items.forEach(function(it){ aoa.push([it.mktt, Number(it.qty)||0]); });
+    if(items.some(function(it){ return itemDisc(it); })) toast("שים לב: הנחות לשורה לא עוברות בפורמט הצעת מחיר לקומקס");
     wch=[{wch:16},{wch:10}]; sheetName="הצעת מחיר"; fname="הצעת-מחיר-קומקס_"+stamp+".xlsx";
   } else if(fmt==="invoice"){
     /* חשבונית מס לקומקס — מק״ט + כמות + סה״כ שורה, שורות פריטים בלבד */
     aoa=[["מק״ט","כמות","סה״כ שורה"]];
-    items.forEach(function(it){ aoa.push([it.mktt, Number(it.qty)||0, Math.round((Number(it.qty)||0)*(Number(it.unit_price)||0)*100)/100]); });
+    items.forEach(function(it){ aoa.push([it.mktt, Number(it.qty)||0, itemSub(it)]); });
     wch=[{wch:16},{wch:10},{wch:13}]; sheetName="חשבונית מס"; fname="חשבונית-מס-קומקס_"+stamp+".xlsx";
   } else {
     var box=document.getElementById("cartXlsxCols"); if(!box) return;
@@ -4469,6 +4524,8 @@ async function adminSendPush(){
 .ag-doc-sum{font-size:13px;color:#333;background:#f7f7f4;border-radius:10px;padding:8px 11px;margin-top:8px}
 .ag-doc-miss{font-size:12.5px;color:#9a5b00;background:#fff4e2;border-radius:10px;padding:8px 11px;margin-top:8px}
 .ag-doc-tot{display:flex;justify-content:space-between;font-weight:800;font-size:15px;margin-top:8px}
+.ag-dd{color:#9a5b00;background:#fff4e2;border-radius:6px;padding:0 6px;font-size:12px;font-weight:800;white-space:nowrap}
+.ag-doc-ci{font-size:12.5px;color:#075E54;background:#eaf5f3;border-radius:10px;padding:7px 10px;margin-bottom:6px}
 .ag-doc-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 15px 14px}
 .ag-doc-acts button{border:1.5px solid #0B7D71;background:#fff;color:#075E54;border-radius:12px;padding:11px 8px;font-family:inherit;font-weight:800;font-size:13.5px;cursor:pointer}
 .ag-doc-acts button.pri{background:#0B7D71;color:#fff;grid-column:1/-1}
@@ -4525,7 +4582,7 @@ async function adminSendPush(){
   var AG={pin:null,msgs:[],pending:null,busy:false,file:null,hay:null,hayFor:null};
   try{ AG.pin=sessionStorage.getItem("etz_agent_pin")||null; }catch(e){}
   var $id=function(i){ return document.getElementById(i); };
-  var DOC={quote:{t:"הצעת מחיר",ok:"הצעת המחיר נוצרה",ic:"💰"},details:{t:"פירוט מוצרים",ok:"פירוט המוצרים נוצר",ic:"📄"},cart:{t:"עגלה ללקוח",ok:"העגלה נוצרה",ic:"🛒"},delivery_note:{t:"תעודת משלוח",ok:"תעודת המשלוח נוצרה",ic:"🚚"}};
+  var DOC={quote:{t:"הצעת מחיר",ok:"הצעת המחיר נוצרה",up:"הצעת המחיר עודכנה",ic:"💰"},details:{t:"פירוט מוצרים",ok:"פירוט המוצרים נוצר",up:"פירוט המוצרים עודכן",ic:"📄"},cart:{t:"עגלה ללקוח",ok:"העגלה נוצרה",up:"העגלה עודכנה",ic:"🛒"},delivery_note:{t:"תעודת משלוח",ok:"תעודת המשלוח נוצרה",up:"תעודת המשלוח עודכנה",ic:"🚚"}};
 
   /* ---------- פתיחה / סגירה / נעילה ---------- */
   function open(){ $id("agentOv").classList.add("open"); if(AG.pin) showChat(); else showLock(""); }
@@ -4683,35 +4740,75 @@ async function adminSendPush(){
     var rows=[], bad=[], byM={};
     (inp.items||[]).forEach(function(it){
       var m=String(it.mktt==null?"":it.mktt).trim(), q=Math.max(1,Math.round(Number(it.qty)||1));
-      if(m==="1"){ if(!it.name){ bad.push("מוצר כללי ללא שם"); return; } rows.push({mktt:"1",name:String(it.name),qty:q,unit_price:pnum(it.unit_price)}); return; }
+      var dsc=dn?0:Math.max(0,Math.min(99,Number(it.discount)||0));
+      if(m==="1"){ if(!it.name){ bad.push("מוצר כללי ללא שם"); return; } rows.push({mktt:"1",name:String(it.name),qty:q,unit_price:pnum(it.unit_price),discount:dsc}); return; }
       var p=PRODMAP.get(m)||(typeof findByCode==="function"?findByCode(m):null); if(!p){ bad.push(m); return; }
       m=String(p.mktt);
       var price=(!dn&&it.unit_price!=null&&it.unit_price!=="")?pnum(it.unit_price):(isClearance(m)?clearancePrice(m):pnum(p.price));
       if(byM[m]){ byM[m].qty+=q; return; }
-      byM[m]={mktt:m,name:p.name||"",qty:q,unit_price:price}; rows.push(byM[m]);
+      byM[m]={mktt:m,name:p.name||"",qty:q,unit_price:price,discount:isClearance(m)?0:dsc}; rows.push(byM[m]);
     });
     if(!rows.length) return {ok:false,text:"לא נוצר: אין פריטים תקינים."+(bad.length?" מק״טים לא קיימים: "+bad.join(", "):"")};
     try{
       var obj={customer:cust,salesperson:sp,status:"open"}; if(dn) obj.kind="dn";
+      var ci=cleanInfo(inp.customer_info); if(Object.keys(ci).length) obj.cust_info=ci;
+      var anyD=rows.some(function(r){ return r.discount>0; }); if(!anyD) rows.forEach(function(r){ delete r.discount; });
       var c=await sb.from("carts").insert(obj).select(); if(c.error) throw c.error;
-      var cart=c.data[0]; if(!CARTS.some(function(x){return x.id===cart.id;})) CARTS.unshift(cart);
+      var cart=c.data[0]; cart._agType=type; if(!CARTS.some(function(x){return x.id===cart.id;})) CARTS.unshift(cart);
       rows.forEach(function(r){ r.cart_id=cart.id; });
       var it=await sb.from("cart_items").insert(rows).select();
       if(it.error){ try{ await sb.from("carts").delete().eq("id",cart.id); }catch(_){} CARTS=CARTS.filter(function(x){return x.id!==cart.id;}); throw it.error; }
       (it.data||[]).forEach(function(r){ if(!ITEMS.some(function(x){return x.id===r.id;})) ITEMS.push(r); });
       try{ renderCartList(); renderDNList(); }catch(_){}
-      var qty=rows.reduce(function(s,r){return s+r.qty;},0), tot=rows.reduce(function(s,r){return s+r.qty*r.unit_price;},0);
+      var qty=rows.reduce(function(s,r){return s+r.qty;},0), tot=rows.reduce(function(s,r){return s+itemSub(r);},0);
       docCard(type,cart,rows,inp,bad,tot,qty);
       return {ok:true,text:"נוצר "+DOC[type].t+" #"+cart.id+" ל"+cust+": "+rows.length+" שורות, "+qty+" יח׳"+(dn?"":", סה״כ "+fmtNis(tot))+"."+(bad.length?" נדחו (לא בקטלוג): "+bad.join(", "):"")};
     }catch(e){
       console.error("agent create",e);
       var msg=String((e&&e.message)||e);
-      return {ok:false,text:/kind/i.test(msg)?"חסרה עמודת kind בטבלת carts (dn-setup.sql)":"שגיאה ביצירה: "+msg};
+      return {ok:false,text:/kind/i.test(msg)?"חסרה עמודת kind בטבלת carts (dn-setup.sql)":/cust_info|discount/i.test(msg)?"חסרות עמודות — יש להריץ את cart-extras.sql ב-Supabase":"שגיאה ביצירה: "+msg};
     }
   }
-  function docCard(type,cart,rows,inp,bad,tot,qty){
+  function cleanInfo(o){ var r={}; if(!o||typeof o!=="object") return r; CUST_FIELDS.forEach(function(f){ var v=o[f[0]]; if(v!=null&&String(v).trim()) r[f[0]]=String(v).trim().slice(0,200); }); return r; }
+  /* עדכון מסמך קיים: פרטי לקוח, שם, הנחות, כמויות */
+  async function updateDoc(inp){
+    var c=CARTS.find(function(x){ return String(x.id)===String(inp.doc_id); });
+    if(!c) return {ok:false,text:"מסמך #"+inp.doc_id+" לא נמצא (אולי נמחק)."};
+    var done=[], dn=c.kind==="dn";
+    try{
+      if(inp.customer||inp.customer_info){
+        var info=Object.assign({},custInfo(c),cleanInfo(inp.customer_info));
+        var name=String(inp.customer||c.customer||"לקוח").trim();
+        if(!(await saveCartCustomer(c,name,info))) return {ok:false,text:"שמירת פרטי לקוח נכשלה (ייתכן שחסר cart-extras.sql)."};
+        done.push("פרטי לקוח");
+      }
+      var its=cartItems(c.id);
+      var D=(inp.discounts||[]);
+      for(var i=0;i<D.length;i++){
+        var x=D[i], pct=Math.max(0,Math.min(99,Number(x.discount)||0));
+        if(dn) return {ok:false,text:"בתעודת משלוח אין הנחות."};
+        var tgt=String(x.mktt)==="*"?its:its.filter(function(it){ return String(it.mktt)===String(x.mktt); });
+        for(var j=0;j<tgt.length;j++){ if(isClearance(tgt[j].mktt)) continue; var r=await sb.from("cart_items").update({discount:pct}).eq("id",tgt[j].id); if(r.error) throw r.error; tgt[j].discount=pct; }
+        done.push((String(x.mktt)==="*"?"כל השורות":x.mktt)+" → "+pct+"%");
+      }
+      var Q=(inp.quantities||[]);
+      for(var k=0;k<Q.length;k++){
+        var it2=its.find(function(it){ return String(it.mktt)===String(Q[k].mktt); }); if(!it2) continue;
+        var q=Math.round(Number(Q[k].qty)||0);
+        if(q<=0){ var d2=await sb.from("cart_items").delete().eq("id",it2.id); if(d2.error) throw d2.error; ITEMS=ITEMS.filter(function(z){ return z.id!==it2.id; }); done.push(it2.mktt+" הוסר"); }
+        else { var u2=await sb.from("cart_items").update({qty:q}).eq("id",it2.id); if(u2.error) throw u2.error; it2.qty=q; done.push(it2.mktt+" × "+q); }
+      }
+      touchCart(c.id); try{ renderCartList(); renderDNList(); if(String(CUR_CART)===String(c.id)) renderCart(); }catch(_){}
+      var its2=cartItems(c.id), tot=its2.reduce(function(s,r){ return s+itemSub(r); },0);
+      var D0=dn?"delivery_note":(c._agType&&c._agType!=="delivery_note"?c._agType:"cart");
+      docCard(D0,c,its2,{summary:inp.summary||("עודכן: "+done.join(" · "))},[],tot,its2.reduce(function(s,r){return s+(Number(r.qty)||0);},0),true);
+      return {ok:true,text:"עודכן מסמך #"+c.id+": "+(done.join(" · ")||"ללא שינוי")+"."+(dn?"":" סה״כ חדש "+fmtNis(tot)+".")};
+    }catch(e){ console.error("agent update",e); var m=String((e&&e.message)||e); return {ok:false,text:/cust_info|discount/i.test(m)?"חסרות עמודות — יש להריץ את cart-extras.sql ב-Supabase":"שגיאה בעדכון: "+m}; }
+  }
+  function docCard(type,cart,rows,inp,bad,tot,qty,upd){
     var D=DOC[type], dn=type==="delivery_note";
-    var show=rows.slice(0,6).map(function(r){ return '<div class="row"><span class="nm">'+esc(r.name||r.mktt)+'</span><span class="q">× '+r.qty+'</span></div>'; }).join("");
+    var show=rows.slice(0,6).map(function(r){ var dd=itemDisc(r); return '<div class="row"><span class="nm">'+esc(r.name||r.mktt)+'</span>'+(dd?'<span class="ag-dd" dir="ltr">−'+dd+'%</span>':'')+'<span class="q">× '+r.qty+'</span></div>'; }).join("");
+    var cl=custLines(cart);
     var miss=[].concat((inp.unmatched||[]).map(function(u){ return u.text+(u.qty?" ×"+u.qty:""); }),bad);
     var acts;
     if(dn) acts='<button class="pri" data-ag="dntable">ייצוא תעודת משלוח (טבלה)</button><button data-ag="open">פתח תעודה</button><button data-ag="pdf">PDF</button>';
@@ -4719,8 +4816,8 @@ async function adminSendPush(){
     else if(type==="details") acts='<button class="pri" data-ag="pdf">ייצוא PDF</button><button data-ag="wa">וואטסאפ</button><button data-ag="open">פתח עגלה</button>';
     else acts='<button class="pri" data-ag="open">פתח עגלה</button><button data-ag="wa">וואטסאפ</button><button data-ag="pdf">PDF</button>';
     var el=div("ag-doc",
-      '<div class="ag-doc-h"><span class="ic">'+D.ic+'</span><div><b>'+D.ok+'</b><small>'+esc(cart.customer||"")+' · '+rows.length+' שורות · '+qty+' יח׳</small></div></div>'+
-      '<div class="ag-doc-b">'+show+(rows.length>6?'<div class="more">ועוד '+(rows.length-6)+' שורות…</div>':'')+
+      '<div class="ag-doc-h"><span class="ic">'+D.ic+'</span><div><b>'+(upd?D.up:D.ok)+'</b><small>'+esc(cart.customer||"")+' · '+rows.length+' שורות · '+qty+' יח׳</small></div></div>'+
+      '<div class="ag-doc-b">'+(cl.length?'<div class="ag-doc-ci">'+cl.map(esc).join(" · ")+'</div>':'')+show+(rows.length>6?'<div class="more">ועוד '+(rows.length-6)+' שורות…</div>':'')+
       (dn?'':'<div class="ag-doc-tot"><span>סה״כ</span><span>'+fmtNis(tot)+'</span></div>')+
       (inp.summary?'<div class="ag-doc-sum">'+md(inp.summary)+'</div>':'')+
       (miss.length?'<div class="ag-doc-miss">⚠ לא נכנסו: '+esc(miss.join(" · "))+'</div>':'')+
@@ -4789,6 +4886,9 @@ async function adminSendPush(){
         } else if(u.name==="create_document"){
           var s3=status("יוצר מסמך…"); var res=await createDoc(u.input||{}); s3.remove();
           out={type:"tool_result",tool_use_id:u.id,content:res.text}; if(!res.ok){ out.is_error=true; err(res.text); } else created=true;
+        } else if(u.name==="update_document"){
+          var s4=status("מעדכן מסמך…"); var res2=await updateDoc(u.input||{}); s4.remove();
+          out={type:"tool_result",tool_use_id:u.id,content:res2.text}; if(!res2.ok){ out.is_error=true; err(res2.text); } else created=true;
         } else out={type:"tool_result",tool_use_id:u.id,content:"כלי לא מוכר",is_error:true};
         results.push(out);
       }
