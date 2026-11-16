@@ -4416,7 +4416,8 @@ async function adminSendPush(){
   <div style="background:var(--surface,#fff);width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.2)">
     <div style="display:flex;align-items:center;margin-bottom:12px"><b style="flex:1;font-size:17px">כלים</b><button id="toolsClose" type="button" style="border:none;background:var(--surface-2,#eee);width:34px;height:34px;border-radius:9px;font-size:18px;cursor:pointer">✕</button></div>
     <button class="btn" id="modBarcodeBtn" type="button" style="width:100%;margin-bottom:10px"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:17px;height:17px;vertical-align:-3px;margin-left:6px"><path d="M3 5v14M8 5v14M13 5v14M18 5v14M21 5v14"/></svg> מחולל מדבקות ברקוד</button>
-    <button class="btn" id="modSignageBtn" type="button" style="width:100%"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:17px;height:17px;vertical-align:-3px;margin-left:6px"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 20h10M8 9h8M8 13h5"/></svg> מחולל שילוט מחיר</button>    <button class="btn" id="modNotifyBtn" type="button" style="width:100%;margin-top:10px"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:17px;height:17px;vertical-align:-3px;margin-left:6px"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg> הפעלת התראות במכשיר הזה</button>
+    <button class="btn" id="modSignageBtn" type="button" style="width:100%"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:17px;height:17px;vertical-align:-3px;margin-left:6px"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 20h10M8 9h8M8 13h5"/></svg> מחולל שילוט מחיר</button>
+    <button class="btn" id="modAgentBtn" type="button" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#0B7D71,#075E54);color:#fff;font-weight:800">✨ סוכן מסמכים AI <span style="opacity:.8;font-size:13px">🔒 מנהל</span></button>    <button class="btn" id="modNotifyBtn" type="button" style="width:100%;margin-top:10px"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:17px;height:17px;vertical-align:-3px;margin-left:6px"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg> הפעלת התראות במכשיר הזה</button>
   </div>
 </div>
 <div id="modOverlay" style="position:fixed;inset:0;z-index:300;background:#fff;display:none;flex-direction:column">
@@ -4426,5 +4427,372 @@ async function adminSendPush(){
   </div>
   <iframe id="modFrame" style="flex:1;width:100%;border:0;background:#fff" title="כלי"></iframe>
 </div>
+<!-- ================= סוכן מסמכים AI (מוגן בקוד מנהל) ================= -->
+<style>
+#agentOv{position:fixed;inset:0;z-index:310;background:var(--bg,#F4F3EE);display:none;flex-direction:column;color:var(--ink,#171D24)}
+#agentOv.open{display:flex}
+#agentOv .ag-hd{flex:none;display:flex;align-items:center;gap:10px;padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top));background:linear-gradient(135deg,#0B7D71,#075E54);color:#fff;box-shadow:0 4px 18px rgba(7,94,84,.25)}
+#agentOv .ag-hd button{background:rgba(255,255,255,.18);border:none;color:#fff;height:38px;min-width:38px;padding:0 11px;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;flex:none}
+#agentOv .ag-ttl{flex:1;min-width:0}
+#agentOv .ag-ttl b{display:block;font-size:16.5px;font-weight:800}
+#agentOv .ag-ttl small{display:block;font-size:11.5px;opacity:.85;margin-top:1px}
+#agLock{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;gap:12px}
+#agLock .ag-lk-ic{width:66px;height:66px;border-radius:20px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 6px 22px rgba(9,26,23,.12)}
+#agLock h3{margin:6px 0 0;font-size:19px}
+#agLock p{margin:0;color:var(--ink2,#5C6672);font-size:14px;line-height:1.6;max-width:330px}
+#agPin{width:190px;text-align:center;font-size:24px;letter-spacing:8px;padding:12px;border:2px solid var(--line,#E8E6DF);border-radius:14px;background:#fff;font-family:inherit;color:inherit}
+#agPin:focus{outline:none;border-color:#0B7D71}
+#agPinBtn{width:190px;padding:13px;border:none;border-radius:14px;background:#0B7D71;color:#fff;font-family:inherit;font-weight:800;font-size:16px;cursor:pointer}
+#agLockErr{color:#D7483B;font-weight:700;font-size:13.5px;min-height:18px}
+#agChat{flex:1;display:none;flex-direction:column;min-height:0}
+#agMsgs{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 12px 8px;display:flex;flex-direction:column;gap:10px}
+.ag-m{max-width:88%;padding:11px 14px;border-radius:16px;font-size:14.5px;line-height:1.6;word-wrap:break-word;white-space:normal}
+.ag-u{align-self:flex-start;background:#0B7D71;color:#fff;border-bottom-right-radius:5px}
+.ag-a{align-self:flex-end;background:#fff;border:1px solid var(--line,#E8E6DF);border-bottom-left-radius:5px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.ag-a b{color:#075E54}
+.ag-file{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.2);border-radius:8px;padding:4px 9px;font-size:12.5px;margin-bottom:6px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ag-st{align-self:center;font-size:12.5px;color:var(--ink2,#5C6672);background:#fff;border:1px solid var(--line,#E8E6DF);border-radius:20px;padding:5px 12px;display:flex;align-items:center;gap:7px}
+.ag-dots{display:inline-flex;gap:3px}.ag-dots i{width:5px;height:5px;border-radius:50%;background:#0B7D71;animation:agB 1s infinite}.ag-dots i:nth-child(2){animation-delay:.15s}.ag-dots i:nth-child(3){animation-delay:.3s}
+@keyframes agB{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+.ag-err{align-self:center;background:#fdecea;color:#b3261e;border-radius:12px;padding:9px 13px;font-size:13.5px;font-weight:600;max-width:92%;text-align:center}
+.ag-doc{align-self:stretch;background:#fff;border:1.5px solid #0B7D71;border-radius:18px;overflow:hidden;box-shadow:0 6px 22px rgba(11,125,113,.13)}
+.ag-doc-h{background:#eaf5f3;padding:12px 15px;display:flex;align-items:center;gap:10px}
+.ag-doc-h .ic{font-size:22px}
+.ag-doc-h b{display:block;font-size:15.5px;color:#075E54}
+.ag-doc-h small{display:block;font-size:12.5px;color:var(--ink2,#5C6672)}
+.ag-doc-b{padding:11px 15px;font-size:13.5px;line-height:1.6}
+.ag-doc-b .row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed #e6e6e6}
+.ag-doc-b .row:last-child{border-bottom:none}
+.ag-doc-b .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ag-doc-b .q{font-weight:800;color:#075E54;white-space:nowrap}
+.ag-doc-b .more{color:var(--ink2,#5C6672);font-size:12.5px;padding-top:6px}
+.ag-doc-sum{font-size:13px;color:#333;background:#f7f7f4;border-radius:10px;padding:8px 11px;margin-top:8px}
+.ag-doc-miss{font-size:12.5px;color:#9a5b00;background:#fff4e2;border-radius:10px;padding:8px 11px;margin-top:8px}
+.ag-doc-tot{display:flex;justify-content:space-between;font-weight:800;font-size:15px;margin-top:8px}
+.ag-doc-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 15px 14px}
+.ag-doc-acts button{border:1.5px solid #0B7D71;background:#fff;color:#075E54;border-radius:12px;padding:11px 8px;font-family:inherit;font-weight:800;font-size:13.5px;cursor:pointer}
+.ag-doc-acts button.pri{background:#0B7D71;color:#fff;grid-column:1/-1}
+#agChips{display:flex;gap:7px;overflow-x:auto;padding:4px 12px 8px;scrollbar-width:none;flex:none}
+#agChips::-webkit-scrollbar{display:none}
+#agChips button{flex:none;border:1px solid #cfe5e1;background:#fff;color:#075E54;border-radius:20px;padding:7px 13px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.ag-welcome{align-self:stretch;text-align:center;padding:18px 10px 4px;color:var(--ink2,#5C6672);font-size:14px;line-height:1.65}
+.ag-welcome b{display:block;color:var(--ink,#171D24);font-size:17px;margin-bottom:4px}
+#agFileBar{display:none;margin:0 12px 6px;background:#fff;border:1px solid #cfe5e1;border-radius:12px;padding:8px 11px;align-items:center;gap:8px;font-size:13px;flex:none}
+#agFileBar.on{display:flex}
+#agFileBar span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+#agFileBar button{border:none;background:#eee;border-radius:8px;width:28px;height:28px;cursor:pointer;flex:none}
+.ag-comp{flex:none;display:flex;align-items:flex-end;gap:8px;padding:8px 12px calc(10px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line,#E8E6DF)}
+.ag-comp textarea{flex:1;min-width:0;resize:none;max-height:130px;min-height:44px;padding:11px 13px;border:1.5px solid var(--line,#E8E6DF);border-radius:14px;font-family:inherit;font-size:15.5px;line-height:1.45;background:var(--bg,#F4F3EE);color:inherit}
+.ag-comp textarea:focus{outline:none;border-color:#0B7D71;background:#fff}
+.ag-comp .ag-ib{width:44px;height:44px;border-radius:13px;border:1.5px solid var(--line,#E8E6DF);background:#fff;color:#075E54;cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center}
+.ag-comp .ag-send{background:#0B7D71;border-color:#0B7D71;color:#fff}
+.ag-comp .ag-send:disabled{opacity:.45}
+.ag-comp svg{width:21px;height:21px}
+</style>
+<div id="agentOv" dir="rtl" aria-label="סוכן מסמכים">
+  <div class="ag-hd">
+    <button id="agClose" type="button" aria-label="חזרה">→</button>
+    <div class="ag-ttl"><b>✨ סוכן מסמכים</b><small id="agUsage">הצעות מחיר · פירוט מוצרים · עגלות · תעודות משלוח</small></div>
+    <button id="agNew" type="button" style="display:none">שיחה חדשה</button>
+  </div>
+  <div id="agLock">
+    <div class="ag-lk-ic">🔒</div>
+    <h3>אזור מנהל</h3>
+    <p>הסוכן משתמש ב-AI בתשלום. הזן קוד מנהל כדי להמשיך.</p>
+    <input id="agPin" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="••••">
+    <button id="agPinBtn" type="button">כניסה</button>
+    <div id="agLockErr"></div>
+  </div>
+  <div id="agChat">
+    <div id="agMsgs"></div>
+    <div id="agChips">
+      <button type="button" data-t="תכין הצעת מחיר מהקובץ המצורף ללקוח ">💰 הצעת מחיר</button>
+      <button type="button" data-t="תכין תעודת משלוח מהקובץ המצורף ל">🚚 תעודת משלוח</button>
+      <button type="button" data-t="תכין פירוט מוצרים ללקוח ">📄 פירוט מוצרים</button>
+      <button type="button" data-t="תפתח עגלה ללקוח ">🛒 עגלה ללקוח</button>
+    </div>
+    <div id="agFileBar"><span id="agFileName"></span><button id="agFileX" type="button" aria-label="הסר קובץ">✕</button></div>
+    <div class="ag-comp">
+      <button class="ag-ib" id="agAttach" type="button" aria-label="צרף קובץ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg></button>
+      <textarea id="agText" rows="1" placeholder="מה להכין? אפשר גם לצרף קובץ…"></textarea>
+      <button class="ag-ib ag-send" id="agSend" type="button" aria-label="שלח"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 5l-7 7 7 7"/></svg></button>
+      <input id="agFile" type="file" accept=".xlsx,.xls,.csv,.pdf,.txt,image/*" style="display:none">
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var AG={pin:null,msgs:[],pending:null,busy:false,file:null,hay:null,hayFor:null};
+  try{ AG.pin=sessionStorage.getItem("etz_agent_pin")||null; }catch(e){}
+  var $id=function(i){ return document.getElementById(i); };
+  var DOC={quote:{t:"הצעת מחיר",ok:"הצעת המחיר נוצרה",ic:"💰"},details:{t:"פירוט מוצרים",ok:"פירוט המוצרים נוצר",ic:"📄"},cart:{t:"עגלה ללקוח",ok:"העגלה נוצרה",ic:"🛒"},delivery_note:{t:"תעודת משלוח",ok:"תעודת המשלוח נוצרה",ic:"🚚"}};
+
+  /* ---------- פתיחה / סגירה / נעילה ---------- */
+  function open(){ $id("agentOv").classList.add("open"); if(AG.pin) showChat(); else showLock(""); }
+  function close(){ $id("agentOv").classList.remove("open"); }
+  function showLock(err){ $id("agLock").style.display="flex"; $id("agChat").style.display="none"; $id("agNew").style.display="none"; $id("agLockErr").textContent=err||""; $id("agPin").value=""; setTimeout(function(){ $id("agPin").focus(); },80); }
+  function showChat(){ $id("agLock").style.display="none"; $id("agChat").style.display="flex"; $id("agNew").style.display=""; if(!AG.msgs.length && !$id("agMsgs").children.length) welcome(); }
+  function setUsage(u){ if(u&&u.limit) $id("agUsage").textContent="שימוש היום: "+u.calls+" מתוך "+u.limit+" פניות"; }
+  async function callFn(body){
+    if(typeof CLOUD==="undefined"||!CLOUD||!sb) return {error:"offline",text:"נדרש חיבור לענן."};
+    try{
+      var r=await sb.functions.invoke("doc-agent",{body:body});
+      if(r.error){
+        var d=null; try{ d=await r.error.context.json(); }catch(_){}
+        return d||{error:"net",text:"לא הצלחתי להגיע לשרת. ודא שפונקציית doc-agent פרוסה."};
+      }
+      return r.data||{};
+    }catch(e){ return {error:"net",text:"שגיאת תקשורת."}; }
+  }
+  async function unlock(){
+    var v=$id("agPin").value.trim(); if(!v) return;
+    $id("agPinBtn").disabled=true; $id("agLockErr").textContent="בודק…";
+    var d=await callFn({action:"auth",pin:v});
+    $id("agPinBtn").disabled=false;
+    if(d&&d.ok){ AG.pin=v; try{ sessionStorage.setItem("etz_agent_pin",v); }catch(e){} setUsage(d.usage); showChat(); setTimeout(function(){ $id("agText").focus(); },60); }
+    else $id("agLockErr").textContent=(d&&d.text)||"קוד שגוי";
+  }
+  function resetChat(){ AG.msgs=[]; AG.pending=null; clearFile(); $id("agMsgs").innerHTML=""; welcome(); }
+
+  /* ---------- תצוגה ---------- */
+  function scroll(){ var m=$id("agMsgs"); m.scrollTop=m.scrollHeight; }
+  function add(el){ $id("agMsgs").appendChild(el); scroll(); return el; }
+  function div(cls,html){ var d=document.createElement("div"); d.className=cls; d.innerHTML=html; return d; }
+  function md(t){
+    var s=esc(String(t||"").trim());
+    s=s.replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/^#{1,4}\s*(.+)$/gm,"<b>$1</b>").replace(/^\s*[-•]\s+/gm,"• ");
+    return s.replace(/\n/g,"<br>");
+  }
+  function welcome(){
+    var n=(typeof PRODUCTS!=="undefined"&&PRODUCTS)?PRODUCTS.length:0;
+    add(div("ag-welcome","<b>מה נכין היום?</b>צרף קובץ — אקסל, PDF או צילום של רשימה — או פשוט כתוב.<br>לדוגמה: \"הצעת מחיר לכהן: 2 מברגות DCF887 ו-5 ארגזי ביטים, 10% הנחה\"."+(n?"":"<br><span style='color:#b3261e'>⚠ הקטלוג עוד לא נטען</span>")));
+  }
+  function status(txt){ return add(div("ag-st",'<span class="ag-dots"><i></i><i></i><i></i></span>'+esc(txt))); }
+  function err(t){ add(div("ag-err",esc(t))); }
+
+  /* ---------- קובץ ---------- */
+  function clearFile(){ AG.file=null; $id("agFileBar").classList.remove("on"); $id("agFile").value=""; }
+  function b64(buf){ var b=new Uint8Array(buf),s="",i,c=0x8000; for(i=0;i<b.length;i+=c) s+=String.fromCharCode.apply(null,b.subarray(i,i+c)); return btoa(s); }
+  function imgToJpeg(file){
+    return new Promise(function(res,rej){
+      var u=URL.createObjectURL(file), im=new Image();
+      im.onload=function(){ var M=1600,w=im.naturalWidth,h=im.naturalHeight,k=Math.min(1,M/Math.max(w,h)); var c=document.createElement("canvas"); c.width=Math.round(w*k); c.height=Math.round(h*k); var x=c.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,c.width,c.height); x.drawImage(im,0,0,c.width,c.height); URL.revokeObjectURL(u); res(c.toDataURL("image/jpeg",0.85).split(",")[1]); };
+      im.onerror=function(){ URL.revokeObjectURL(u); rej(new Error("img")); };
+      im.src=u;
+    });
+  }
+  async function pickFile(f){
+    if(!f) return;
+    var nm=f.name||"קובץ", ext=(nm.split(".").pop()||"").toLowerCase(), block=null, kind="";
+    try{
+      if(/^image\//.test(f.type)||/^(jpe?g|png|webp|heic|gif)$/.test(ext)){
+        block={type:"image",source:{type:"base64",media_type:"image/jpeg",data:await imgToJpeg(f)}}; kind="🖼";
+      } else if(ext==="pdf"){
+        if(f.size>6*1024*1024){ toast("PDF גדול מדי (עד 6MB)"); return; }
+        block={type:"document",source:{type:"base64",media_type:"application/pdf",data:b64(await f.arrayBuffer())}}; kind="📕";
+      } else if(/^(xlsx|xls|csv)$/.test(ext)){
+        var wb=XLSX.read(await f.arrayBuffer(),{type:"array"}), parts=[];
+        wb.SheetNames.slice(0,3).forEach(function(sn){ var csv=XLSX.utils.sheet_to_csv(wb.Sheets[sn],{blankrows:false}).replace(/,+$/gm,"").replace(/\n{2,}/g,"\n").trim(); if(csv) parts.push("### גיליון: "+sn+"\n"+csv); });
+        var txt=parts.join("\n\n"); var cut=txt.length>60000; if(cut) txt=txt.slice(0,60000);
+        block={type:"text",text:"קובץ מצורף: "+nm+(cut?" (קוצר — קובץ ארוך)":"")+"\n```\n"+txt+"\n```"}; kind="📊";
+      } else if(ext==="txt"){
+        block={type:"text",text:"קובץ מצורף: "+nm+"\n```\n"+(await f.text()).slice(0,60000)+"\n```"}; kind="📝";
+      } else { toast("סוג קובץ לא נתמך"); return; }
+    }catch(e){ console.error("agent file",e); toast("לא הצלחתי לקרוא את הקובץ"); return; }
+    AG.file={name:nm,kind:kind,block:block};
+    $id("agFileName").textContent=kind+" "+nm; $id("agFileBar").classList.add("on");
+  }
+
+  /* ---------- חיפוש בקטלוג (מקומי — אפס טוקנים) ---------- */
+  function norm(s){ return String(s||"").toLowerCase().replace(/[״"'׳`]/g,"").replace(/[-_./\\]/g,""); }
+  function buildHay(){
+    if(AG.hayFor===PRODUCTS && AG.hay) return AG.hay;
+    AG.hay=PRODUCTS.map(function(p){ var h=(String(p.name||"")+" "+p.mktt+" "+(p.barcode||"")).toLowerCase(); return {p:p,h:h,n:norm(h).replace(/\s+/g,"")}; });
+    AG.hayFor=PRODUCTS; return AG.hay;
+  }
+  function line(p,tag){
+    var st=(p.stock!=null&&String(p.stock).trim()!=="")?String(p.stock):"?";
+    var pr=isClearance(p.mktt)?clearancePrice(p.mktt):pnum(p.price);
+    return "  "+p.mktt+" | "+(p.name||"")+" | "+pr+"₪ | ברקוד "+(p.barcode||"—")+" | מלאי "+st+(isClearance(p.mktt)?" | מחיר חיסול":"")+(tag||"");
+  }
+  function findOne(q){
+    q=String(q||"").trim(); if(!q) return {exact:null,list:[]};
+    var ex=(typeof findByCode==="function")?findByCode(q.replace(/\s+/g,"")):PRODMAP.get(q);
+    if(ex) return {exact:ex,list:[]};
+    var toks=q.toLowerCase().split(/[\s,;:()]+/).filter(function(t){ return t.length>=2||/\d/.test(t); });
+    if(!toks.length) return {exact:null,list:[]};
+    var W=toks.map(function(t){ return (/\d/.test(t)&&t.length>=3)?3:1; }), WS=W.reduce(function(a,b){return a+b;},0);
+    var hasModel=W.some(function(w){return w===3;}), out=[];
+    buildHay().forEach(function(o){
+      var sc=0, mHit=false;
+      for(var i=0;i<toks.length;i++){ var t=toks[i], tn=norm(t); if(o.h.indexOf(t)>=0||(tn&&o.n.indexOf(tn)>=0)){ sc+=W[i]; if(W[i]===3) mHit=true; } }
+      if(!sc||(hasModel&&!mHit)) return;
+      var r=sc/WS; if(r<0.5) return;
+      out.push([r,o.p]);
+    });
+    out.sort(function(a,b){ return b[0]-a[0]||String(a[1].name||"").length-String(b[1].name||"").length; });
+    return {exact:null,list:out.slice(0,6).map(function(x){return x[1];})};
+  }
+  function runSearch(inp){
+    var qs=(inp&&inp.queries)||[], L=[];
+    if(!PRODUCTS||!PRODUCTS.length) return "הקטלוג לא נטען במכשיר. בקש מהמשתמש לרענן את האפליקציה.";
+    qs.slice(0,120).forEach(function(q){
+      var r=findOne(q.text);
+      L.push("["+q.ref+"] \""+q.text+"\"");
+      if(r.exact) L.push(line(r.exact," | ✓ התאמה מדויקת (מק״ט/ברקוד)"));
+      else if(r.list.length) r.list.forEach(function(p){ L.push(line(p)); });
+      else L.push("  לא נמצא");
+    });
+    return L.join("\n");
+  }
+
+  /* ---------- יצירת המסמך באפליקציה ---------- */
+  async function createDoc(inp){
+    if(typeof CLOUD==="undefined"||!CLOUD||!sb) return {ok:false,text:"אין חיבור לענן"};
+    var type=DOC[inp.doc_type]?inp.doc_type:"details", dn=type==="delivery_note";
+    var cust=String(inp.customer||"").trim()||"לקוח";
+    var spEl=$id("counter"), sp=((spEl&&spEl.value)||"").trim()||"סוכן AI";
+    var rows=[], bad=[], byM={};
+    (inp.items||[]).forEach(function(it){
+      var m=String(it.mktt==null?"":it.mktt).trim(), q=Math.max(1,Math.round(Number(it.qty)||1));
+      if(m==="1"){ if(!it.name){ bad.push("מוצר כללי ללא שם"); return; } rows.push({mktt:"1",name:String(it.name),qty:q,unit_price:pnum(it.unit_price)}); return; }
+      var p=PRODMAP.get(m)||(typeof findByCode==="function"?findByCode(m):null); if(!p){ bad.push(m); return; }
+      m=String(p.mktt);
+      var price=(!dn&&it.unit_price!=null&&it.unit_price!=="")?pnum(it.unit_price):(isClearance(m)?clearancePrice(m):pnum(p.price));
+      if(byM[m]){ byM[m].qty+=q; return; }
+      byM[m]={mktt:m,name:p.name||"",qty:q,unit_price:price}; rows.push(byM[m]);
+    });
+    if(!rows.length) return {ok:false,text:"לא נוצר: אין פריטים תקינים."+(bad.length?" מק״טים לא קיימים: "+bad.join(", "):"")};
+    try{
+      var obj={customer:cust,salesperson:sp,status:"open"}; if(dn) obj.kind="dn";
+      var c=await sb.from("carts").insert(obj).select(); if(c.error) throw c.error;
+      var cart=c.data[0]; if(!CARTS.some(function(x){return x.id===cart.id;})) CARTS.unshift(cart);
+      rows.forEach(function(r){ r.cart_id=cart.id; });
+      var it=await sb.from("cart_items").insert(rows).select();
+      if(it.error){ try{ await sb.from("carts").delete().eq("id",cart.id); }catch(_){} CARTS=CARTS.filter(function(x){return x.id!==cart.id;}); throw it.error; }
+      (it.data||[]).forEach(function(r){ if(!ITEMS.some(function(x){return x.id===r.id;})) ITEMS.push(r); });
+      try{ renderCartList(); renderDNList(); }catch(_){}
+      var qty=rows.reduce(function(s,r){return s+r.qty;},0), tot=rows.reduce(function(s,r){return s+r.qty*r.unit_price;},0);
+      docCard(type,cart,rows,inp,bad,tot,qty);
+      return {ok:true,text:"נוצר "+DOC[type].t+" #"+cart.id+" ל"+cust+": "+rows.length+" שורות, "+qty+" יח׳"+(dn?"":", סה״כ "+fmtNis(tot))+"."+(bad.length?" נדחו (לא בקטלוג): "+bad.join(", "):"")};
+    }catch(e){
+      console.error("agent create",e);
+      var msg=String((e&&e.message)||e);
+      return {ok:false,text:/kind/i.test(msg)?"חסרה עמודת kind בטבלת carts (dn-setup.sql)":"שגיאה ביצירה: "+msg};
+    }
+  }
+  function docCard(type,cart,rows,inp,bad,tot,qty){
+    var D=DOC[type], dn=type==="delivery_note";
+    var show=rows.slice(0,6).map(function(r){ return '<div class="row"><span class="nm">'+esc(r.name||r.mktt)+'</span><span class="q">× '+r.qty+'</span></div>'; }).join("");
+    var miss=[].concat((inp.unmatched||[]).map(function(u){ return u.text+(u.qty?" ×"+u.qty:""); }),bad);
+    var acts;
+    if(dn) acts='<button class="pri" data-ag="dntable">ייצוא תעודת משלוח (טבלה)</button><button data-ag="open">פתח תעודה</button><button data-ag="pdf">PDF</button>';
+    else if(type==="quote") acts='<button class="pri" data-ag="xlsq">אקסל — הצעת מחיר</button><button data-ag="pdf">PDF</button><button data-ag="wa">וואטסאפ</button><button data-ag="open" style="grid-column:1/-1">פתח עגלה</button>';
+    else if(type==="details") acts='<button class="pri" data-ag="pdf">ייצוא PDF</button><button data-ag="wa">וואטסאפ</button><button data-ag="open">פתח עגלה</button>';
+    else acts='<button class="pri" data-ag="open">פתח עגלה</button><button data-ag="wa">וואטסאפ</button><button data-ag="pdf">PDF</button>';
+    var el=div("ag-doc",
+      '<div class="ag-doc-h"><span class="ic">'+D.ic+'</span><div><b>'+D.ok+'</b><small>'+esc(cart.customer||"")+' · '+rows.length+' שורות · '+qty+' יח׳</small></div></div>'+
+      '<div class="ag-doc-b">'+show+(rows.length>6?'<div class="more">ועוד '+(rows.length-6)+' שורות…</div>':'')+
+      (dn?'':'<div class="ag-doc-tot"><span>סה״כ</span><span>'+fmtNis(tot)+'</span></div>')+
+      (inp.summary?'<div class="ag-doc-sum">'+md(inp.summary)+'</div>':'')+
+      (miss.length?'<div class="ag-doc-miss">⚠ לא נכנסו: '+esc(miss.join(" · "))+'</div>':'')+
+      '</div><div class="ag-doc-acts">'+acts+'</div>');
+    el.dataset.cart=cart.id; el.dataset.dn=dn?"1":"";
+    add(el);
+  }
+  function goDoc(id,dn){
+    close();
+    if(dn) openDeliveryNote(id);
+    else { setMode("sale"); openCart(id); }
+  }
+  function docAction(btn){
+    var card=btn.closest(".ag-doc"); if(!card) return;
+    var id=card.dataset.cart, dn=card.dataset.dn==="1", a=btn.getAttribute("data-ag");
+    if(!CARTS.some(function(c){return String(c.id)===String(id);})){ toast("המסמך כבר לא קיים"); return; }
+    goDoc(id,dn);
+    if(a==="pdf") exportCartPdf();
+    else if(a==="wa") shareCartQuote();
+    else if(a==="dntable") exportDnTable();
+    else if(a==="xlsq"){ openCartXlsx(); var q=document.querySelector('input[name=cartFmt][value=quote]'); if(q){ q.checked=true; cartXlsxSync(); } }
+  }
+
+  /* ---------- שיחה ---------- */
+  async function send(){
+    if(AG.busy) return;
+    var ta=$id("agText"), text=ta.value.trim();
+    if(!text&&!AG.file) return;
+    var content=[];
+    if(AG.pending){ content=content.concat(AG.pending); AG.pending=null; }
+    if(AG.file) content.push(AG.file.block);
+    content.push({type:"text",text:text||"תכין מסמך מהקובץ המצורף."});
+    var w=$id("agMsgs").querySelector(".ag-welcome"); if(w) w.remove();
+    add(div("ag-m ag-u",(AG.file?'<div class="ag-file">'+AG.file.kind+" "+esc(AG.file.name)+'</div><br>':"")+md(text||"תכין מסמך מהקובץ המצורף.")));
+    AG.msgs.push({role:"user",content:content});
+    ta.value=""; autoGrow(); clearFile();
+    AG.busy=true; $id("agSend").disabled=true;
+    try{ await loop(); } finally { AG.busy=false; $id("agSend").disabled=false; }
+  }
+  async function loop(){
+    for(var round=0;round<6;round++){
+      var st=status(round===0?"חושב…":"ממשיך…");
+      var d=await callFn({pin:AG.pin,messages:AG.msgs});
+      st.remove();
+      if(d&&d.usage) setUsage(d.usage);
+      if(!d||!d.content){
+        if(d&&(d.error==="bad_pin"||d.error==="locked")){ AG.pin=null; try{ sessionStorage.removeItem("etz_agent_pin"); }catch(e){} showLock(d.text); }
+        err((d&&d.text)||"שגיאה");
+        AG.msgs.pop(); /* ההודעה לא נשלחה — אפשר לנסות שוב */
+        return;
+      }
+      AG.msgs.push({role:"assistant",content:d.content});
+      d.content.forEach(function(b){ if(b.type==="text"&&b.text&&b.text.trim()) add(div("ag-m ag-a",md(b.text))); });
+      var uses=d.content.filter(function(b){return b.type==="tool_use";});
+      if(!uses.length) return;
+      var results=[], created=false;
+      for(var i=0;i<uses.length;i++){
+        var u=uses[i], out;
+        if(u.name==="search_products"){
+          var n=((u.input&&u.input.queries)||[]).length, s2=status("מחפש "+n+" פריטים בקטלוג…");
+          await new Promise(function(r){ setTimeout(r,30); });
+          out={type:"tool_result",tool_use_id:u.id,content:runSearch(u.input)}; s2.remove();
+        } else if(u.name==="create_document"){
+          var s3=status("יוצר מסמך…"); var res=await createDoc(u.input||{}); s3.remove();
+          out={type:"tool_result",tool_use_id:u.id,content:res.text}; if(!res.ok){ out.is_error=true; err(res.text); } else created=true;
+        } else out={type:"tool_result",tool_use_id:u.id,content:"כלי לא מוכר",is_error:true};
+        results.push(out);
+      }
+      if(created){ AG.pending=results; return; }   /* חוסך פנייה — התוצאה תצורף להודעה הבאה */
+      AG.msgs.push({role:"user",content:results});
+    }
+    err("הסוכן עצר — נסה לנסח מחדש.");
+  }
+  function autoGrow(){ var t=$id("agText"); t.style.height="auto"; t.style.height=Math.min(130,t.scrollHeight)+"px"; }
+
+  /* ---------- חיווט ---------- */
+  document.addEventListener("click",function(e){
+    var el=e.target&&e.target.closest?e.target:null; if(!el) return;
+    if(el.closest("#modAgentBtn")){ e.preventDefault(); if(typeof closeToolsSheet==="function") closeToolsSheet(); open(); return; }
+    if(!el.closest("#agentOv")) return;
+    if(el.closest("#agClose")){ close(); return; }
+    if(el.closest("#agNew")){ resetChat(); return; }
+    if(el.closest("#agPinBtn")){ unlock(); return; }
+    if(el.closest("#agSend")){ send(); return; }
+    if(el.closest("#agAttach")){ $id("agFile").click(); return; }
+    if(el.closest("#agFileX")){ clearFile(); return; }
+    var ch=el.closest("#agChips button"); if(ch){ var t=$id("agText"); t.value=ch.getAttribute("data-t"); autoGrow(); t.focus(); try{ t.setSelectionRange(t.value.length,t.value.length); }catch(_){} return; }
+    var ab=el.closest("[data-ag]"); if(ab){ docAction(ab); return; }
+  });
+  document.addEventListener("keydown",function(e){
+    if(e.target&&e.target.id==="agPin"&&e.key==="Enter"){ e.preventDefault(); unlock(); }
+    if(e.target&&e.target.id==="agText"&&e.key==="Enter"&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); send(); }
+  });
+  document.addEventListener("input",function(e){ if(e.target&&e.target.id==="agText") autoGrow(); });
+  document.addEventListener("change",function(e){ if(e.target&&e.target.id==="agFile"){ pickFile(e.target.files&&e.target.files[0]); } });
+  window.openDocAgent=open;
+  window.__AG=AG; window.__agRunSearch=runSearch; window.__agCreate=createDoc;
+})();
+</script>
+<!-- ================= סוף סוכן מסמכים ================= -->
+
 </body>
 </html>
