@@ -173,7 +173,7 @@
     font-size:15px;cursor:pointer;color:var(--text-2);flex:none;transition:background .12s}
   .mini:active{background:var(--surface-2)}
   .mini.del{color:var(--red);border-color:#F0C4BF}
-  .mini.cdisc{min-width:40px;font-weight:800;color:var(--ink2)}
+  .mini.cdisc{width:auto;min-width:36px;padding:0 9px;white-space:nowrap;font-weight:800;font-size:13px;color:var(--ink2);flex:none}
   .mini.cdisc.on{color:#9a5b00;background:#fff4e2;border-color:#f2c98a}
   .cprice s.cpo{color:var(--ink2);font-weight:500;font-size:.85em;margin-inline-end:2px}
   .cci{display:flex;flex-wrap:wrap;gap:3px 10px;margin-top:5px;font-size:12.5px;color:var(--ink);cursor:pointer}
@@ -1134,7 +1134,6 @@ body.m-count #calcFab{display:inline-flex}
       <span>סה״כ</span><span id="cartSum">0 ₪</span>
     </div>
     <button class="btn primary" id="waQuoteBtn" style="margin-top:8px;background:#25D366"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg> <span id="waQuoteTxt">שיתוף פירוט מוצרים בוואטסאפ</span></button>
-    <button class="btn" id="cartAgentBtn" type="button" style="margin-top:8px;border:1.5px solid #0B7D71;color:#075E54;font-weight:800">✨ עריכה עם הסוכן</button>
     <button class="btn" id="exportCartXlsxBtn" style="margin-top:8px"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> ייצוא לאקסל</button>
     <button class="btn" id="exportCartPdfBtn" style="margin-top:8px"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 18h6M9 12h2"/></svg> ייצוא PDF (עם תמונות)</button>
     <button class="btn dn-only" id="exportDnTableBtn" style="margin-top:8px;width:100%;border:2px solid #0B7D71;color:#0B7D71;font-weight:800"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg> ייצוא תעודת משלוח (טבלה)</button>
@@ -2343,7 +2342,7 @@ function renderCart(){
         <button class="qbtn" data-act="dec" type="button">−</button>
         <button class="qnum" data-act="qty" type="button" title="שינוי כמות">${i.qty}</button>
         <button class="qbtn" data-act="inc" type="button">+</button>
-        ${isClearance(i.mktt)?`<span class="cprice locked" title="מחיר חיסול נעול">${ic("lock")} ${fmtNis(Number(i.unit_price)||0)}</span>`:`<button class="mini cdisc${dsc?" on":""}" data-act="disc" type="button" dir="ltr" title="הנחה לשורה">${dsc?"−"+dsc+"%":"%"}</button><span class="cprice" data-act="price">${dsc?`<s class="cpo">${fmtNis(Number(i.unit_price)||0)}</s> `:""}${fmtNis(itemUnit(i))}</span>`}
+        ${isClearance(i.mktt)?`<span class="cprice locked" title="מחיר חיסול נעול">${ic("lock")} ${fmtNis(Number(i.unit_price)||0)}</span>`:`<button class="mini cdisc${dsc?" on":""}" data-act="disc" type="button" dir="ltr" title="הנחה לשורה">${dsc?"−"+(Math.round(dsc*10)/10)+"%":"%"}</button><span class="cprice" data-act="price">${dsc?`<s class="cpo">${fmtNis(Number(i.unit_price)||0)}</s> `:""}${fmtNis(itemUnit(i))}</span>`}
         <button class="mini del" data-act="del" type="button">${ic("trash")}</button>
       </div></div>`;
   }).join("") : (c.kind==="dn" ? emptyState('box','התעודה ריקה','סרוק ברקוד כדי להוסיף פריטים') : emptyState('cart','העגלה ריקה','הוסף פריטים מהחיפוש למעלה'));
@@ -2582,57 +2581,78 @@ async function confirmGeneralProduct(){
 function buildCartPdfHTML(items, cart, note){
   var dn=!!(cart&&cart.kind==="dn");
   var DN_TAIL='<div class="sign"><div>שם המקבל: ______________________</div><div>חתימה: ______________________</div><div>תאריך קבלה: ______________</div></div>'+
-    '<div class="terms"><div>• המחירים כוללים מע״מ.</div><div>• התמונות להמחשה בלבד.</div>'+
+    '<div class="terms"><div>• התמונות להמחשה בלבד.</div>'+
     '<div>• ליצירת קשר עם נציג ניתן לפנות אלינו בוואטסאפ למספר 053-3224433 או לחילופין לחייג 04-6156146</div></div>';
-  var rows=items.map(function(i){
+  var units=0, hasD=!dn&&items.some(function(i){ return itemDisc(i)>0; });
+  var rows=items.map(function(i,n){
     var p=(typeof PRODMAP!=="undefined")?PRODMAP.get(String(i.mktt)):null;
     var img=(p&&p.image_url)?esc(p.image_url):"";
-    var qty=Number(i.qty)||0, up=itemUnit(i), tot=itemSub(i), dsc=itemDisc(i);
-    return '<div class="it">'+
-      (img?'<img src="'+img+'" alt="">':'<div class="noimg">—</div>')+
-      '<div class="inf"><div class="nm">'+esc(i.name||"")+'</div>'+
-      '<div class="sub">מק״ט '+esc(String(i.mktt))+' · '+qty+' יח׳ × '+(dsc?'<s>'+fmtNis(Number(i.unit_price)||0)+'</s> '+fmtNis(up)+' <b class="dsc">הנחה '+dsc+'%</b>':fmtNis(up))+'</div></div>'+
-      '<div class="pr">'+fmtNis(tot)+'</div></div>';
+    var qty=Number(i.qty)||0; units+=qty;
+    return '<tr>'+
+      '<td class="n">'+(n+1)+'</td>'+
+      '<td class="im">'+(img?'<img src="'+img+'" alt="">':'<div class="noimg"></div>')+'</td>'+
+      '<td class="nm"><div class="t">'+esc(i.name||"")+'</div><div class="k">מק״ט '+esc(String(i.mktt))+'</div></td>'+
+      '<td class="num q">'+qty+'</td>'+
+      (dn?'':'<td class="num">'+fmtNis(hasD?(Number(i.unit_price)||0):itemUnit(i))+'</td>')+
+      (hasD?'<td class="num dc">'+(itemDisc(i)?(Math.round(itemDisc(i)*10)/10)+'%':'—')+'</td>':'')+
+      (dn?'':'<td class="num tot">'+fmtNis(itemSub(i))+'</td>')+
+    '</tr>';
   }).join("");
   var total=items.reduce(function(s,i){return s+itemSub(i);},0);
-  var saved=Math.round(items.reduce(function(s,i){return s+(Number(i.qty)||0)*(Number(i.unit_price)||0);},0)*100)/100-total;
+  var gross=Math.round(items.reduce(function(s,i){return s+(Number(i.qty)||0)*(Number(i.unit_price)||0);},0)*100)/100;
+  var saved=Math.round((gross-total)*100)/100;
   var cinfo=custLines(cart).map(esc);
   var d=new Date(), pad=function(n){return String(n).padStart(2,"0");};
   var dateStr=pad(d.getDate())+"/"+pad(d.getMonth()+1)+"/"+d.getFullYear();
   var cust=(cart&&cart.customer)?esc(String(cart.customer)):"";
   var sp=(cart&&cart.salesperson)?esc(String(cart.salesperson)):"";
+  var title=dn?'תעודת משלוח':'פירוט מוצרים';
   var S='<scr'+'ipt>window.onload=function(){var g=[].slice.call(document.images),n=g.length;function go(){setTimeout(function(){try{window.focus();}catch(e){}window.print();},350);}if(!n){go();return;}g.forEach(function(im){if(im.complete){if(--n===0)go();}else{im.onload=im.onerror=function(){if(--n===0)go();};}});setTimeout(go,8000);};</scr'+'ipt>';
-  return '<!doctype html><html dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+(dn?'תעודת משלוח':'פירוט מוצרים')+' — עץ האורן</title>'+
+  var sumHtml=dn?
+    '<div class="sum"><div class="ln big"><span>סה״כ יחידות</span><b>'+units+'</b></div></div>':
+    '<div class="sum">'+
+      '<div class="ln big"><span>סה״כ לתשלום</span><b>'+fmtNis(total)+'</b></div>'+
+      '<div class="vat">המחירים כוללים מע״מ</div>'+
+    '</div>';
+  return '<!doctype html><html dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+' — עץ האורן</title>'+
   '<style>'+
-  '@page{size:A4;margin:12mm}'+
+  '@page{size:A4;margin:11mm 11mm 13mm}'+
   '*{box-sizing:border-box;font-family:Arial,"Heebo",sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}'+
-  'body{margin:0;color:#1a1f24}'+
-  '.hd{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #0B7D71;padding-bottom:12px;margin-bottom:16px}'+
-  '.hd img{height:62px;width:auto}'+
-  '.hd .t{font-size:23px;font-weight:800;color:#0B7D71;margin-bottom:4px}'+
-  '.hd .m{font-size:12.5px;color:#555;line-height:1.55;text-align:right}'+
-  '.it{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid #e6e6e6;border-radius:9px;margin-bottom:8px;page-break-inside:avoid;break-inside:avoid}'+
-  '.it img{width:60px;height:60px;object-fit:contain;background:#fff;border:1px solid #eee;border-radius:7px;flex:none}'+
-  '.it .noimg{width:60px;height:60px;border:1px solid #eee;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#ccc;flex:none;font-size:20px}'+
-  '.it .inf{flex:1;min-width:0}'+
-  '.it .nm{font-size:14.5px;font-weight:700;line-height:1.3}'+
-  '.saved{text-align:left;color:#b26a00;font-weight:700;font-size:13px;margin-top:4px}.it .sub{font-size:12px;color:#777;margin-top:3px}.it .sub s{color:#aaa}.it .sub .dsc{color:#b26a00}'+
-  '.it .pr{font-size:15px;font-weight:800;color:#0B7D71;white-space:nowrap}'+
-  '.sum{margin-top:14px;border-top:2px solid #0B7D71;padding-top:12px;display:flex;justify-content:space-between;align-items:center;page-break-inside:avoid}'+
-  '.sum .l{font-size:16px;font-weight:700}.sum .v{font-size:24px;font-weight:900;color:#0B7D71}'+
-  '.note{margin-top:14px;padding:11px 13px;background:#f6f4ec;border-right:3px solid #0B7D71;border-radius:7px;font-size:13px;color:#333;line-height:1.5;page-break-inside:avoid}'+'.terms{margin-top:18px;border-top:1px solid #e0e0e0;padding-top:12px;font-size:10.5px;color:#777;line-height:1.7;text-align:right;page-break-inside:avoid}'+'.terms div{margin-bottom:3px}'+'.sign{margin-top:26px;display:flex;gap:18px;flex-wrap:wrap;font-size:13.5px;color:#222;page-break-inside:avoid}.sign div{flex:1;min-width:190px}'+
+  'body{margin:0;color:#1a1f24;font-size:13px}'+
+  '.hd{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:2.5px solid #0B7D71}'+
+  '.hd img{height:70px;width:auto}'+
+  '.hd .t{font-size:24px;font-weight:800;color:#0B7D71;line-height:1.1}'+
+  '.hd .biz{font-size:11.5px;color:#666;margin-top:5px;line-height:1.5}'+
+  '.meta{display:flex;justify-content:space-between;gap:16px;margin:12px 0 4px;font-size:12.5px;line-height:1.6}'+
+  '.meta .to b{font-size:15px}.meta .to div{color:#444}.meta .dt{text-align:left;color:#444;white-space:nowrap}'+
+  'table{width:100%;border-collapse:collapse;margin-top:10px}thead{display:table-header-group}'+
+  'th{background:#0B7D71;color:#fff;font-weight:700;font-size:12px;padding:7px 8px;text-align:right;white-space:nowrap}'+
+  'th:first-child{border-radius:0 6px 6px 0}th:last-child{border-radius:6px 0 0 6px}'+
+  'td{padding:7px 8px;border-bottom:1px solid #e7e7e2;vertical-align:middle}'+
+  'tbody tr:nth-child(even) td{background:#fafaf7}tr{page-break-inside:avoid;break-inside:avoid}'+
+  'td.n{width:26px;color:#999;font-size:11.5px;text-align:center}'+
+  'td.im{width:58px}td.im img,td.im .noimg{width:48px;height:48px;object-fit:contain;background:#fff;border:1px solid #eee;border-radius:6px;display:block}'+
+  'td.nm .t{font-weight:700;font-size:13px;line-height:1.35}td.nm .k{font-size:11px;color:#888;margin-top:2px}'+
+  'td.num,th.num{text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums;width:1%;padding-left:12px;padding-right:12px}'+
+  'td.q{font-weight:700}td.tot{font-weight:800;color:#0B7D71}td.dc{color:#9a5b00;font-weight:700}'+
+  '.sum{margin:14px 0 0 0;margin-right:auto;width:260px;page-break-inside:avoid;break-inside:avoid}'+
+  '.sum .ln{display:flex;justify-content:space-between;padding:3px 0}'+
+  '.sum .sm{font-size:12px;color:#666}.sum .dsc{color:#9a5b00}'+
+  '.sum .big{border-top:2px solid #0B7D71;margin-top:5px;padding-top:8px;font-size:15px;font-weight:700}.sum .big b{font-size:21px;color:#0B7D71}'+
+  '.sum .vat{font-size:10.5px;color:#888;text-align:left}'+
+  '.note{margin-top:14px;padding:10px 12px;background:#f6f4ec;border-right:3px solid #0B7D71;border-radius:6px;font-size:12.5px;color:#333;line-height:1.5;page-break-inside:avoid}'+
+  '.terms{margin-top:18px;border-top:1px solid #e0e0e0;padding-top:10px;font-size:10px;color:#888;line-height:1.7;page-break-inside:avoid}'+
+  '.sign{margin-top:26px;display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:#222;page-break-inside:avoid}.sign div{flex:1;min-width:190px}'+
   '</style></head><body>'+
-  '<div class="hd"><div><div class="t">'+(dn?'תעודת משלוח':'פירוט מוצרים')+'</div>'+
-  '<div class="m">תאריך: '+dateStr+(cust?'<br>לקוח: '+cust:"")+(cinfo.length?'<br>'+cinfo.join(' · '):"")+(sp?'<br>'+(dn?'הופק ע״י: ':'נציג: ')+sp:"")+'</div></div><img src="'+LOGO_B64+'" alt=""></div>'+
-  rows+
-  '<div class="sum"><span class="l">סה״כ לתשלום</span><span class="v">'+fmtNis(total)+'</span></div>'+
-  (saved>0.004?'<div class="saved">כולל הנחה בסך '+fmtNis(saved)+'</div>':'')+
+  '<div class="hd"><div><div class="t">'+title+'</div><div class="biz">עץ האורן — המרכז לכלי עבודה · דרך השוקולד 1, א.ת צפת · 04-6156146</div></div><img src="'+LOGO_B64+'" alt=""></div>'+
+  '<div class="meta"><div class="to">'+(cust?'<div>לכבוד:</div><b>'+cust+'</b>':'')+(cinfo.length?'<div>'+cinfo.join(' · ')+'</div>':'')+'</div>'+
+  '<div class="dt">תאריך: '+dateStr+(sp?'<br>'+(dn?'הופק ע״י: ':'נציג: ')+sp:'')+'</div></div>'+
+  '<table><thead><tr><th>#</th><th></th><th>פריט</th><th class="num">כמות</th>'+(dn?'':'<th class="num">מחיר ליחידה</th>')+(hasD?'<th class="num">הנחה</th>':'')+(dn?'':'<th class="num">סה״כ לשורה</th>')+'</tr></thead><tbody>'+rows+'</tbody></table>'+
+  sumHtml+
   (note?'<div class="note"><b>הערה:</b> '+esc(note)+'</div>':'')+
   (dn?DN_TAIL:'<div class="terms">'+
-    '<div>• המחירים כוללים מע״מ.</div>'+
     '<div>• מסמך זה נועד להצגת הפריטים המבוקשים בלבד ואינו מהווה הצעת מחיר רשמית / חשבונית מס או אישור הזמנה.</div>'+
-    '<div>• המחירים תקפים עד תום יום העסקים הנוכחי.</div>'+
-    '<div>• התמונות להמחשה בלבד.</div>'+
+    '<div>• המחירים תקפים עד תום יום העסקים הנוכחי. התמונות להמחשה בלבד.</div>'+
     '<div>• ליצירת קשר עם נציג ניתן לפנות אלינו בוואטסאפ למספר 053-3224433 או לחילופין לחייג 04-6156146</div>'+
   '</div>')+
   S+'</body></html>';
