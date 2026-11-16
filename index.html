@@ -4538,8 +4538,10 @@ async function adminSendPush(){
     try{
       var r=await sb.functions.invoke("doc-agent",{body:body});
       if(r.error){
-        var d=null; try{ d=await r.error.context.json(); }catch(_){}
-        return d||{error:"net",text:"לא הצלחתי להגיע לשרת. ודא שפונקציית doc-agent פרוסה."};
+        var ctx=r.error.context, d=null, raw="", code=(ctx&&ctx.status)||"";
+        try{ if(ctx&&typeof ctx.text==="function"){ raw=await ctx.text(); d=JSON.parse(raw); } else if(ctx&&typeof ctx.json==="function"){ d=await ctx.json(); } }catch(_){}
+        console.error("doc-agent",code,raw,r.error);
+        return d||{error:"net",text:code?("השרת החזיר שגיאה "+code+(raw?" — "+raw.replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim().slice(0,140):"")):("אין תגובה מהשרת ("+String(r.error.message||r.error.name||"")+")")};
       }
       return r.data||{};
     }catch(e){ return {error:"net",text:"שגיאת תקשורת."}; }
@@ -4588,8 +4590,9 @@ async function adminSendPush(){
       if(/^image\//.test(f.type)||/^(jpe?g|png|webp|heic|gif)$/.test(ext)){
         block={type:"image",source:{type:"base64",media_type:"image/jpeg",data:await imgToJpeg(f)}}; kind="🖼";
       } else if(ext==="pdf"){
-        if(f.size>6*1024*1024){ toast("PDF גדול מדי (עד 6MB)"); return; }
-        block={type:"document",source:{type:"base64",media_type:"application/pdf",data:b64(await f.arrayBuffer())}}; kind="📕";
+        if(f.size>40*1024*1024){ toast("PDF גדול מדי"); return; }
+        $id("agFileName").textContent="⏳ ממיר PDF…"; $id("agFileBar").classList.add("on");
+        block=await pdfToBlocks(await f.arrayBuffer(),nm); kind="📕";
       } else if(/^(xlsx|xls|csv)$/.test(ext)){
         var wb=XLSX.read(await f.arrayBuffer(),{type:"array"}), parts=[];
         wb.SheetNames.slice(0,3).forEach(function(sn){ var csv=XLSX.utils.sheet_to_csv(wb.Sheets[sn],{blankrows:false}).replace(/,+$/gm,"").replace(/\n{2,}/g,"\n").trim(); if(csv) parts.push("### גיליון: "+sn+"\n"+csv); });
@@ -4601,6 +4604,31 @@ async function adminSendPush(){
     }catch(e){ console.error("agent file",e); toast("לא הצלחתי לקרוא את הקובץ"); return; }
     AG.file={name:nm,kind:kind,block:block};
     $id("agFileName").textContent=kind+" "+nm; $id("agFileBar").classList.add("on");
+  }
+
+  /* PDF → תמונות עמודים (JPEG קל). חוסך נפח וטוקנים, וקורא עברית בצורה אמינה */
+  var PDFV="3.11.174", PDFB="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/"+PDFV+"/";
+  function loadPdfJs(){
+    if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    return new Promise(function(res,rej){ var sc=document.createElement("script"); sc.src=PDFB+"pdf.min.js";
+      sc.onload=function(){ try{ window.pdfjsLib.GlobalWorkerOptions.workerSrc=PDFB+"pdf.worker.min.js"; res(window.pdfjsLib); }catch(e){ rej(e); } };
+      sc.onerror=function(){ rej(new Error("pdfjs")); }; document.head.appendChild(sc); });
+  }
+  async function pdfToBlocks(buf,nm){
+    var lib=await loadPdfJs(), doc=await lib.getDocument({data:new Uint8Array(buf)}).promise;
+    var MAXP=10, n=Math.min(doc.numPages,MAXP), out=[];
+    out.push({type:"text",text:"קובץ מצורף: "+nm+" — "+doc.numPages+" עמודים"+(doc.numPages>MAXP?" (נשלחו "+MAXP+" הראשונים)":"")+". העמודים מצורפים כתמונות לפי הסדר."});
+    for(var i=1;i<=n;i++){
+      var pg=await doc.getPage(i), v0=pg.getViewport({scale:1}), k=Math.min(2.2,1500/Math.max(v0.width,v0.height)), v=pg.getViewport({scale:k});
+      var c=document.createElement("canvas"); c.width=Math.round(v.width); c.height=Math.round(v.height);
+      var x=c.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,c.width,c.height);
+      await pg.render({canvasContext:x,viewport:v}).promise;
+      out.push({type:"image",source:{type:"base64",media_type:"image/jpeg",data:c.toDataURL("image/jpeg",0.8).split(",")[1]}});
+      c.width=c.height=0;
+    }
+    try{ doc.destroy(); }catch(_){}
+    if(doc.numPages>MAXP) toast("נשלחים "+MAXP+" העמודים הראשונים בלבד");
+    return out;
   }
 
   /* ---------- חיפוש בקטלוג (מקומי — אפס טוקנים) ---------- */
@@ -4721,9 +4749,10 @@ async function adminSendPush(){
     if(AG.busy) return;
     var ta=$id("agText"), text=ta.value.trim();
     if(!text&&!AG.file) return;
+    AG.snap={len:AG.msgs.length,pending:AG.pending};
     var content=[];
     if(AG.pending){ content=content.concat(AG.pending); AG.pending=null; }
-    if(AG.file) content.push(AG.file.block);
+    if(AG.file) content=content.concat(AG.file.block);
     content.push({type:"text",text:text||"תכין מסמך מהקובץ המצורף."});
     var w=$id("agMsgs").querySelector(".ag-welcome"); if(w) w.remove();
     add(div("ag-m ag-u",(AG.file?'<div class="ag-file">'+AG.file.kind+" "+esc(AG.file.name)+'</div><br>':"")+md(text||"תכין מסמך מהקובץ המצורף.")));
@@ -4735,13 +4764,15 @@ async function adminSendPush(){
   async function loop(){
     for(var round=0;round<6;round++){
       var st=status(round===0?"חושב…":"ממשיך…");
-      var d=await callFn({pin:AG.pin,messages:AG.msgs});
+      var payload={pin:AG.pin,messages:AG.msgs}, sz=JSON.stringify(payload).length;
+      if(sz>5500000){ st.remove(); err("הקבצים בשיחה גדולים מדי. התחל שיחה חדשה ושלח קובץ קטן יותר."); rollback(); return; }
+      var d=await callFn(payload);
       st.remove();
       if(d&&d.usage) setUsage(d.usage);
       if(!d||!d.content){
         if(d&&(d.error==="bad_pin"||d.error==="locked")){ AG.pin=null; try{ sessionStorage.removeItem("etz_agent_pin"); }catch(e){} showLock(d.text); }
         err((d&&d.text)||"שגיאה");
-        AG.msgs.pop(); /* ההודעה לא נשלחה — אפשר לנסות שוב */
+        rollback(); /* ההודעה לא נשלחה — אפשר לנסות שוב */
         return;
       }
       AG.msgs.push({role:"assistant",content:d.content});
@@ -4766,6 +4797,7 @@ async function adminSendPush(){
     }
     err("הסוכן עצר — נסה לנסח מחדש.");
   }
+  function rollback(){ if(AG.snap){ AG.msgs.length=AG.snap.len; AG.pending=AG.snap.pending; } }
   function autoGrow(){ var t=$id("agText"); t.style.height="auto"; t.style.height=Math.min(130,t.scrollHeight)+"px"; }
 
   /* ---------- חיווט ---------- */
