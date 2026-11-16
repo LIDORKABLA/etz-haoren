@@ -1134,6 +1134,7 @@ body.m-count #calcFab{display:inline-flex}
       <span>סה״כ</span><span id="cartSum">0 ₪</span>
     </div>
     <button class="btn primary" id="waQuoteBtn" style="margin-top:8px;background:#25D366"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg> <span id="waQuoteTxt">שיתוף פירוט מוצרים בוואטסאפ</span></button>
+    <button class="btn" id="cartAgentBtn" type="button" style="margin-top:8px;border:1.5px solid #0B7D71;color:#075E54;font-weight:800">✨ עריכה עם הסוכן</button>
     <button class="btn" id="exportCartXlsxBtn" style="margin-top:8px"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> ייצוא לאקסל</button>
     <button class="btn" id="exportCartPdfBtn" style="margin-top:8px"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 18h6M9 12h2"/></svg> ייצוא PDF (עם תמונות)</button>
     <button class="btn dn-only" id="exportDnTableBtn" style="margin-top:8px;width:100%;border:2px solid #0B7D71;color:#0B7D71;font-weight:800"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg> ייצוא תעודת משלוח (טבלה)</button>
@@ -4534,6 +4535,14 @@ async function adminSendPush(){
 #agChips button{flex:none;border:1px solid #cfe5e1;background:#fff;color:#075E54;border-radius:20px;padding:7px 13px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
 .ag-welcome{align-self:stretch;text-align:center;padding:18px 10px 4px;color:var(--ink2,#5C6672);font-size:14px;line-height:1.65}
 .ag-welcome b{display:block;color:var(--ink,#171D24);font-size:17px;margin-bottom:4px}
+#agCtx{display:none;margin:0 12px 6px;background:#eaf5f3;border:1px solid #cfe5e1;border-radius:12px;padding:7px 11px;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#075E54;flex:none}
+#agCtx.on{display:flex}#agCtx span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#agCtx button{border:none;background:#fff;border-radius:8px;width:26px;height:26px;cursor:pointer;flex:none}
+.ag-kv{display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-size:13.5px}.ag-kv.sub{color:var(--ink2,#5C6672);font-size:12.5px;padding:2px 0}
+.ag-ex{margin-top:8px;border-top:1px solid #eee;padding-top:4px}.ag-ch{font-size:12px;color:#075E54;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55%}
+.ag-cf-st{grid-column:1/-1;text-align:center;font-weight:800;color:var(--ink2,#5C6672);padding:6px}
+.ag-doc-acts button.dng{background:#D7483B;border-color:#D7483B}
+.ag-note{font-size:13.5px}.ag-undo{margin-inline-start:6px;border:1px solid #cfe5e1;background:#fff;color:#075E54;border-radius:8px;padding:3px 9px;font-family:inherit;font-weight:700;font-size:12.5px;cursor:pointer}
 #agFileBar{display:none;margin:0 12px 6px;background:#fff;border:1px solid #cfe5e1;border-radius:12px;padding:8px 11px;align-items:center;gap:8px;font-size:13px;flex:none}
 #agFileBar.on{display:flex}
 #agFileBar span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
@@ -4567,7 +4576,10 @@ async function adminSendPush(){
       <button type="button" data-t="תכין תעודת משלוח מהקובץ המצורף ל">🚚 תעודת משלוח</button>
       <button type="button" data-t="תכין פירוט מוצרים ללקוח ">📄 פירוט מוצרים</button>
       <button type="button" data-t="תפתח עגלה ללקוח ">🛒 עגלה ללקוח</button>
+      <button type="button" data-t="תעדכן מחירים בקטלוג לפי הקובץ המצורף">🏷 עדכון מחירים</button>
+      <button type="button" data-t="תקים את המוצרים החדשים מהקובץ המצורף">🆕 הקמת מוצרים</button>
     </div>
+    <div id="agCtx"><span></span><button id="agCtxX" type="button" aria-label="נקה הקשר">✕</button></div>
     <div id="agFileBar"><span id="agFileName"></span><button id="agFileX" type="button" aria-label="הסר קובץ">✕</button></div>
     <div class="ag-comp">
       <button class="ag-ib" id="agAttach" type="button" aria-label="צרף קובץ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg></button>
@@ -4579,7 +4591,7 @@ async function adminSendPush(){
 </div>
 <script>
 (function(){
-  var AG={pin:null,msgs:[],pending:null,busy:false,file:null,hay:null,hayFor:null};
+  var AG={pin:null,msgs:[],pending:null,busy:false,file:null,hay:null,hayFor:null,sheets:{},undo:{},ctx:null};
   try{ AG.pin=sessionStorage.getItem("etz_agent_pin")||null; }catch(e){}
   var $id=function(i){ return document.getElementById(i); };
   var DOC={quote:{t:"הצעת מחיר",ok:"הצעת המחיר נוצרה",up:"הצעת המחיר עודכנה",ic:"💰"},details:{t:"פירוט מוצרים",ok:"פירוט המוצרים נוצר",up:"פירוט המוצרים עודכן",ic:"📄"},cart:{t:"עגלה ללקוח",ok:"העגלה נוצרה",up:"העגלה עודכנה",ic:"🛒"},delivery_note:{t:"תעודת משלוח",ok:"תעודת המשלוח נוצרה",up:"תעודת המשלוח עודכנה",ic:"🚚"}};
@@ -4611,6 +4623,7 @@ async function adminSendPush(){
     if(d&&d.ok){ AG.pin=v; try{ sessionStorage.setItem("etz_agent_pin",v); }catch(e){} setUsage(d.usage); showChat(); setTimeout(function(){ $id("agText").focus(); },60); }
     else $id("agLockErr").textContent=(d&&d.text)||"קוד שגוי";
   }
+  function ctxBar(){ var b=$id("agCtx"); if(!b) return; var c=AG.ctx!=null&&CARTS.find(function(x){ return String(x.id)===String(AG.ctx); }); if(c){ b.querySelector("span").textContent=(c.kind==="dn"?"🚚 תעודת משלוח":"🛒 עגלה")+" #"+c.id+" · "+(c.customer||""); b.classList.add("on"); } else b.classList.remove("on"); }
   function resetChat(){ AG.msgs=[]; AG.pending=null; clearFile(); $id("agMsgs").innerHTML=""; welcome(); }
 
   /* ---------- תצוגה ---------- */
@@ -4624,7 +4637,7 @@ async function adminSendPush(){
   }
   function welcome(){
     var n=(typeof PRODUCTS!=="undefined"&&PRODUCTS)?PRODUCTS.length:0;
-    add(div("ag-welcome","<b>מה נכין היום?</b>צרף קובץ — אקסל, PDF או צילום של רשימה — או פשוט כתוב.<br>לדוגמה: \"הצעת מחיר לכהן: 2 מברגות DCF887 ו-5 ארגזי ביטים, 10% הנחה\"."+(n?"":"<br><span style='color:#b3261e'>⚠ הקטלוג עוד לא נטען</span>")));
+    add(div("ag-welcome","<b>מה נעשה היום?</b>צרף קובץ — אקסל, PDF או צילום — או פשוט כתוב.<br>מסמכים · עריכת עגלות ותעודות קיימות · עדכון מחירים והקמת מוצרים מקובץ · מחירי חיסול · ספירה · התראות לעובדים.<br>לדוגמה: \"תעדכן מחירים מהקובץ\" או \"תן 10% לעגלה של כהן\"."+(n?"":"<br><span style='color:#b3261e'>⚠ הקטלוג עוד לא נטען</span>")));
   }
   function status(txt){ return add(div("ag-st",'<span class="ag-dots"><i></i><i></i><i></i></span>'+esc(txt))); }
   function err(t){ add(div("ag-err",esc(t))); }
@@ -4651,10 +4664,19 @@ async function adminSendPush(){
         $id("agFileName").textContent="⏳ ממיר PDF…"; $id("agFileBar").classList.add("on");
         block=await pdfToBlocks(await f.arrayBuffer(),nm); kind="📕";
       } else if(/^(xlsx|xls|csv)$/.test(ext)){
-        var wb=XLSX.read(await f.arrayBuffer(),{type:"array"}), parts=[];
-        wb.SheetNames.slice(0,3).forEach(function(sn){ var csv=XLSX.utils.sheet_to_csv(wb.Sheets[sn],{blankrows:false}).replace(/,+$/gm,"").replace(/\n{2,}/g,"\n").trim(); if(csv) parts.push("### גיליון: "+sn+"\n"+csv); });
+        var wb=XLSX.read(await f.arrayBuffer(),{type:"array"}), parts=[], store={sheets:{},order:[]}, total=0;
+        wb.SheetNames.slice(0,3).forEach(function(sn){
+          var ws=wb.Sheets[sn]; if(!ws||!ws["!ref"]) return;
+          var rg=XLSX.utils.decode_range(ws["!ref"]), rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",blankrows:true,raw:false});
+          store.sheets[sn]={name:sn,rows:rows,r0:rg.s.r,c0:rg.s.c}; store.order.push(sn);
+          var letters=[]; for(var c=rg.s.c;c<=rg.e.c&&c<rg.s.c+40;c++) letters.push(XLSX.utils.encode_col(c));
+          var lines=[]; rows.forEach(function(r,i){ var cells=r.map(function(v){ return String(v).replace(/\s+/g," ").trim(); }); while(cells.length&&!cells[cells.length-1]) cells.pop(); if(cells.length) lines.push((rg.s.r+i+1)+") "+cells.join(" | ")); });
+          total+=lines.length;
+          parts.push("### גיליון: "+sn+" — "+lines.length+" שורות. עמודות לפי הסדר: "+letters.join(",")+". המספר בתחילת כל שורה = מספר השורה באקסל.\n"+lines.join("\n"));
+        });
+        AG.sheets[nm]=store;
         var txt=parts.join("\n\n"); var cut=txt.length>60000; if(cut) txt=txt.slice(0,60000);
-        block={type:"text",text:"קובץ מצורף: "+nm+(cut?" (קוצר — קובץ ארוך)":"")+"\n```\n"+txt+"\n```"}; kind="📊";
+        block={type:"text",text:"קובץ מצורף: "+nm+(cut?" (מוצג רק החלק הראשון — "+total+" שורות בסך הכול. לעדכון קטלוג השתמש ב-apply_product_file, שרץ על כל השורות)":"")+"\n```\n"+txt+"\n```"}; kind="📊";
       } else if(ext==="txt"){
         block={type:"text",text:"קובץ מצורף: "+nm+"\n```\n"+(await f.text()).slice(0,60000)+"\n```"}; kind="📝";
       } else { toast("סוג קובץ לא נתמך"); return; }
@@ -4782,7 +4804,31 @@ async function adminSendPush(){
         if(!(await saveCartCustomer(c,name,info))) return {ok:false,text:"שמירת פרטי לקוח נכשלה (ייתכן שחסר cart-extras.sql)."};
         done.push("פרטי לקוח");
       }
+      var A=(inp.add_items||[]), addN=0, badA=[];
+      for(var a=0;a<A.length;a++){
+        var x0=A[a], m0=String(x0.mktt==null?"":x0.mktt).trim(), q0=Math.max(1,Math.round(Number(x0.qty)||1)), d0=dn?0:Math.max(0,Math.min(99,Number(x0.discount)||0));
+        var row0=null;
+        if(m0==="1"){ if(!x0.name){ badA.push("מוצר כללי ללא שם"); continue; } row0={cart_id:c.id,mktt:"1",name:String(x0.name),qty:q0,unit_price:pnum(x0.unit_price)}; }
+        else {
+          var p0=PRODMAP.get(m0)||findByCode(m0); if(!p0){ badA.push(m0); continue; } m0=String(p0.mktt);
+          var ex0=cartItems(c.id).find(function(it){ return String(it.mktt)===m0; });
+          if(ex0){ var pq={qty:(Number(ex0.qty)||0)+q0}; var ru=await sb.from("cart_items").update(pq).eq("id",ex0.id); if(ru.error) throw ru.error; ex0.qty=pq.qty; addN++; continue; }
+          row0={cart_id:c.id,mktt:m0,name:p0.name||"",qty:q0,unit_price:(!dn&&x0.unit_price!=null&&x0.unit_price!=="")?pnum(x0.unit_price):(isClearance(m0)?clearancePrice(m0):pnum(p0.price))};
+          if(isClearance(m0)) d0=0;
+        }
+        if(d0) row0.discount=d0;
+        var ri=await sb.from("cart_items").insert(row0).select(); if(ri.error) throw ri.error;
+        (ri.data||[]).forEach(function(r){ if(!ITEMS.some(function(z){ return z.id===r.id; })) ITEMS.push(r); }); addN++;
+      }
+      if(addN) done.push("נוספו "+addN+" פריטים");
+      if(badA.length) done.push("לא נמצאו: "+badA.join(", "));
       var its=cartItems(c.id);
+      var P=(inp.prices||[]);
+      for(var pi=0;pi<P.length;pi++){
+        if(dn) break;
+        var itp=its.find(function(it){ return String(it.mktt)===String(P[pi].mktt); }); if(!itp||isClearance(itp.mktt)) continue;
+        var np=pnum(P[pi].unit_price); var rp=await sb.from("cart_items").update({unit_price:np}).eq("id",itp.id); if(rp.error) throw rp.error; itp.unit_price=np; done.push(itp.mktt+" מחיר "+np+"₪");
+      }
       var D=(inp.discounts||[]);
       for(var i=0;i<D.length;i++){
         var x=D[i], pct=Math.max(0,Math.min(99,Number(x.discount)||0));
@@ -4841,6 +4887,249 @@ async function adminSendPush(){
     else if(a==="xlsq"){ openCartXlsx(); var q=document.querySelector('input[name=cartFmt][value=quote]'); if(q){ q.checked=true; cartXlsxSync(); } }
   }
 
+  /* ================= פעולות נוספות: קטלוג, חיסול, ספירה, התראות, מסמכים קיימים ================= */
+  var PF=["name","price","barcode","unit","stock","image_url"];
+  var PFL={name:"שם",price:"מחיר",barcode:"ברקוד",unit:"יחידה",stock:"מלאי",image_url:"תמונה"};
+  function confirmCard(title,html,okLbl,danger){
+    try{ $id("agMsgs").querySelectorAll(".ag-st").forEach(function(x){ x.remove(); }); }catch(_){}
+    return new Promise(function(res){
+      var el=div("ag-doc ag-cf",'<div class="ag-doc-h"><span class="ic">'+(danger?"⚠️":"📝")+'</span><div><b>'+esc(title)+'</b><small>ממתין לאישור שלך</small></div></div>'+
+        '<div class="ag-doc-b">'+html+'</div><div class="ag-doc-acts"><button class="pri'+(danger?' dng':'')+'" data-cf="ok">'+esc(okLbl||"אישור וביצוע")+'</button><button data-cf="no" style="grid-column:1/-1">ביטול</button></div>');
+      el.addEventListener("click",function(e){
+        var b=e.target.closest("[data-cf]"); if(!b||el.dataset.done) return;
+        el.dataset.done="1"; var ok=b.getAttribute("data-cf")==="ok";
+        el.querySelector(".ag-doc-acts").innerHTML='<div class="ag-cf-st">'+(ok?"✓ אושר":"✕ בוטל")+'</div>';
+        el.querySelector(".ag-doc-h small").textContent=ok?"אושר":"בוטל";
+        res(ok);
+      });
+      add(el);
+    });
+  }
+  function note(html){ return add(div("ag-m ag-a ag-note",html)); }
+  function canon(f,v){
+    if(v==null) return null; var s=String(v).trim(); if(s==="") return null;
+    if(f==="price"){ var n=pnum(s); return isNaN(n)?null:Math.round(n*100)/100; }
+    if(f==="barcode"||f==="mktt") return s.replace(/\.0+$/,"").replace(/\s+/g,"");
+    return s;
+  }
+  function same(f,a,b){ if(f==="price") return (a==null||a==="")?(b==null):(b!=null&&Math.abs(pnum(a)-b)<0.005); return String(a==null?"":a).trim()===String(b==null?"":b).trim(); }
+
+  /* --- תכנון שינויים בקטלוג (משותף לקובץ ולרשימה) --- */
+  function planProducts(list,mode){
+    var plan={upd:[],neu:[],same:0,skip:[],fields:{},jumps:0};
+    var seen={};
+    list.forEach(function(r){
+      var m=canon("mktt",r.mktt); if(!m){ return; }
+      if(seen[m]) return; seen[m]=1;
+      var p=PRODMAP.get(m);
+      if(p){
+        if(mode==="create_only"){ plan.same++; return; }
+        var ch={};
+        PF.forEach(function(f){ if(r[f]===undefined) return; var v=canon(f,r[f]); if(v==null) return; if(!same(f,p[f],v)){ ch[f]=v; plan.fields[f]=(plan.fields[f]||0)+1; } });
+        if(!Object.keys(ch).length){ plan.same++; return; }
+        if(ch.price!=null){ var o=pnum(p.price); if(o>0&&Math.abs(ch.price-o)/o>0.4) plan.jumps++; }
+        plan.upd.push({mktt:m,p:p,ch:ch});
+      } else {
+        if(mode==="update_only"){ plan.skip.push(m+" (לא קיים בקטלוג)"); return; }
+        var nm=canon("name",r.name); if(!nm){ plan.skip.push(m+" (חסר שם)"); return; }
+        var o2={mktt:m}; PF.forEach(function(f){ if(r[f]!==undefined){ var v=canon(f,r[f]); if(v!=null) o2[f]=v; } });
+        plan.neu.push(o2);
+      }
+    });
+    return plan;
+  }
+  function planHtml(plan){
+    var h='<div class="ag-kv"><span>מוצרים חדשים</span><b>'+plan.neu.length+'</b></div><div class="ag-kv"><span>מוצרים שיתעדכנו</span><b>'+plan.upd.length+'</b></div>';
+    Object.keys(plan.fields).forEach(function(f){ h+='<div class="ag-kv sub"><span>· '+PFL[f]+'</span><b>'+plan.fields[f]+'</b></div>'; });
+    if(plan.same) h+='<div class="ag-kv sub"><span>ללא שינוי</span><b>'+plan.same+'</b></div>';
+    if(plan.jumps) h+='<div class="ag-doc-miss">⚠ '+plan.jumps+' מחירים משתנים ביותר מ-40% — בדוק לפני אישור</div>';
+    var ex=plan.upd.slice(0,8).map(function(u){ return '<div class="row"><span class="nm">'+esc(u.p.name||u.mktt)+'</span><span class="ag-ch">'+Object.keys(u.ch).map(function(f){ return PFL[f]+": "+esc(f==="price"?(u.p.price!=null&&u.p.price!==""?pnum(u.p.price):"—"):(u.p[f]||"—"))+" ← "+esc(u.ch[f]); }).join(" · ")+'</span></div>'; }).join("");
+    ex+=plan.neu.slice(0,Math.max(0,8-plan.upd.length)).map(function(n){ return '<div class="row"><span class="nm">🆕 '+esc(n.name)+'</span><span class="ag-ch">'+esc(n.mktt)+(n.price!=null?" · "+fmtNis(n.price):"")+'</span></div>'; }).join("");
+    if(ex) h+='<div class="ag-ex">'+ex+'</div>';
+    var more=plan.upd.length+plan.neu.length-8; if(more>0) h+='<div class="more">ועוד '+more+'…</div>';
+    if(plan.skip.length) h+='<div class="ag-doc-miss">דילוג על '+plan.skip.length+': '+esc(plan.skip.slice(0,6).join(" · "))+(plan.skip.length>6?"…":"")+'</div>';
+    return h;
+  }
+  function rebuildProdMaps(){
+    PRODMAP=new Map(PRODUCTS.map(function(x){ return [String(x.mktt),x]; }));
+    BARCODEMAP=new Map(PRODUCTS.filter(function(x){ return x.barcode; }).map(function(x){ return [String(x.barcode).trim(),x]; }));
+    try{ BARCODEMAP_NORM=null; }catch(_){}
+    AG.hay=null;
+    try{ localStorage.setItem(LS.products,JSON.stringify(PRODUCTS)); }catch(_){}
+    try{ refreshEditResults(); if($id("qSale")) renderSaleResults(search($id("qSale").value.trim())); if(CUR_CART!=null) renderCart(); refreshCatalogState(); }catch(_){}
+  }
+  async function upsertUniform(rows){
+    /* כל שורה באצווה עם אותם שדות — כדי ש-Supabase לא ירוקן עמודות */
+    var groups={};
+    rows.forEach(function(r){ var k=Object.keys(r).sort().join(","); (groups[k]=groups[k]||[]).push(r); });
+    for(var k in groups){ var g=groups[k]; for(var i=0;i<g.length;i+=500){ var r=await sb.from("products").upsert(g.slice(i,i+500),{onConflict:"mktt"}); if(r.error) throw r.error; } }
+  }
+  async function execPlan(plan,label){
+    if(!plan.upd.length&&!plan.neu.length) return {ok:true,text:"אין שינויים לביצוע — הכול כבר מעודכן ("+plan.same+" ללא שינוי)."+(plan.skip.length?" דילוגים: "+plan.skip.length:""),final:false};
+    var ok=await confirmCard(label||"עדכון קטלוג",planHtml(plan),"אישור — עדכן "+(plan.upd.length+plan.neu.length)+" מוצרים",plan.jumps>0);
+    if(!ok) return {ok:true,text:"המשתמש ביטל. לא בוצע שינוי בקטלוג.",final:true};
+    var st=status("מעדכן קטלוג…");
+    var undo={upd:plan.upd.map(function(u){ var o={mktt:u.mktt}; Object.keys(u.ch).forEach(function(f){ o[f]=(u.p[f]===undefined||u.p[f]==="")?null:u.p[f]; }); return o; }),neu:plan.neu.map(function(n){ return n.mktt; })};
+    try{
+      var rows=plan.upd.map(function(u){ var o={mktt:u.mktt}; Object.keys(u.ch).forEach(function(f){ o[f]=u.ch[f]; }); return o; }).concat(plan.neu);
+      if(CLOUD&&sb) await upsertUniform(rows);
+      plan.upd.forEach(function(u){ Object.assign(u.p,u.ch); });
+      plan.neu.forEach(function(n){ PRODUCTS.push(Object.assign({},n)); });
+      rebuildProdMaps(); st.remove();
+      var id="u"+Date.now(); AG.undo[id]=undo;
+      add(div("ag-m ag-a ag-note",'✓ הקטלוג עודכן: '+plan.upd.length+' עודכנו, '+plan.neu.length+' חדשים. <button class="ag-undo" data-undo="'+id+'">↩ ביטול השינוי</button>'));
+      return {ok:true,text:"בוצע: "+plan.upd.length+" מוצרים עודכנו ("+Object.keys(plan.fields).map(function(f){return PFL[f]+" "+plan.fields[f];}).join(", ")+"), "+plan.neu.length+" מוצרים חדשים נוצרו."+(plan.skip.length?" דילוג על "+plan.skip.length+": "+plan.skip.slice(0,15).join(", "):""),final:true};
+    }catch(e){
+      st.remove(); console.error("agent products",e); var m=String((e&&e.message)||e);
+      return {ok:false,text:"עדכון הקטלוג נכשל: "+m};
+    }
+  }
+  async function doUndo(id,btn){
+    var u=AG.undo[id]; if(!u) return; if(!confirm("לבטל את השינוי ולהחזיר את הערכים הקודמים?")) return;
+    btn.disabled=true; btn.textContent="מבטל…";
+    try{
+      if(u.upd.length) await upsertUniform(u.upd);
+      if(u.neu.length){ for(var i=0;i<u.neu.length;i+=200){ var r=await sb.from("products").delete().in("mktt",u.neu.slice(i,i+200)); if(r.error) throw r.error; } }
+      u.upd.forEach(function(o){ var p=PRODMAP.get(o.mktt); if(p) Object.keys(o).forEach(function(f){ if(f!=="mktt") p[f]=o[f]; }); });
+      var dead={}; u.neu.forEach(function(m){ dead[m]=1; }); PRODUCTS=PRODUCTS.filter(function(p){ return !dead[String(p.mktt)]; });
+      rebuildProdMaps(); delete AG.undo[id]; btn.textContent="✓ בוטל";
+    }catch(e){ console.error(e); btn.disabled=false; btn.textContent="↩ ביטול השינוי"; toast("ביטול נכשל"); }
+  }
+
+  /* --- קובץ אקסל: מיפוי עמודות ע״י הסוכן, הביצוע על כל השורות כאן (חוסך טוקנים) --- */
+  function colIdx(sheet,c){
+    if(c==null||c==="") return -1;
+    var s=String(c).trim().toUpperCase();
+    if(/^[A-Z]{1,3}$/.test(s)) return XLSX.utils.decode_col(s)-sheet.c0;
+    var hi=sheet.rows.length?sheet.rows[0]:[]; for(var r=0;r<Math.min(6,sheet.rows.length);r++){ var row=sheet.rows[r]; for(var j=0;j<row.length;j++){ if(String(row[j]).trim()===String(c).trim()) return j; } }
+    return -1;
+  }
+  function findSheet(inp){
+    var f=null, names=Object.keys(AG.sheets);
+    if(!names.length) return null;
+    f=AG.sheets[inp.file]||AG.sheets[names[names.length-1]];
+    var sn=inp.sheet&&f.sheets[inp.sheet]?inp.sheet:f.order[0];
+    return f.sheets[sn];
+  }
+  async function applyProductFile(inp){
+    var sh=findSheet(inp); if(!sh) return {ok:false,text:"לא נמצא קובץ אקסל/CSV מצורף בשיחה. בקש מהמשתמש לצרף."};
+    var cols=inp.columns||{}, map={}, mi=colIdx(sh,cols.mktt);
+    if(mi<0) return {ok:false,text:"לא זוהתה עמודת מק״ט ("+cols.mktt+")."};
+    PF.forEach(function(f){ if(cols[f]!=null&&cols[f]!==""){ var k=colIdx(sh,cols[f]); if(k<0) throw new Error("עמודה לא נמצאה: "+f+"="+cols[f]); map[f]=k; } });
+    var first=Math.max(sh.r0+1,parseInt(inp.first_row,10)||sh.r0+2), last=parseInt(inp.last_row,10)||(sh.r0+sh.rows.length);
+    var mult=Number(inp.price_multiplier)||1; if(inp.prices_exclude_vat) mult*=1+(Number(inp.vat_percent)||18)/100;
+    var list=[];
+    for(var rn=first;rn<=last;rn++){
+      var row=sh.rows[rn-sh.r0-1]; if(!row) continue;
+      var o={mktt:row[mi]};
+      Object.keys(map).forEach(function(f){ var v=row[map[f]]; if(f==="price"&&v!==""&&v!=null){ var n=pnum(v); v=n?Math.round(n*mult*100)/100:""; } o[f]=v; });
+      list.push(o);
+    }
+    var plan=planProducts(list,inp.mode||"upsert");
+    return await execPlan(plan,"עדכון קטלוג מקובץ — "+(sh.name||""));
+  }
+  async function upsertProducts(inp){
+    var items=(inp.items||[]).slice(0,300);
+    return await execPlan(planProducts(items,inp.mode||"upsert"),"עדכון קטלוג");
+  }
+
+  /* --- מחירי חיסול --- */
+  async function clearanceOps(inp){
+    if(!CLEARANCE_OK) return {ok:false,text:"טבלת החיסול לא זמינה (clearance)."};
+    var A=(inp.add||[]).filter(function(x){ return PRODMAP.get(String(x.mktt))&&!isClearance(x.mktt)&&pnum(x.price)>0; });
+    var U=(inp.update||[]).filter(function(x){ return isClearance(x.mktt); });
+    var D=(inp.remove||[]).map(String).filter(function(m){ return isClearance(m); });
+    if(!A.length&&!U.length&&!D.length) return {ok:false,text:"אין פעולות תקינות (בדוק שהמק״טים קיימים / נמצאים בחיסול)."};
+    var h=A.map(function(x){ var p=PRODMAP.get(String(x.mktt)); return '<div class="row"><span class="nm">➕ '+esc(p.name||x.mktt)+'</span><span class="q">'+fmtNis(pnum(x.price))+'</span></div>'; }).join("")+
+      U.map(function(x){ var c=CLEARANCE_MAP.get(String(x.mktt)); return '<div class="row"><span class="nm">✎ '+esc(c.name||x.mktt)+'</span><span class="ag-ch">'+(x.price!=null?fmtNis(pnum(c.price))+" ← "+fmtNis(pnum(x.price)):"")+(x.note!=null?" · הערה":"")+(x.name?" · שם":"")+'</span></div>'; }).join("")+
+      D.map(function(m){ var c=CLEARANCE_MAP.get(m); return '<div class="row"><span class="nm">🗑 '+esc((c&&c.name)||m)+'</span><span class="ag-ch">הסרה מחיסול</span></div>'; }).join("");
+    if(!(await confirmCard("מחירי חיסול",h,"אישור וביצוע",D.length>0))) return {ok:true,text:"המשתמש ביטל.",final:true};
+    try{
+      for(var i=0;i<A.length;i++){ var p=PRODMAP.get(String(A[i].mktt)); var row={mktt:String(p.mktt),name:p.name||"",unit:p.unit||"",barcode:p.barcode||"",image_url:p.image_url||"",price:pnum(A[i].price)}; if(A[i].note) row.note=String(A[i].note); var r=await sb.from("clearance").insert(row); if(r.error) throw r.error; CLEARANCE.unshift(row); }
+      for(var j=0;j<U.length;j++){ var x=U[j], patch={}; if(x.price!=null) patch.price=pnum(x.price); if(x.name) patch.name=String(x.name); if(x.note!=null) patch.note=String(x.note); if(x.image_url!=null) patch.image_url=String(x.image_url); if(x.cheapest_il!==undefined) patch.cheapest_il=x.cheapest_il===null?null:pnum(x.cheapest_il); var r2=await sb.from("clearance").update(patch).eq("mktt",String(x.mktt)); if(r2.error) throw r2.error; Object.assign(CLEARANCE_MAP.get(String(x.mktt)),patch); }
+      if(D.length){ var r3=await sb.from("clearance").delete().in("mktt",D); if(r3.error) throw r3.error; CLEARANCE=CLEARANCE.filter(function(c){ return D.indexOf(String(c.mktt))<0; }); }
+      rebuildClearanceMap(); try{ renderClearance(); if(CUR_CART!=null) renderCart(); }catch(_){}
+      note("✓ מחירי החיסול עודכנו");
+      return {ok:true,text:"בוצע: "+A.length+" נוספו, "+U.length+" עודכנו, "+D.length+" הוסרו מחיסול.",final:true};
+    }catch(e){ console.error(e); return {ok:false,text:"שגיאה בחיסול: "+String((e&&e.message)||e)}; }
+  }
+
+  /* --- ספירת מלאי --- */
+  async function addCounts(inp){
+    var who=String(inp.counter||(($id("counter")||{}).value)||"").trim()||"סוכן AI";
+    var L=(inp.items||[]).map(function(x){ var p=PRODMAP.get(String(x.mktt)); return p?{p:p,qty:Number(x.qty),loc:x.location||null}:null; }).filter(function(x){ return x&&!isNaN(x.qty); });
+    if(!L.length) return {ok:false,text:"אין שורות ספירה תקינות."};
+    var h=L.slice(0,12).map(function(x){ return '<div class="row"><span class="nm">'+esc(x.p.name||x.p.mktt)+'</span><span class="q">'+x.qty+'</span></div>'; }).join("")+(L.length>12?'<div class="more">ועוד '+(L.length-12)+'…</div>':'')+'<div class="ag-kv sub"><span>סופר/ת</span><b>'+esc(who)+'</b></div>';
+    if(!(await confirmCard("רישום ספירת מלאי ("+L.length+" שורות)",h))) return {ok:true,text:"המשתמש ביטל.",final:true};
+    for(var i=0;i<L.length;i++) await addCount({mktt:String(L[i].p.mktt),name:L[i].p.name||"",qty:L[i].qty,counter:who,location:L[i].loc});
+    try{ renderSummary(); }catch(_){}
+    note("✓ נרשמו "+L.length+" שורות ספירה");
+    return {ok:true,text:"נרשמו "+L.length+" שורות ספירה בשם "+who+".",final:true};
+  }
+
+  /* --- התראה לעובדים --- */
+  async function sendPush(inp){
+    var t=String(inp.title||"עץ האורן").slice(0,80), b=String(inp.body||"").slice(0,300);
+    if(!b) return {ok:false,text:"חסר תוכן להתראה."};
+    if(!(await confirmCard("שליחת התראה לכל העובדים","<div class='ag-kv'><span>כותרת</span><b>"+esc(t)+"</b></div><div class='ag-doc-sum'>"+esc(b)+"</div>","שלח עכשיו"))) return {ok:true,text:"המשתמש ביטל.",final:true};
+    var ti=$id("pushTitle"), bi=$id("pushBody"); if(ti) ti.value=t; if(bi) bi.value=b;
+    await adminSendPush();
+    return {ok:true,text:"ההתראה נשלחה (או שהתבקש קוד שליחה). הודע למשתמש.",final:true};
+  }
+
+  /* --- נתוני אפליקציה לקריאה --- */
+  function appData(inp){
+    var w=inp.what||"summary", q=String(inp.query||"").toLowerCase(), L=[];
+    if(w==="clearance"){ CLEARANCE.filter(function(c){ return !q||String(c.name||"").toLowerCase().indexOf(q)>=0||String(c.mktt).indexOf(q)>=0; }).slice(0,150).forEach(function(c){ L.push(c.mktt+" | "+(c.name||"")+" | "+pnum(c.price)+"₪"+(c.note?" | הערה: "+c.note:"")); }); return L.length?"מחירי חיסול ("+CLEARANCE.length+"):\n"+L.join("\n"):"אין פריטים בחיסול."; }
+    if(w==="counts"){ var ag=aggregate().filter(function(e){ return !q||String(e.name||"").toLowerCase().indexOf(q)>=0||String(e.mktt).indexOf(q)>=0; }); ag.slice(0,200).forEach(function(e){ L.push(e.mktt+" | "+e.name+" | נספר "+e.qty+" ("+e.lines+" שורות) | מלאי במערכת "+curStock(e.mktt)); }); return "ספירת מלאי — "+ag.length+" מק״טים, "+COUNTS.length+" שורות:\n"+(L.join("\n")||"אין"); }
+    var carts=CARTS.filter(function(c){ return c.kind!=="dn"; }).length, dns=CARTS.filter(function(c){ return c.kind==="dn"; }).length;
+    var noPrice=PRODUCTS.filter(function(p){ return p.price==null||String(p.price).trim()===""||pnum(p.price)===0; }).length, noBc=PRODUCTS.filter(function(p){ return !p.barcode; }).length;
+    return "קטלוג: "+PRODUCTS.length+" מוצרים ("+noPrice+" בלי מחיר, "+noBc+" בלי ברקוד). עגלות פתוחות: "+carts+". תעודות משלוח פתוחות: "+dns+". פריטי חיסול: "+CLEARANCE.length+". שורות ספירה: "+COUNTS.length+".";
+  }
+
+  /* --- מסמכים קיימים --- */
+  function docText(c){
+    var its=cartItems(c.id), dn=c.kind==="dn", cl=custLines(c);
+    var s="#"+c.id+" · "+(dn?"תעודת משלוח":"עגלה")+" · "+(c.customer||"")+" · "+(c.salesperson||"")+" · עודכן "+timeAgo(cartActivity(c))+" · "+its.length+" שורות"+(dn?"":" · סה״כ "+fmtNis(cartTotal(c.id)));
+    if(cl.length) s+="\n  פרטי לקוח: "+cl.join(" · ");
+    its.slice(0,60).forEach(function(i){ var d=itemDisc(i); s+="\n  "+i.mktt+" | "+(i.name||"")+" | כמות "+i.qty+(dn?"":" | "+(Number(i.unit_price)||0)+"₪"+(d?" | הנחה "+d+"%":"")); });
+    if(its.length>60) s+="\n  …ועוד "+(its.length-60);
+    return s;
+  }
+  function findDocs(inp){
+    var k=inp.kind||"all", q=String(inp.customer||"").trim().toLowerCase();
+    var list=CARTS.filter(function(c){
+      if(inp.doc_id) return String(c.id)===String(inp.doc_id);
+      if(k==="cart"&&c.kind==="dn") return false; if(k==="delivery_note"&&c.kind!=="dn") return false;
+      return !q||String(c.customer||"").toLowerCase().indexOf(q)>=0;
+    }).slice(0,8);
+    if(!list.length) return "לא נמצאו מסמכים פתוחים"+(q?" ללקוח \""+inp.customer+"\"":"")+". סה״כ פתוחים: "+CARTS.length+".";
+    return list.map(docText).join("\n\n");
+  }
+  async function deleteDoc(inp){
+    var c=CARTS.find(function(x){ return String(x.id)===String(inp.doc_id); }); if(!c) return {ok:false,text:"מסמך לא נמצא."};
+    if(!(await confirmCard("מחיקת "+(c.kind==="dn"?"תעודת משלוח":"עגלה")+" #"+c.id,'<div class="ag-kv"><span>לקוח</span><b>'+esc(c.customer||"")+'</b></div><div class="ag-kv"><span>שורות</span><b>'+cartItems(c.id).length+'</b></div>',"מחק לצמיתות",true))) return {ok:true,text:"המשתמש ביטל.",final:true};
+    var r=await sb.from("carts").delete().eq("id",c.id); if(r.error) return {ok:false,text:"מחיקה נכשלה: "+r.error.message};
+    CARTS=CARTS.filter(function(x){ return x.id!==c.id; }); ITEMS=ITEMS.filter(function(i){ return String(i.cart_id)!==String(c.id); });
+    if(String(CUR_CART)===String(c.id)){ try{ closeCart(); }catch(_){} }
+    try{ renderCartList(); renderDNList(); }catch(_){}
+    note("🗑 מסמך #"+c.id+" נמחק");
+    return {ok:true,text:"מסמך #"+c.id+" נמחק.",final:true};
+  }
+
+  var TOOLS_LOCAL={
+    search_products:{lbl:function(i){ return "מחפש "+((i.queries||[]).length)+" פריטים בקטלוג…"; },fn:function(i){ return runSearch(i); }},
+    create_document:{lbl:"יוצר מסמך…",fn:async function(i){ var r=await createDoc(i); r.final=r.ok; return r; }},
+    update_document:{lbl:"מעדכן מסמך…",fn:async function(i){ var r=await updateDoc(i); r.final=r.ok; return r; }},
+    find_documents:{lbl:"מחפש מסמכים…",fn:function(i){ return findDocs(i); }},
+    delete_document:{lbl:null,fn:deleteDoc},
+    apply_product_file:{lbl:"מנתח את הקובץ…",fn:applyProductFile},
+    upsert_products:{lbl:"בודק שינויים…",fn:upsertProducts},
+    clearance:{lbl:null,fn:clearanceOps},
+    add_counts:{lbl:null,fn:addCounts},
+    send_push:{lbl:null,fn:sendPush},
+    app_data:{lbl:"קורא נתונים…",fn:function(i){ return appData(i); }}
+  };
   /* ---------- שיחה ---------- */
   async function send(){
     if(AG.busy) return;
@@ -4850,6 +5139,7 @@ async function adminSendPush(){
     var content=[];
     if(AG.pending){ content=content.concat(AG.pending); AG.pending=null; }
     if(AG.file) content=content.concat(AG.file.block);
+    if(AG.ctx){ var cc=CARTS.find(function(x){ return String(x.id)===String(AG.ctx); }); if(cc) content.push({type:"text",text:"[הקשר: המשתמש פתח את הסוכן מתוך המסמך הזה. בקשות עריכה מתייחסות אליו — השתמש ב-update_document עם doc_id "+cc.id+"]\n"+docText(cc)}); AG.ctx=null; ctxBar(); }
     content.push({type:"text",text:text||"תכין מסמך מהקובץ המצורף."});
     var w=$id("agMsgs").querySelector(".ag-welcome"); if(w) w.remove();
     add(div("ag-m ag-u",(AG.file?'<div class="ag-file">'+AG.file.kind+" "+esc(AG.file.name)+'</div><br>':"")+md(text||"תכין מסמך מהקובץ המצורף.")));
@@ -4878,18 +5168,16 @@ async function adminSendPush(){
       if(!uses.length) return;
       var results=[], created=false;
       for(var i=0;i<uses.length;i++){
-        var u=uses[i], out;
-        if(u.name==="search_products"){
-          var n=((u.input&&u.input.queries)||[]).length, s2=status("מחפש "+n+" פריטים בקטלוג…");
-          await new Promise(function(r){ setTimeout(r,30); });
-          out={type:"tool_result",tool_use_id:u.id,content:runSearch(u.input)}; s2.remove();
-        } else if(u.name==="create_document"){
-          var s3=status("יוצר מסמך…"); var res=await createDoc(u.input||{}); s3.remove();
-          out={type:"tool_result",tool_use_id:u.id,content:res.text}; if(!res.ok){ out.is_error=true; err(res.text); } else created=true;
-        } else if(u.name==="update_document"){
-          var s4=status("מעדכן מסמך…"); var res2=await updateDoc(u.input||{}); s4.remove();
-          out={type:"tool_result",tool_use_id:u.id,content:res2.text}; if(!res2.ok){ out.is_error=true; err(res2.text); } else created=true;
-        } else out={type:"tool_result",tool_use_id:u.id,content:"כלי לא מוכר",is_error:true};
+        var u=uses[i], out, T=TOOLS_LOCAL[u.name];
+        if(!T){ results.push({type:"tool_result",tool_use_id:u.id,content:"כלי לא מוכר",is_error:true}); continue; }
+        var lbl=typeof T.lbl==="function"?T.lbl(u.input||{}):T.lbl, sx=lbl?status(lbl):null, res;
+        await new Promise(function(r){ setTimeout(r,30); });
+        try{ res=await T.fn(u.input||{}); }catch(e){ console.error("tool "+u.name,e); res={ok:false,text:"שגיאה: "+String((e&&e.message)||e)}; }
+        if(sx) sx.remove();
+        if(typeof res==="string") res={ok:true,text:res};
+        out={type:"tool_result",tool_use_id:u.id,content:String(res.text||"")};
+        if(!res.ok){ out.is_error=true; err(res.text); }
+        if(res.ok&&res.final) created=true;
         results.push(out);
       }
       if(created){ AG.pending=results; return; }   /* חוסך פנייה — התוצאה תצורף להודעה הבאה */
@@ -4904,6 +5192,7 @@ async function adminSendPush(){
   document.addEventListener("click",function(e){
     var el=e.target&&e.target.closest?e.target:null; if(!el) return;
     if(el.closest("#modAgentBtn")){ e.preventDefault(); if(typeof closeToolsSheet==="function") closeToolsSheet(); open(); return; }
+    if(el.closest("#cartAgentBtn")){ e.preventDefault(); if(CUR_CART==null) return; AG.ctx=CUR_CART; open(); ctxBar(); setTimeout(function(){ var t=$id("agText"); if(t&&AG.pin) t.focus(); },120); return; }
     if(!el.closest("#agentOv")) return;
     if(el.closest("#agClose")){ close(); return; }
     if(el.closest("#agNew")){ resetChat(); return; }
@@ -4913,6 +5202,8 @@ async function adminSendPush(){
     if(el.closest("#agFileX")){ clearFile(); return; }
     var ch=el.closest("#agChips button"); if(ch){ var t=$id("agText"); t.value=ch.getAttribute("data-t"); autoGrow(); t.focus(); try{ t.setSelectionRange(t.value.length,t.value.length); }catch(_){} return; }
     var ab=el.closest("[data-ag]"); if(ab){ docAction(ab); return; }
+    var ub=el.closest("[data-undo]"); if(ub){ doUndo(ub.getAttribute("data-undo"),ub); return; }
+    if(el.closest("#agCtxX")){ AG.ctx=null; ctxBar(); return; }
   });
   document.addEventListener("keydown",function(e){
     if(e.target&&e.target.id==="agPin"&&e.key==="Enter"){ e.preventDefault(); unlock(); }
