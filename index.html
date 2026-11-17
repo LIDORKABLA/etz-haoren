@@ -1792,10 +1792,14 @@ function search(term){
     const hay=name+" "+String(p.mktt).toLowerCase()+" "+String(p.barcode||"").toLowerCase()+" "+bcNorm(p.barcode||"").toLowerCase()+" "+bcNorm(p.mktt||"").toLowerCase();
     if(tokens.every(t=>hay.includes(t)||hay.includes(bcNorm(t)))){
       let score=name.indexOf(tokens[0]); if(score<0) score=900+String(p.mktt).toLowerCase().indexOf(tokens[0]);
-      scored.push([score,p]);
+      /* עדיפות למלאי: התאמה מדויקת של מק״ט/ברקוד → במלאי → מלאי לא ידוע → מלאי 0 או מינוס */
+      const st=p.stock, sn=(st==null||String(st).trim()==="")?null:parseFloat(String(st).replace(/,/g,""));
+      let tier=(sn==null||isNaN(sn))?1:(sn>0?0:2);
+      if(String(p.mktt).toLowerCase()===term||String(p.barcode||"").toLowerCase()===term) tier=-1;
+      scored.push([score,p,tier]);
     }
   }
-  scored.sort((a,b)=>a[0]-b[0]);
+  scored.sort((a,b)=>(a[2]-b[2])||(a[0]-b[0]));
   return scored.slice(0,50).map(x=>x[1]);
 }
 function renderResults(list){
@@ -2629,6 +2633,8 @@ async function confirmGeneralProduct(){
     closeGeneralProduct();
   }catch(e){ console.error("general product",e); pulseFX(false,"✗ לא נוסף — נסה שוב"); }
 }
+const VAT_RATE=0.18; /* מע״מ בישראל */
+function exVat(v){ return Math.round((Number(v)||0)/(1+VAT_RATE)*100)/100; }
 function buildCartPdfHTML(items, cart, note){
   var dn=!!(cart&&cart.kind==="dn");
   var DN_TAIL='<div class="sign"><div>שם המקבל: ______________________</div><div>חתימה: ______________________</div><div>תאריך קבלה: ______________</div></div>'+
@@ -2644,7 +2650,7 @@ function buildCartPdfHTML(items, cart, note){
       '<td class="im">'+(img?'<img src="'+img+'" alt="">':'<div class="noimg"></div>')+'</td>'+
       '<td class="nm"><div class="t">'+esc(i.name||"")+'</div><div class="k">מק״ט '+esc(String(i.mktt))+'</div></td>'+
       '<td class="num q">'+qty+'</td>'+
-      (dn?'':'<td class="num">'+fmtNis(hasD?(Number(i.unit_price)||0):itemUnit(i))+'</td>')+
+      (dn?'':(function(){ var u=hasD?(Number(i.unit_price)||0):itemUnit(i); return '<td class="num ex">'+fmtNis(exVat(u))+'</td><td class="num">'+fmtNis(u)+'</td>'; })())+
       (hasD?'<td class="num dc">'+(itemDisc(i)?(Math.round(itemDisc(i)*10)/10)+'%':'—')+'</td>':'')+
       (dn?'':'<td class="num tot">'+fmtNis(itemSub(i))+'</td>')+
     '</tr>';
@@ -2662,8 +2668,9 @@ function buildCartPdfHTML(items, cart, note){
   var sumHtml=dn?
     '<div class="sum"><div class="ln big"><span>סה״כ יחידות</span><b>'+units+'</b></div></div>':
     '<div class="sum">'+
-      '<div class="ln big"><span>סה״כ לתשלום</span><b>'+fmtNis(total)+'</b></div>'+
-      '<div class="vat">המחירים כוללים מע״מ</div>'+
+      '<div class="ln sm"><span>סה״כ לפני מע״מ</span><span>'+fmtNis(exVat(total))+'</span></div>'+
+      '<div class="ln sm"><span>מע״מ '+Math.round(VAT_RATE*100)+'%</span><span>'+fmtNis(Math.round((total-exVat(total))*100)/100)+'</span></div>'+
+      '<div class="ln big"><span>סה״כ כולל מע״מ</span><b>'+fmtNis(total)+'</b></div>'+
     '</div>';
   return '<!doctype html><html dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+' — עץ האורן</title>'+
   '<style>'+
@@ -2677,18 +2684,19 @@ function buildCartPdfHTML(items, cart, note){
   '.meta{display:flex;justify-content:space-between;gap:16px;margin:12px 0 4px;font-size:12.5px;line-height:1.6}'+
   '.meta .to b{font-size:15px}.meta .to div{color:#444}.meta .dt{text-align:left;color:#444;white-space:nowrap}'+
   'table{width:100%;border-collapse:collapse;margin-top:10px}thead{display:table-header-group}'+
-  'th{background:#0B7D71;color:#fff;font-weight:700;font-size:12px;padding:7px 8px;text-align:right;white-space:nowrap}'+
+  'th{background:#0B7D71;color:#fff;font-weight:700;font-size:11.5px;padding:6px 7px;text-align:right;white-space:nowrap;line-height:1.25;vertical-align:middle}th small{font-weight:400;font-size:9.5px;opacity:.85}'+
+  'td.ex{color:#666}'+
   'th:first-child{border-radius:0 6px 6px 0}th:last-child{border-radius:6px 0 0 6px}'+
   'td{padding:7px 8px;border-bottom:1px solid #e7e7e2;vertical-align:middle}'+
   'tbody tr:nth-child(even) td{background:#fafaf7}tr{page-break-inside:avoid;break-inside:avoid}'+
   'td.n{width:26px;color:#999;font-size:11.5px;text-align:center}'+
   'td.im{width:58px}td.im img,td.im .noimg{width:48px;height:48px;object-fit:contain;background:#fff;border:1px solid #eee;border-radius:6px;display:block}'+
   'td.nm .t{font-weight:700;font-size:13px;line-height:1.35}td.nm .k{font-size:11px;color:#888;margin-top:2px}'+
-  'td.num,th.num{text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums;width:1%;padding-left:12px;padding-right:12px}'+
+  'td.num,th.num{text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums;width:1%;padding-left:9px;padding-right:9px}'+
   'td.q{font-weight:700}td.tot{font-weight:800;color:#0B7D71}td.dc{color:#9a5b00;font-weight:700}'+
   '.sum{margin:14px 0 0 0;margin-right:auto;width:260px;page-break-inside:avoid;break-inside:avoid}'+
   '.sum .ln{display:flex;justify-content:space-between;padding:3px 0}'+
-  '.sum .sm{font-size:12px;color:#666}.sum .dsc{color:#9a5b00}'+
+  '.sum .sm{font-size:12.5px;color:#444}.sum .dsc{color:#9a5b00}'+
   '.sum .big{border-top:2px solid #0B7D71;margin-top:5px;padding-top:8px;font-size:15px;font-weight:700}.sum .big b{font-size:21px;color:#0B7D71}'+
   '.sum .vat{font-size:10.5px;color:#888;text-align:left}'+
   '.note{margin-top:14px;padding:10px 12px;background:#f6f4ec;border-right:3px solid #0B7D71;border-radius:6px;font-size:12.5px;color:#333;line-height:1.5;page-break-inside:avoid}'+
@@ -2698,7 +2706,7 @@ function buildCartPdfHTML(items, cart, note){
   '<div class="hd"><div><div class="t">'+title+'</div><div class="biz">עץ האורן — המרכז לכלי עבודה · דרך השוקולד 1, א.ת צפת · 04-6156146</div></div><img src="'+LOGO_B64+'" alt=""></div>'+
   '<div class="meta"><div class="to">'+(cust?'<div>לכבוד:</div><b>'+cust+'</b>':'')+(cinfo.length?'<div>'+cinfo.join(' · ')+'</div>':'')+'</div>'+
   '<div class="dt">תאריך: '+dateStr+(sp?'<br>'+(dn?'הופק ע״י: ':'נציג: ')+sp:'')+'</div></div>'+
-  '<table><thead><tr><th>#</th><th></th><th>פריט</th><th class="num">כמות</th>'+(dn?'':'<th class="num">מחיר ליחידה</th>')+(hasD?'<th class="num">הנחה</th>':'')+(dn?'':'<th class="num">סה״כ לשורה</th>')+'</tr></thead><tbody>'+rows+'</tbody></table>'+
+  '<table><thead><tr><th>#</th><th></th><th>פריט</th><th class="num">כמות</th>'+(dn?'':'<th class="num">מחיר ליחידה<br><small>לפני מע״מ</small></th><th class="num">מחיר ליחידה<br><small>כולל מע״מ</small></th>')+(hasD?'<th class="num">הנחה</th>':'')+(dn?'':'<th class="num">סה״כ לשורה<br><small>כולל מע״מ</small></th>')+'</tr></thead><tbody>'+rows+'</tbody></table>'+
   sumHtml+
   (note?'<div class="note"><b>הערה:</b> '+esc(note)+'</div>':'')+
   (dn?DN_TAIL:'<div class="terms">'+
@@ -4673,8 +4681,14 @@ async function adminSendPush(){
   function showLock(err){ $id("agLock").style.display="flex"; $id("agChat").style.display="none"; $id("agNew").style.display="none"; $id("agLockErr").textContent=err||""; $id("agPin").value=""; setTimeout(function(){ $id("agPin").focus(); },80); }
   function showChat(){ $id("agLock").style.display="none"; $id("agChat").style.display="flex"; $id("agNew").style.display=""; if(!AG.msgs.length && !$id("agMsgs").children.length) welcome(); }
   function setUsage(u){ if(u&&u.limit) $id("agUsage").textContent="שימוש היום: "+u.calls+" מתוך "+u.limit+" פניות"; }
-  async function callFn(body){
+  async function callFn(body,tries){
     if(typeof CLOUD==="undefined"||!CLOUD||!sb) return {error:"offline",text:"נדרש חיבור לענן."};
+    tries=tries==null?2:tries;
+    var r0=await callFn1(body);
+    if(r0&&r0.error==="net"&&tries>0){ await new Promise(function(r){ setTimeout(r,1500); }); return callFn(body,tries-1); }
+    return r0;
+  }
+  async function callFn1(body){
     try{
       var r=await sb.functions.invoke("doc-agent",{body:body});
       if(r.error){
@@ -5049,7 +5063,9 @@ async function adminSendPush(){
       rebuildProdMaps(); st.remove();
       var id="u"+Date.now(); AG.undo[id]=undo;
       add(div("ag-m ag-a ag-note",'✓ הקטלוג עודכן: '+plan.upd.length+' עודכנו, '+plan.neu.length+' חדשים. <button class="ag-undo" data-undo="'+id+'">↩ ביטול השינוי</button>'));
-      return {ok:true,text:"בוצע: "+plan.upd.length+" מוצרים עודכנו ("+Object.keys(plan.fields).map(function(f){return PFL[f]+" "+plan.fields[f];}).join(", ")+"), "+plan.neu.length+" מוצרים חדשים נוצרו."+(plan.skip.length?" דילוג על "+plan.skip.length+": "+plan.skip.slice(0,15).join(", "):""),final:true};
+      if(plan.neu.length) AG.lastNew=plan.neu.map(function(n){ return {mktt:n.mktt,name:n.name||"",image_url:n.image_url||""}; });
+      var newList=plan.neu.slice(0,100).map(function(n){ return n.mktt+" | "+(n.name||""); }).join("\n");
+      return {ok:true,text:"בוצע: "+plan.upd.length+" מוצרים עודכנו ("+Object.keys(plan.fields).map(function(f){return PFL[f]+" "+plan.fields[f];}).join(", ")+"), "+plan.neu.length+" מוצרים חדשים נוצרו."+(plan.skip.length?" דילוג על "+plan.skip.length+": "+plan.skip.slice(0,15).join(", "):"")+(newList?"\nהמוצרים החדשים (מק״ט | שם):\n"+newList:""),final:true};
     }catch(e){
       st.remove(); console.error("agent products",e); var m=String((e&&e.message)||e);
       return {ok:false,text:"עדכון הקטלוג נכשל: "+m};
@@ -5151,6 +5167,8 @@ async function adminSendPush(){
   /* --- נתוני אפליקציה לקריאה --- */
   function appData(inp){
     var w=inp.what||"summary", q=String(inp.query||"").toLowerCase(), L=[];
+    if(w==="missing_images"){ var mi=PRODUCTS.filter(function(p){ return !p.image_url&&(!q||String(p.name||"").toLowerCase().indexOf(q)>=0||String(p.mktt).indexOf(q)>=0); }); return "מוצרים בלי תמונה: "+mi.length+"\n"+mi.slice(0,150).map(function(p){ return p.mktt+" | "+(p.name||""); }).join("\n")+(mi.length>150?"\n…ועוד "+(mi.length-150):""); }
+    if(w==="recent_new"){ var rn=AG.lastNew||[]; return rn.length?"מוצרים שהוקמו בעדכון האחרון ("+rn.length+"):\n"+rn.map(function(p){ return p.mktt+" | "+(p.name||"")+(p.image_url?" | יש תמונה":" | בלי תמונה"); }).join("\n"):"לא הוקמו מוצרים חדשים בשיחה הזו."; }
     if(w==="clearance"){ CLEARANCE.filter(function(c){ return !q||String(c.name||"").toLowerCase().indexOf(q)>=0||String(c.mktt).indexOf(q)>=0; }).slice(0,150).forEach(function(c){ L.push(c.mktt+" | "+(c.name||"")+" | "+pnum(c.price)+"₪"+(c.note?" | הערה: "+c.note:"")); }); return L.length?"מחירי חיסול ("+CLEARANCE.length+"):\n"+L.join("\n"):"אין פריטים בחיסול."; }
     if(w==="counts"){ var ag=aggregate().filter(function(e){ return !q||String(e.name||"").toLowerCase().indexOf(q)>=0||String(e.mktt).indexOf(q)>=0; }); ag.slice(0,200).forEach(function(e){ L.push(e.mktt+" | "+e.name+" | נספר "+e.qty+" ("+e.lines+" שורות) | מלאי במערכת "+curStock(e.mktt)); }); return "ספירת מלאי — "+ag.length+" מק״טים, "+COUNTS.length+" שורות:\n"+(L.join("\n")||"אין"); }
     var carts=CARTS.filter(function(c){ return c.kind!=="dn"; }).length, dns=CARTS.filter(function(c){ return c.kind==="dn"; }).length;
@@ -5199,7 +5217,12 @@ async function adminSendPush(){
     clearance:{lbl:null,fn:clearanceOps},
     add_counts:{lbl:null,fn:addCounts},
     send_push:{lbl:null,fn:sendPush},
-    app_data:{lbl:"קורא נתונים…",fn:function(i){ return appData(i); }}
+    app_data:{lbl:"קורא נתונים…",fn:function(i){ return appData(i); }},
+    site_lookup:{lbl:function(i){ return "מחפש "+((i.items||[]).length)+" מוצרים באתר…"; },fn:async function(i){
+      var d=await callFn({action:"site_lookup",pin:AG.pin,items:(i.items||[]).slice(0,60)});
+      if(d&&d.ok) return {ok:true,text:d.text};
+      return {ok:false,text:"החיפוש באתר נכשל: "+((d&&d.text)||"שגיאה")+(d&&d.error==="net"?" (ייתכן שצריך לפרוס מחדש את doc-agent)":"")};
+    }}
   };
   /* ---------- שיחה ---------- */
   async function send(){
@@ -5236,7 +5259,7 @@ async function adminSendPush(){
       AG.msgs.push({role:"assistant",content:d.content});
       d.content.forEach(function(b){ if(b.type==="text"&&b.text&&b.text.trim()) add(div("ag-m ag-a",md(b.text))); });
       var uses=d.content.filter(function(b){return b.type==="tool_use";});
-      if(!uses.length) return;
+      if(!uses.length){ if(d.stop_reason==="pause_turn") continue; return; }
       var results=[], created=false;
       for(var i=0;i<uses.length;i++){
         var u=uses[i], out, T=TOOLS_LOCAL[u.name];
