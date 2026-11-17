@@ -5218,6 +5218,14 @@ async function adminSendPush(){
     add_counts:{lbl:null,fn:addCounts},
     send_push:{lbl:null,fn:sendPush},
     app_data:{lbl:"קורא נתונים…",fn:function(i){ return appData(i); }},
+    page_images:{lbl:function(i){ return "נכנס ל-"+((i.urls||[]).length)+" דפים…"; },fn:async function(i){
+      var d=await callFn({action:"page_images",pin:AG.pin,urls:(i.urls||[]).slice(0,8)});
+      return (d&&d.ok)?{ok:true,text:d.text}:{ok:false,text:"קריאת הדפים נכשלה: "+((d&&d.text)||"שגיאה")};
+    }},
+    store_images:{lbl:function(i){ return "שומר "+((i.items||[]).length)+" תמונות…"; },fn:async function(i){
+      var d=await callFn({action:"store_images",pin:AG.pin,items:(i.items||[]).slice(0,25)});
+      return (d&&d.ok)?{ok:true,text:d.text}:{ok:false,text:"שמירת התמונות נכשלה: "+((d&&d.text)||"שגיאה")+" (ודא שהרצת images-setup.sql)"};
+    }},
     site_lookup:{lbl:function(i){ return "מחפש "+((i.items||[]).length)+" מוצרים באתר…"; },fn:async function(i){
       var d=await callFn({action:"site_lookup",pin:AG.pin,items:(i.items||[]).slice(0,60)});
       if(d&&d.ok) return {ok:true,text:d.text};
