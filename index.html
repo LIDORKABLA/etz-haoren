@@ -4614,6 +4614,9 @@ async function adminSendPush(){
 #agChips button{flex:none;border:1px solid #cfe5e1;background:#fff;color:#075E54;border-radius:20px;padding:7px 13px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
 .ag-welcome{align-self:stretch;text-align:center;padding:18px 10px 4px;color:var(--ink2,#5C6672);font-size:14px;line-height:1.65}
 .ag-welcome b{display:block;color:var(--ink,#171D24);font-size:17px;margin-bottom:4px}
+#agMsgs>*{flex-shrink:0}
+.ag-cf .ag-ex{max-height:260px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.ag-cf .ag-doc-acts{position:sticky;bottom:0;background:#fff;padding-top:10px}
 #agCtx{display:none;margin:0 12px 6px;background:#eaf5f3;border:1px solid #cfe5e1;border-radius:12px;padding:7px 11px;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#075E54;flex:none}
 #agCtx.on{display:flex}#agCtx span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #agCtx button{border:none;background:#fff;border-radius:8px;width:26px;height:26px;cursor:pointer;flex:none}
@@ -5251,7 +5254,7 @@ async function adminSendPush(){
     try{ await loop(); } finally { AG.busy=false; $id("agSend").disabled=false; }
   }
   async function loop(){
-    for(var round=0;round<6;round++){
+    for(var round=0;round<14;round++){
       var st=status(round===0?"חושב…":"ממשיך…");
       var payload={pin:AG.pin,messages:AG.msgs}, sz=JSON.stringify(payload).length;
       if(sz>5500000){ st.remove(); err("הקבצים בשיחה גדולים מדי. התחל שיחה חדשה ושלח קובץ קטן יותר."); rollback(); return; }
