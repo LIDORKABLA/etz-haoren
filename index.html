@@ -5472,6 +5472,11 @@ async function adminSendPush(){
     if(!CLOUD||!sb){ if(!silent) $i("specBody").innerHTML='<div class="sp-empty">אין חיבור לענן</div>'; return; }
     try{
       var r=await sb.functions.invoke("product-specs",{body:{action:"get",mktt:mktt,force:!!force}});
+      if(r.data&&r.data.blocked){
+        if(r.data.spec) saveOne(r.data.spec);
+        if(!silent&&CUR===mktt){ var pp=PRODMAP.get(mktt)||{mktt:mktt}; if(r.data.spec&&r.data.spec.found!==false) render(pp,r.data.spec); else $i("specBody").innerHTML=head(pp,null)+'<div class="sp-empty">אין עדיין מפרט שמור למוצר הזה.<br>המפרטים מתעדכנים מקובץ הייצוא של קונימבו — במסך הניהול, או דרך הסוכן.</div>'; if(force) toast("האתר חוסם שליפה אוטומטית"); }
+        return;
+      }
       if(r.error||!r.data||!r.data.spec) throw (r.error||new Error("no data"));
       saveOne(r.data.spec);
       if(CUR===mktt&&$i("specSheet").classList.contains("open")) render(PRODMAP.get(mktt)||{mktt:mktt},r.data.spec);
