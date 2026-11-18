@@ -5203,7 +5203,7 @@ async function adminSendPush(){
   function appData(inp){
     var w=inp.what||"summary", q=String(inp.query||"").toLowerCase(), L=[];
     if(w==="categories"||w==="brands"||w==="missing_meta"){ return window.metaReport?window.metaReport(w,q):"מודול השטח לא נטען"; }
-    if(w==="specs_status"){ var n=window.__SPECS?window.__SPECS.size:0; var withSpec=window.__SPECS?Array.from(window.__SPECS.values()).filter(function(x){ return x.found!==false&&(x.specs||[]).length; }).length:0; var noSpec=PRODUCTS.filter(function(p){ var x=window.__SPECS&&window.__SPECS.get(String(p.mktt)); return !x||x.found===false||!(x.specs||[]).length; }); return "מפרטים שמורים: "+n+" ("+withSpec+" עם טבלת מפרט). מוצרים בקטלוג בלי מפרט: "+noSpec.length+"\n"+noSpec.slice(0,100).map(function(p){ return p.mktt+" | "+(p.name||""); }).join("\n"); }
+    if(w==="specs_status"){ var n=window.__SPECS?window.__SPECS.size:0; var withSpec=window.__SPECS?Array.from(window.__SPECS.values()).filter(function(x){ return x.found!==false&&(x.specs||[]).length; }).length:0; var noSpec=PRODUCTS.filter(function(p){ var x=window.__SPECS&&window.__SPECS.get(String(p.mktt)); return (!q||String(p.name||"").toLowerCase().indexOf(q)>=0||String(p.mktt)===q)&&(!x||x.found===false||(x.specs||[]).length<4); }); return "מפרטים שמורים: "+n+" ("+withSpec+" עם טבלת מפרט). מוצרים בקטלוג בלי מפרט או עם פחות מ-4 שורות: "+noSpec.length+"\n"+noSpec.slice(0,100).map(function(p){ var x=window.__SPECS&&window.__SPECS.get(String(p.mktt)); return p.mktt+" | "+(p.name||"")+" | "+(x&&x.found!==false?(x.specs||[]).length+" שורות":"אין מפרט"); }).join("\n"); }
     if(w==="missing_images"){ var mi=PRODUCTS.filter(function(p){ return !p.image_url&&(!q||String(p.name||"").toLowerCase().indexOf(q)>=0||String(p.mktt).indexOf(q)>=0); }); return "מוצרים בלי תמונה: "+mi.length+"\n"+mi.slice(0,150).map(function(p){ return p.mktt+" | "+(p.name||""); }).join("\n")+(mi.length>150?"\n…ועוד "+(mi.length-150):""); }
     if(w==="recent_new"){ var rn=AG.lastNew||[]; return rn.length?"מוצרים שהוקמו בעדכון האחרון ("+rn.length+"):\n"+rn.map(function(p){ return p.mktt+" | "+(p.name||"")+(p.image_url?" | יש תמונה":" | בלי תמונה"); }).join("\n"):"לא הוקמו מוצרים חדשים בשיחה הזו."; }
     if(w==="clearance"){ CLEARANCE.filter(function(c){ return !q||String(c.name||"").toLowerCase().indexOf(q)>=0||String(c.mktt).indexOf(q)>=0; }).slice(0,150).forEach(function(c){ L.push(c.mktt+" | "+(c.name||"")+" | "+pnum(c.price)+"₪"+(c.note?" | הערה: "+c.note:"")); }); return L.length?"מחירי חיסול ("+CLEARANCE.length+"):\n"+L.join("\n"):"אין פריטים בחיסול."; }
@@ -5258,6 +5258,21 @@ async function adminSendPush(){
     page_images:{lbl:function(i){ return "נכנס ל-"+((i.urls||[]).length)+" דפים…"; },fn:async function(i){
       var d=await callFn({action:"page_images",pin:AG.pin,urls:(i.urls||[]).slice(0,8)});
       return (d&&d.ok)?{ok:true,text:d.text}:{ok:false,text:"קריאת הדפים נכשלה: "+((d&&d.text)||"שגיאה")};
+    }},
+    page_text:{lbl:function(i){ return "קורא "+((i.urls||[]).length)+" דפים…"; },fn:async function(i){
+      var d=await callFn({action:"page_text",pin:AG.pin,urls:(i.urls||[]).slice(0,4)});
+      return (d&&d.ok)?{ok:true,text:d.text}:{ok:false,text:"קריאת הדף נכשלה: "+((d&&d.text)||"שגיאה")};
+    }},
+    save_specs:{lbl:null,fn:async function(i){
+      var it=(i.items||[]).filter(function(x){ return x&&x.mktt&&(x.specs||[]).length; }).slice(0,20); if(!it.length) return {ok:false,text:"אין מפרטים לשמירה."};
+      var h=it.map(function(x){ var p=PRODMAP.get(String(x.mktt)); return '<div class="row"><span class="nm">'+esc((p&&p.name)||x.mktt)+'</span><span class="ag-ch">'+x.specs.length+' שורות'+(x.description?' + תיאור':'')+((x.faq||[]).length?' + '+x.faq.length+' שאלות':'')+'</span></div>'+'<div class="ag-ex" style="max-height:none;margin:0 0 6px">'+x.specs.slice(0,4).map(function(s2){ return '<div class="ag-kv sub"><span>'+esc(s2.k)+'</span><b>'+esc(s2.v)+'</b></div>'; }).join("")+(x.source?'<div class="ag-kv sub"><span>מקור</span><b style="direction:ltr;overflow:hidden;text-overflow:ellipsis;max-width:60%">'+esc(x.source)+'</b></div>':'')+'</div>'; }).join("");
+      if(!(await confirmCard("שמירת מפרט ל-"+it.length+" מוצרים",h,"אישור — שמור"))) return {ok:true,text:"המשתמש ביטל.",final:true};
+      var rows=it.map(function(x){ var p=PRODMAP.get(String(x.mktt))||{}; return {mktt:String(x.mktt),title:p.name||"",url:x.source||null,specs:x.specs.map(function(s2){ return {k:String(s2.k),v:String(s2.v)}; }),description:x.description||null,faq:(x.faq||[]).map(function(f){ return {q:String(f.q),a:String(f.a)}; })}; });
+      var d=await callFn1b("product-specs",{action:"import",pin:AG.pin,force:true,rows:rows});
+      if(!d||!d.ok) return {ok:false,text:"השמירה נכשלה: "+((d&&d.text)||"שגיאה")};
+      try{ window.loadSpecs&&window.loadSpecs(); }catch(e){}
+      note("✓ נשמר מפרט ל-"+d.saved+" מוצרים");
+      return {ok:true,text:"נשמר מפרט ל-"+d.saved+" מוצרים.",final:true};
     }},
     store_images:{lbl:function(i){ return "שומר "+((i.items||[]).length)+" תמונות…"; },fn:async function(i){
       var d=await callFn({action:"store_images",pin:AG.pin,items:(i.items||[]).slice(0,25)});
@@ -5869,8 +5884,19 @@ body.m-field #fieldMain{display:block}
     var faq=[], fh=String(r.features||"");
     if(fh.trim()){ var fd=new DOMParser().parseFromString("<div>"+fh+"</div>","text/html"), q=""; Array.prototype.forEach.call(fd.querySelectorAll("p.kbq, p.kba"),function(p){ if(p.classList.contains("kbq")) q=p.textContent.trim(); else if(q){ faq.push({q:q,a:p.textContent.trim()}); q=""; } }); }
     if(!desc&&loose.length) desc=loose.map(function(x){ return "• "+x; }).join("\n");
+    /* תיאור קצר (הטקסט שמתחת לכותרת באתר) — אם העמודה קיימת בייצוא */
+    var subRaw="";
+    Object.keys(r).forEach(function(k){ if(subRaw) return; if(/^(content|features|seo_description|product_spec|title|tag_titles|tag_category_titles|model_title)$/i.test(k)) return; if(/desc|תיאור|short|sub_?title|subtitle/i.test(k)&&String(r[k]).trim()) subRaw=String(r[k]); });
+    var sub=null;
+    if(subRaw){
+      var stxt=/<[a-z][\s\S]*>/i.test(subRaw)?(new DOMParser().parseFromString("<div>"+subRaw.replace(/<br\s*\/?>/gi,"\n").replace(/<\/(p|li|div)>/gi,"\n")+"</div>","text/html").body.textContent||""):subRaw;
+      stxt=stxt.replace(/\r/g,"").replace(/[ \t]+/g," ").replace(/\n\s*\n+/g,"\n").trim(); sub=stxt.slice(0,2500)||null;
+      var have={}; specs.forEach(function(x){ have[x.k]=1; });
+      if(specs.length<4) stxt.split(/\n|\s\|\s|❱|•/).forEach(function(part){ var t=part.replace(/^[-–•*\s]+/,"").trim(), ci=t.indexOf(":"); if(ci>1&&ci<40&&ci<t.length-1){ var k=t.slice(0,ci).trim(); if(!have[k]){ specs.push({k:k,v:t.slice(ci+1).trim().replace(/\.$/,"")}); have[k]=1; } } });
+      if(!desc&&!specs.length) desc=stxt;
+    }
     if(!specs.length&&!desc&&!faq.length) return null;
-    return {mktt:String(r.code).trim(),title:String(r.title||"").trim(),url:r.id?"https://www.etzhaoren.co.il/items/"+String(r.id).trim():null,specs:specs,description:desc,faq:faq};
+    return {mktt:String(r.code).trim(),title:String(r.title||"").trim(),url:r.id?"https://www.etzhaoren.co.il/items/"+String(r.id).trim():null,specs:specs,description:desc,faq:faq,sub:sub};
   }
   function parseKonimbo(rows){
     var by={}, specs={};
