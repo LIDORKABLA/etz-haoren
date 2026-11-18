@@ -4715,6 +4715,9 @@ async function adminSendPush(){
     if(r0&&r0.error==="net"&&tries>0){ await new Promise(function(r){ setTimeout(r,1500); }); return callFn(body,tries-1); }
     return r0;
   }
+  async function callFn1b(name,body){
+    try{ var r=await sb.functions.invoke(name,{body:body}); if(r.error){ var d=null; try{ d=await r.error.context.json(); }catch(_){} return d||{error:"net",text:String(r.error.message||"")}; } return r.data||{}; }catch(e){ return {error:"net",text:String(e)}; }
+  }
   async function callFn1(body){
     try{
       var r=await sb.functions.invoke("doc-agent",{body:body});
@@ -4787,6 +4790,11 @@ async function adminSendPush(){
           parts.push("### גיליון: "+sn+" — "+lines.length+" שורות. עמודות לפי הסדר: "+letters.join(",")+". המספר בתחילת כל שורה = מספר השורה באקסל.\n"+lines.join("\n"));
         });
         AG.sheets[nm]=store;
+        var fs0=store.order.length?store.sheets[store.order[0]]:null, hdr=fs0&&fs0.rows[0]?fs0.rows[0].map(String):[];
+        if(hdr.indexOf("code")>=0&&hdr.indexOf("store_category_title_he")>=0){
+          block={type:"text",text:"קובץ מצורף: "+nm+" — קובץ ייצוא מוצרים מקונימבו ("+(fs0.rows.length-1)+" שורות; עמודות: "+hdr.join(", ")+"). התוכן לא נשלח אליך כדי לחסוך — לעדכון קטגוריות, מותגים ומפרטים השתמש ב-import_konimbo_file."}; kind="📊";
+          AG.file={name:nm,kind:kind,block:block}; $id("agFileName").textContent=kind+" "+nm; $id("agFileBar").classList.add("on"); return;
+        }
         var txt=parts.join("\n\n"); var cut=txt.length>60000; if(cut) txt=txt.slice(0,60000);
         block={type:"text",text:"קובץ מצורף: "+nm+(cut?" (מוצג רק החלק הראשון — "+total+" שורות בסך הכול. לעדכון קטלוג השתמש ב-apply_product_file, שרץ על כל השורות)":"")+"\n```\n"+txt+"\n```"}; kind="📊";
       } else if(ext==="txt"){
@@ -5194,6 +5202,8 @@ async function adminSendPush(){
   /* --- נתוני אפליקציה לקריאה --- */
   function appData(inp){
     var w=inp.what||"summary", q=String(inp.query||"").toLowerCase(), L=[];
+    if(w==="categories"||w==="brands"||w==="missing_meta"){ return window.metaReport?window.metaReport(w,q):"מודול השטח לא נטען"; }
+    if(w==="specs_status"){ var n=window.__SPECS?window.__SPECS.size:0; var withSpec=window.__SPECS?Array.from(window.__SPECS.values()).filter(function(x){ return x.found!==false&&(x.specs||[]).length; }).length:0; var noSpec=PRODUCTS.filter(function(p){ var x=window.__SPECS&&window.__SPECS.get(String(p.mktt)); return !x||x.found===false||!(x.specs||[]).length; }); return "מפרטים שמורים: "+n+" ("+withSpec+" עם טבלת מפרט). מוצרים בקטלוג בלי מפרט: "+noSpec.length+"\n"+noSpec.slice(0,100).map(function(p){ return p.mktt+" | "+(p.name||""); }).join("\n"); }
     if(w==="missing_images"){ var mi=PRODUCTS.filter(function(p){ return !p.image_url&&(!q||String(p.name||"").toLowerCase().indexOf(q)>=0||String(p.mktt).indexOf(q)>=0); }); return "מוצרים בלי תמונה: "+mi.length+"\n"+mi.slice(0,150).map(function(p){ return p.mktt+" | "+(p.name||""); }).join("\n")+(mi.length>150?"\n…ועוד "+(mi.length-150):""); }
     if(w==="recent_new"){ var rn=AG.lastNew||[]; return rn.length?"מוצרים שהוקמו בעדכון האחרון ("+rn.length+"):\n"+rn.map(function(p){ return p.mktt+" | "+(p.name||"")+(p.image_url?" | יש תמונה":" | בלי תמונה"); }).join("\n"):"לא הוקמו מוצרים חדשים בשיחה הזו."; }
     if(w==="clearance"){ CLEARANCE.filter(function(c){ return !q||String(c.name||"").toLowerCase().indexOf(q)>=0||String(c.mktt).indexOf(q)>=0; }).slice(0,150).forEach(function(c){ L.push(c.mktt+" | "+(c.name||"")+" | "+pnum(c.price)+"₪"+(c.note?" | הערה: "+c.note:"")); }); return L.length?"מחירי חיסול ("+CLEARANCE.length+"):\n"+L.join("\n"):"אין פריטים בחיסול."; }
@@ -5252,6 +5262,37 @@ async function adminSendPush(){
     store_images:{lbl:function(i){ return "שומר "+((i.items||[]).length)+" תמונות…"; },fn:async function(i){
       var d=await callFn({action:"store_images",pin:AG.pin,items:(i.items||[]).slice(0,25)});
       return (d&&d.ok)?{ok:true,text:d.text}:{ok:false,text:"שמירת התמונות נכשלה: "+((d&&d.text)||"שגיאה")+" (ודא שהרצת images-setup.sql)"};
+    }},
+    import_konimbo_file:{lbl:null,fn:async function(i){
+      var names=Object.keys(AG.sheets); if(!names.length) return {ok:false,text:"לא צורף קובץ. בקש מהמשתמש לצרף את קובץ הייצוא מקונימבו."};
+      var f=AG.sheets[i.file]||AG.sheets[names[names.length-1]], sh=f.sheets[f.order[0]], H=(sh.rows[0]||[]).map(String);
+      var rows=sh.rows.slice(1).map(function(r){ var o={}; H.forEach(function(h,j){ o[h]=r[j]==null?"":r[j]; }); return o; });
+      if(!window.importKonimbo) return {ok:false,text:"מודול השטח לא נטען."};
+      var st=null;
+      var res=await window.importKonimbo(rows,{pin:AG.pin,confirm:function(sm){ return confirmCard("עדכון קטגוריות, מותגים ומפרטים מקונימבו",'<div class="ag-kv"><span>מק״טים בקובץ</span><b>'+sm.codes+'</b></div><div class="ag-kv sub"><span>קיימים בקטלוג</span><b>'+sm.inApp+'</b></div><div class="ag-kv"><span>מותגים</span><b>'+sm.brands+'</b></div><div class="ag-kv"><span>קטגוריות ראשיות</span><b>'+sm.cats+'</b></div><div class="ag-kv"><span>מפרטים / תיאורים</span><b>'+sm.specs+'</b></div>',"אישור — עדכן"); },progress:function(t){ if(!st) st=status(t); else st.lastChild.textContent=t; }});
+      if(st) st.remove();
+      if(res.cancelled) return {ok:true,text:"המשתמש ביטל.",final:true};
+      note("✓ עודכנו "+res.summary.codes+" מק״טים · "+res.savedSpecs+" מפרטים"+(res.specErr?" · ⚠ "+esc(res.specErr):""));
+      return {ok:true,text:"בוצע: קטגוריות/מותגים ל-"+res.summary.codes+" מק״טים ("+res.summary.inApp+" בקטלוג), "+res.savedSpecs+" מפרטים נשמרו."+(res.specErr?" שגיאה במפרטים: "+res.specErr:""),final:true};
+    }},
+    update_product_meta:{lbl:null,fn:async function(i){
+      var it=(i.items||[]).filter(function(x){ return x&&x.mktt; }).slice(0,500); if(!it.length) return {ok:false,text:"אין פריטים."};
+      var h=it.slice(0,10).map(function(x){ var p=PRODMAP.get(String(x.mktt)); return '<div class="row"><span class="nm">'+esc((p&&p.name)||x.mktt)+'</span><span class="ag-ch">'+esc([x.brand&&("מותג: "+x.brand),x.category&&(x.category+(x.subcategory?" › "+x.subcategory:"")),x.model&&("דגם: "+x.model)].filter(Boolean).join(" · "))+'</span></div>'; }).join("")+(it.length>10?'<div class="more">ועוד '+(it.length-10)+'…</div>':'');
+      if(!(await confirmCard("עדכון מותג / קטגוריה ("+it.length+")",h))) return {ok:true,text:"המשתמש ביטל.",final:true};
+      try{ var n=await window.updateMeta(it); note("✓ עודכנו "+n+" מוצרים"); return {ok:true,text:"עודכנו "+n+" מוצרים.",final:true}; }catch(e){ return {ok:false,text:"שגיאה: "+String((e&&e.message)||e)}; }
+    }},
+    refresh_specs:{lbl:function(i){ return i.all?null:"שולף מפרטים מהאתר…"; },fn:async function(i){
+      if(i.all){
+        if(!(await confirmCard("סריקת כל האתר","<div class='ag-doc-sum'>סורק את כל דפי המוצרים באתר ומעדכן מפרט, תיאור ושאלות-תשובות לכל מק״ט. רץ ברקע בשרת, כ-15–30 דקות.</div>","התחל סריקה"))) return {ok:true,text:"המשתמש ביטל.",final:true};
+        var d=await callFn1b("product-specs",{action:"sync_start",pin:AG.pin});
+        return d&&d.ok?{ok:true,text:"הסריקה התחילה ברקע ("+d.total+" דפים). אפשר לעקוב במסך הניהול.",final:true}:{ok:false,text:"הסריקה לא התחילה: "+((d&&d.text)||"שגיאה")};
+      }
+      var L=(i.mktts||[]).map(String).slice(0,60); if(!L.length) return {ok:false,text:"אין מק״טים."};
+      var res=[], k=0;
+      async function w(){ while(k<L.length){ var m=L[k++]; var d=await callFn1b("product-specs",{action:"get",mktt:m,force:true}); var sp=d&&d.spec; res.push(m+" | "+(!sp?"שגיאה":sp.found===false?"לא נמצא באתר":"✓ "+((sp.specs||[]).length)+" שורות מפרט"+(sp.description?" + תיאור":"")+((sp.faq||[]).length?" + "+sp.faq.length+" שאלות":""))); } }
+      await Promise.all([w(),w(),w(),w()]);
+      try{ window.loadSpecs&&window.loadSpecs(); }catch(e){}
+      return {ok:true,text:res.join("\n")};
     }},
     site_lookup:{lbl:function(i){ return "מחפש "+((i.items||[]).length)+" מוצרים באתר…"; },fn:async function(i){
       var d=await callFn({action:"site_lookup",pin:AG.pin,items:(i.items||[]).slice(0,60)});
@@ -5593,6 +5634,8 @@ body.m-field #fieldMain{display:block}
 .fp-add{display:flex;gap:8px;align-items:center;position:sticky;bottom:0;background:var(--card);padding:10px 0 2px;margin-top:8px}
 .fp-add .qs{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:12px;overflow:hidden}
 .fp-add .qs button{width:42px;height:46px;border:none;background:var(--bg);font-size:20px;cursor:pointer;color:var(--ink)}
+.fp-add .qs input::-webkit-outer-spin-button,.fp-add .qs input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.fp-add .qs input{-moz-appearance:textfield;appearance:textfield}
 .fp-add .qs input{width:56px;height:46px;border:none;text-align:center;font-size:17px;font-weight:800;font-family:inherit;background:var(--card);color:var(--ink)}
 .fp-add .go{flex:1;height:48px;border:none;border-radius:12px;background:#0B7D71;color:#fff;font-family:inherit;font-size:16px;font-weight:800;cursor:pointer}
 .fp-spec{margin-top:6px}
@@ -5797,35 +5840,104 @@ body.m-field #fieldMain{display:block}
     if((x=t.closest("[data-fcsel]"))){ setActive(x.getAttribute("data-fcsel")); $i("fcSheet").classList.remove("open"); toast("עגלה פעילה: "+(activeCart()||{}).customer); return; }
   });
 
-  /* ---------- ייבוא קטגוריות ומותגים (קובץ ייצוא מקונימבו) ---------- */
+  /* ---------- ייבוא מקובץ ייצוא של קונימבו: קטגוריות, מותגים, דגם + מפרט/תיאור/שאלות ---------- */
+  function specFromKonimbo(r){
+    var specs=[], g="", loose=[];
+    String(r.product_spec||"").split(/\r*\n|❱|•/).forEach(function(line){
+      line=line.replace(/\r/g,"").trim(); if(!line) return;
+      var t=line.indexOf("\t"), k="", v="";
+      if(t>0){ k=line.slice(0,t).trim(); v=line.slice(t+1).trim(); }
+      else { var ci=line.indexOf(":"); if(ci>0&&ci<40&&ci<line.length-1){ k=line.slice(0,ci).trim(); v=line.slice(ci+1).trim(); } }
+      if(!k){ if(line.length<=30&&!/[.!?]$/.test(line)){ g=(line==="כללי"||/^פרטי המוצר/.test(line))?"":line; } else loose.push(line); return; }
+      k=k.replace(/^[-–•*\s]+/,""); v=v.replace(/\.$/,"");
+      if(!k||/^מק["״]?ט$/.test(k)) return;
+      specs.push(g?{k:k,v:v,g:g}:{k:k,v:v});
+    });
+    var desc=null, html=String(r.content||"");
+    if(html.trim()){
+      var d=new DOMParser().parseFromString("<div>"+html+"</div>","text/html").body.firstChild;
+      var hr=d.querySelector("hr"), before=[], after=[], seen=false;
+      Array.prototype.forEach.call(d.childNodes,function(n){ if(n===hr){ seen=true; return; } (seen?after:before).push(n); });
+      desc=before.map(function(n){ return (n.textContent||"").trim(); }).filter(Boolean).join("\n")||null;
+      if(!specs.length){ var grp=""; after.forEach(function(n){ if(n.nodeType!==1) return; if(n.tagName==="P"&&n.querySelector("strong,b")){ grp=n.textContent.trim(); if(/^מפרט טכני/.test(grp)) grp=""; } if(n.tagName==="UL") Array.prototype.forEach.call(n.querySelectorAll("li"),function(li){ var t=li.textContent.trim(), ci=t.indexOf(":"); if(ci>0&&ci<t.length-1) specs.push(grp?{k:t.slice(0,ci).trim(),v:t.slice(ci+1).trim(),g:grp}:{k:t.slice(0,ci).trim(),v:t.slice(ci+1).trim()}); }); }); }
+    }
+    var faq=[], fh=String(r.features||"");
+    if(fh.trim()){ var fd=new DOMParser().parseFromString("<div>"+fh+"</div>","text/html"), q=""; Array.prototype.forEach.call(fd.querySelectorAll("p.kbq, p.kba"),function(p){ if(p.classList.contains("kbq")) q=p.textContent.trim(); else if(q){ faq.push({q:q,a:p.textContent.trim()}); q=""; } }); }
+    if(!desc&&loose.length) desc=loose.map(function(x){ return "• "+x; }).join("\n");
+    if(!specs.length&&!desc&&!faq.length) return null;
+    return {mktt:String(r.code).trim(),title:String(r.title||"").trim(),url:r.id?"https://www.etzhaoren.co.il/items/"+String(r.id).trim():null,specs:specs,description:desc,faq:faq};
+  }
+  function parseKonimbo(rows){
+    var by={}, specs={};
+    rows.forEach(function(r){
+      var code=String(r.code||"").trim(); if(!code) return;
+      var o=by[code]||(by[code]={mktt:code,brand:"",cats:[],model:"",updated_at:new Date().toISOString()});
+      var b=String(r.product_brand_he||r.product_brand||"").trim(); if(b&&!o.brand) o.brand=b;
+      var md=String(r.model_title||"").trim(); if(md&&!o.model) o.model=md;
+      var p=String(r.store_category_parent_title||"").trim(), s2=String(r.store_category_title_he||"").trim();
+      if(!/מומלצים/.test(p)){ if(!p&&s2){ p=s2; s2=""; } if(p&&!o.cats.some(function(c){ return c.p===p&&c.s===s2; })) o.cats.push({p:p,s:s2}); }
+      if(!specs[code]){ var sp=specFromKonimbo(r); if(sp) specs[code]=sp; }
+    });
+    return {meta:Object.values(by),specs:Object.values(specs)};
+  }
+  /* opts: {confirm(summary)->Promise<bool>, progress(text), pin} */
+  async function importKonimbo(rows,opts){
+    opts=opts||{};
+    if(!rows.length||!("code" in rows[0])) throw new Error("לא זוהה קובץ ייצוא של קונימבו (חסרה עמודה code)");
+    var P=parseKonimbo(rows), list=P.meta, inApp=list.filter(function(o){ return PRODMAP.has(o.mktt); }).length;
+    var summary={codes:list.length,inApp:inApp,specs:P.specs.length,brands:new Set(list.map(function(o){ return o.brand; }).filter(Boolean)).size,cats:new Set([].concat.apply([],list.map(function(o){ return o.cats.map(function(c){ return c.p; }); }))).size};
+    if(opts.confirm&&!(await opts.confirm(summary))) return {cancelled:true,summary:summary};
+    var prog=opts.progress||function(){};
+    for(var i=0;i<list.length;i+=500){ prog("שומר קטגוריות… "+Math.min(i+500,list.length)+" / "+list.length); var r=await sb.from("product_meta").upsert(list.slice(i,i+500),{onConflict:"mktt"}); if(r.error) throw r.error; }
+    list.forEach(function(o){ META.set(o.mktt,o); }); META_TS=list.reduce(function(a,o){ return o.updated_at>a?o.updated_at:a; },META_TS);
+    PCACHE.set("meta",{ts:META_TS,rows:Array.from(META.values())});
+    var savedSpecs=0, specErr="";
+    if(P.specs.length){
+      var pin=opts.pin; if(!pin){ try{ pin=sessionStorage.getItem("etz_agent_pin"); }catch(e){} }
+      if(!pin){ pin=prompt("קוד מנהל (לשמירת המפרטים):")||""; }
+      for(var j=0;j<P.specs.length&&pin;j+=300){
+        prog("שומר מפרטים… "+Math.min(j+300,P.specs.length)+" / "+P.specs.length);
+        var rr=await sb.functions.invoke("product-specs",{body:{action:"import",pin:pin,rows:P.specs.slice(j,j+300)}});
+        var d=rr.data; if(rr.error){ try{ d=await rr.error.context.json(); }catch(_){ d=null; } }
+        if(!d||!d.ok){ specErr=(d&&d.text)||"שמירת המפרטים נכשלה (ודא שפונקציית product-specs פרוסה בגרסה החדשה)"; break; }
+        savedSpecs+=d.saved||0;
+      }
+      if(pin&&!specErr){ try{ sessionStorage.setItem("etz_agent_pin",pin); }catch(e){} }
+      try{ window.loadSpecs&&window.loadSpecs(); }catch(e){}
+    }
+    if(MODE==="field") render();
+    return {summary:summary,savedSpecs:savedSpecs,specErr:specErr};
+  }
   async function importMeta(file){
     var st=$i("metaImpSt"); st.textContent="קורא קובץ…";
     try{
-      var wb=XLSX.read(await file.arrayBuffer(),{type:"array"}), ws=wb.Sheets[wb.SheetNames[0]];
-      var rows=XLSX.utils.sheet_to_json(ws,{defval:"",raw:false});
-      if(!rows.length||!("code" in rows[0])) throw new Error("לא זוהה קובץ ייצוא של קונימבו (חסרה עמודה code)");
-      var by={};
-      rows.forEach(function(r){
-        var code=String(r.code||"").trim(); if(!code) return;
-        var o=by[code]||(by[code]={mktt:code,brand:"",cats:[],model:"",updated_at:new Date().toISOString()});
-        var b=String(r.product_brand_he||r.product_brand||"").trim(); if(b&&!o.brand) o.brand=b;
-        var md=String(r.model_title||"").trim(); if(md&&!o.model) o.model=md;
-        var p=String(r.store_category_parent_title||"").trim(), s=String(r.store_category_title_he||"").trim();
-        if(/מומלצים/.test(p)) return;
-        if(!p&&s){ p=s; s=""; }
-        if(p&&!o.cats.some(function(c){ return c.p===p&&c.s===s; })) o.cats.push({p:p,s:s});
-      });
-      var list=Object.values(by), inApp=list.filter(function(o){ return PRODMAP.has(o.mktt); }).length;
-      if(!confirm("נמצאו "+list.length+" מק״טים בקובץ ("+inApp+" מהם קיימים בקטלוג של האפליקציה).\nלעדכן קטגוריות ומותגים?")){ st.textContent="בוטל"; return; }
-      for(var i=0;i<list.length;i+=500){
-        st.textContent="שומר… "+Math.min(i+500,list.length)+" / "+list.length;
-        var r=await sb.from("product_meta").upsert(list.slice(i,i+500),{onConflict:"mktt"}); if(r.error) throw r.error;
-      }
-      list.forEach(function(o){ META.set(o.mktt,o); }); META_TS=list.reduce(function(a,o){ return o.updated_at>a?o.updated_at:a; },META_TS);
-      PCACHE.set("meta",{ts:META_TS,rows:Array.from(META.values())});
-      st.textContent="✓ עודכנו "+list.length+" מק״טים ("+inApp+" קיימים בקטלוג)";
+      var wb=XLSX.read(await file.arrayBuffer(),{type:"array"}), rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:"",raw:false});
+      var res=await importKonimbo(rows,{confirm:async function(s){ return confirm("נמצאו "+s.codes+" מק״טים ("+s.inApp+" קיימים בקטלוג), "+s.brands+" מותגים, "+s.cats+" קטגוריות ו-"+s.specs+" מפרטים.\nלעדכן?"); },progress:function(t){ st.textContent=t; }});
+      if(res.cancelled){ st.textContent="בוטל"; return; }
+      st.textContent="✓ עודכנו "+res.summary.codes+" מק״טים · "+res.savedSpecs+" מפרטים נשמרו"+(res.specErr?" · ⚠ "+res.specErr:"");
     }catch(e){ console.error(e); st.textContent="שגיאה: "+String((e&&e.message)||e)+(/product_meta/.test(String(e&&e.message))?" — הרץ field-setup.sql":""); }
   }
+  /* עדכון ידני של מותג / קטגוריה (לסוכן) */
+  async function updateMeta(items){
+    var rows=items.map(function(x){
+      var m=String(x.mktt||"").trim(); if(!m) return null;
+      var cur=META.get(m)||{mktt:m,brand:"",cats:[],model:""};
+      var o={mktt:m,brand:x.brand!=null?String(x.brand).trim():(cur.brand||""),model:x.model!=null?String(x.model).trim():(cur.model||""),cats:(cur.cats||[]).slice(),updated_at:new Date().toISOString()};
+      if(x.category){ var c={p:String(x.category).trim(),s:String(x.subcategory||"").trim()}; if(x.replace_categories) o.cats=[c]; else if(!o.cats.some(function(z){ return z.p===c.p&&z.s===c.s; })) o.cats.push(c); }
+      return o;
+    }).filter(Boolean);
+    for(var i=0;i<rows.length;i+=500){ var r=await sb.from("product_meta").upsert(rows.slice(i,i+500),{onConflict:"mktt"}); if(r.error) throw r.error; }
+    rows.forEach(function(o){ META.set(o.mktt,o); }); PCACHE.set("meta",{ts:META_TS,rows:Array.from(META.values())}); if(MODE==="field") render();
+    return rows.length;
+  }
+  function metaReport(what,q){
+    q=String(q||"").toLowerCase();
+    if(what==="categories"){ var t={}; PRODUCTS.forEach(function(p){ cats(p).forEach(function(c){ var k=c.p+(c.s?" › "+c.s:""); t[k]=(t[k]||0)+1; }); }); return Object.keys(t).sort().map(function(k){ return k+" ("+t[k]+")"; }).join("\n")||"אין קטגוריות"; }
+    if(what==="brands"){ return brandCounts().map(function(x){ return x[0]+" ("+x[1]+")"; }).join("\n")||"אין מותגים"; }
+    var miss=PRODUCTS.filter(function(p){ var m=META.get(String(p.mktt)); return (!m||!(m.cats||[]).length||!m.brand)&&(!q||String(p.name||"").toLowerCase().indexOf(q)>=0); });
+    return "מוצרים בקטלוג בלי קטגוריה או מותג: "+miss.length+"\n"+miss.slice(0,150).map(function(p){ var m=META.get(String(p.mktt))||{}; return p.mktt+" | "+(p.name||"")+(m.brand?" | מותג: "+m.brand:" | בלי מותג")+((m.cats||[]).length?"":" | בלי קטגוריה"); }).join("\n");
+  }
+  window.importKonimbo=importKonimbo; window.updateMeta=updateMeta; window.metaReport=metaReport;
   document.addEventListener("change",function(e){ if(e.target&&e.target.id==="metaFile"&&e.target.files[0]){ importMeta(e.target.files[0]); e.target.value=""; } });
 
   window.renderField=render; window.loadMeta=loadMeta; window.__META=META; window.fieldRenderCartBar=renderCartBar;
