@@ -963,6 +963,7 @@ body.m-count #calcFab{display:inline-flex}
 <div id="modebar">
   <button data-mode="sale" class="active"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.6"/><circle cx="18" cy="20" r="1.6"/><path d="M2 3h2.2l2.3 12a2 2 0 0 0 2 1.6h8.4a2 2 0 0 0 2-1.6L21 7H5.3"/></svg> מכירות</button>
   <button data-mode="count"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg> לוגיסטיקה</button>
+  <button data-mode="field"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v13H3z"/><path d="M8 7V4h8v3"/><path d="M3 12h18"/></svg> שטח</button>
 </div>
 
 <main id="countMain">
@@ -1020,6 +1021,23 @@ body.m-count #calcFab{display:inline-flex}
 
   <!-- ADMIN TAB -->
   <section id="tab-admin" class="tab">
+    <div class="panel">
+      <h4>🗂 קטגוריות ומותגים (מודול שטח)</h4>
+      <p>העלה את קובץ ייצוא המוצרים מקונימבו (xlsx). נשמרים לכל מק״ט: קטגוריה, תת-קטגוריה, מותג ודגם. אפשר להעלות שוב בכל עדכון — רק מה שבקובץ מתעדכן.</p>
+      <input type="file" id="metaFile" accept=".xlsx,.xls,.csv">
+      <p id="metaImpSt" style="margin-top:8px;font-weight:600;color:var(--pine)"></p>
+    </div>
+    <div class="panel" id="specSync">
+      <h4>📋 מפרט טכני מהאתר</h4>
+      <p>סורק את כל דפי המוצרים באתר ושומר לכל מק״ט מפרט, תיאור ושאלות-תשובות — כדי שכפתור "מפרט טכני" ייפתח מיד. רץ ברקע בשרת (כ-15–30 דקות).</p>
+      <div class="sbar"><i></i></div>
+      <div class="sst">טוען מצב…</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button class="btn primary" type="button" data-sync="start">סריקת כל האתר</button>
+        <button class="btn" type="button" data-sync="resume" style="display:none">המשך סריקה</button>
+        <button class="btn" type="button" data-sync="stop" style="display:none">עצור</button>
+      </div>
+    </div>
     <div class="panel">
       <h4>שליחת התראה לעובדים</h4>
       <p>שולח התראת Push לכל העובדים שהפעילו התראות במכשיר שלהם.</p>
@@ -1284,6 +1302,7 @@ body.m-count #calcFab{display:inline-flex}
     </div>
     <button id="calcInSheet" class="calc-sheet-btn" type="button"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="16" y1="14" x2="16" y2="18"/><line x1="8" y1="18" x2="12" y2="18"/></svg> מחשבון</button>
     <button id="aiInSheet" class="calc-sheet-btn" type="button" style="color:#7c3aed"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4z"/><path d="M19 14l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg> AI</button>
+    <button id="specInSheet" class="calc-sheet-btn" type="button" style="color:#075E54">📋 מפרט טכני</button>
     <div class="loc"><input id="eLoc" placeholder="מיקום / מדף (לא חובה)" autocomplete="off"></div>
     <button class="btn primary" id="addBtn">הוסף ספירה</button>
     <button class="btn ghost" id="cancelBtn">ביטול</button>
@@ -1503,6 +1522,7 @@ function gotoTab(tab){
   if(tab==="summary") renderSummary();
   if(tab==="edit") refreshEditResults();
   if(tab==="dn") renderDNList();
+  if(tab==="admin"&&window.__specPoll) window.__specPoll();
 }
 let PIN_CB=null;
 function askPin(cb){ PIN_CB=cb||null; $("#pinInput").value=""; $("#pinSheet").classList.add("open"); setTimeout(()=>$("#pinInput").focus(),60); }
@@ -2322,12 +2342,15 @@ function shareCartQuote(){
 
 function setMode(mode){
   if(DN_MODE){ DN_MODE=false; document.body.classList.remove("dn-mode"); var _q=document.getElementById("dnQty"); if(_q) _q.classList.remove("open"); _dnProd=null; if(CUR_CART!=null){ CUR_CART=null; document.body.classList.remove("cart-open"); } }
+  if(window.FIELD_MODE){ window.FIELD_MODE=false; document.body.classList.remove("field-cart"); if(CUR_CART!=null&&mode!=="sale"){ CUR_CART=null; document.body.classList.remove("cart-open"); } }
   MODE=mode;
   document.body.classList.toggle("m-sale", mode==="sale");
   document.body.classList.toggle("m-count", mode==="count");
+  document.body.classList.toggle("m-field", mode==="field");
   document.querySelectorAll("#modebar button").forEach(b=>b.classList.toggle("active", b.dataset.mode===mode));
-  $("#nameLabel").textContent = mode==="sale" ? "איש מכירות:" : "סופר/ת:";
+  $("#nameLabel").textContent = mode==="sale" ? "איש מכירות:" : mode==="field" ? "סוכן שטח:" : "סופר/ת:";
   if(mode==="sale") renderCartList();
+  if(mode==="field"&&window.renderField) window.renderField();
 }
 
 async function loadSales(){
@@ -2358,13 +2381,14 @@ async function newCart(){
 }
 function openCart(id){ CUR_CART=id; document.body.classList.add("cart-open"); $("#qSale").value=""; renderSaleResults([]); syncCartLabels(); renderCart(); if(DN_MODE){ dnFocusScan(true); dnScanState(); setTimeout(function(){ dnFocusScan(true); dnScanState(); },80); } }
 function closeCart(){
+  if(window.FIELD_MODE){ CUR_CART=null; document.body.classList.remove("cart-open"); setMode("field"); return; }
   if(DN_MODE){ CUR_CART=null; document.body.classList.remove("cart-open"); setMode("count"); gotoTab("dn"); return; }
   CUR_CART=null; document.body.classList.remove("cart-open"); renderCartList();
 }
 
 function renderCartList(){
   const _qc=$("#qCart"); const term=_qc?_qc.value.trim().toLowerCase():"";
-  const list=CARTS.filter(c=>c.kind!=="dn" && (!term||String(c.customer||"").toLowerCase().includes(term)));
+  const list=CARTS.filter(c=>c.kind!=="dn" && c.kind!=="field" && (!term||String(c.customer||"").toLowerCase().includes(term)));
   const box=$("#cartList");
   if(!list.length){ box.innerHTML='<div class="empty">אין עגלות פתוחות. לחץ "עגלה חדשה".</div>'; return; }
   box.innerHTML=list.map(c=>{
@@ -2377,7 +2401,7 @@ function renderCartList(){
 function renderCart(){
   const c=CARTS.find(x=>String(x.id)===String(CUR_CART)); if(!c){ closeCart(); return; }
   $("#cartCustomer").textContent=c.customer||"לקוח";
-  $("#cartWho").textContent=(c.kind==="dn"?"הופק ע״י: ":"איש מכירות: ")+(displayName(c.salesperson)||"—")+" · עודכן "+timeAgo(cartActivity(c));
+  $("#cartWho").textContent=(c.kind==="dn"?"הופק ע״י: ":c.kind==="field"?"סוכן שטח: ":"איש מכירות: ")+(displayName(c.salesperson)||"—")+" · עודכן "+timeAgo(cartActivity(c));
   { const ci=$("#cartCustInfo"), cl=custLines(c); if(ci){ ci.innerHTML=cl.length?cl.map(x=>`<span>${esc(x)}</span>`).join(""):`<span class="cci-add">+ הוספת טלפון, כתובת ופרטים</span>`; } }
   const items=cartItems(c.id), box=$("#cartItems");
   box.innerHTML = items.length ? items.map(i=>{
@@ -2390,7 +2414,7 @@ function renderCart(){
         <div class="citem-info">
           <div class="top"><b>${esc(i.name||i.mktt)}</b><span class="csub">${fmtNis(sub)}</span></div>
           <div class="sub">מק״ט ${esc(i.mktt)}${clrCheapest(i.mktt)!=null?` · הזול בישראל <s style="color:#c0392b">${esc(fmtNis(clrCheapest(i.mktt)))}</s>`:""}</div>
-          <button class="ai-btn ai-mini" data-mktt="${esc(i.mktt)}" type="button">✨ AI</button>
+          <button class="ai-btn ai-mini" data-mktt="${esc(i.mktt)}" type="button">✨ AI</button><button class="spec-btn" data-mktt="${esc(i.mktt)}" type="button">📋 מפרט</button>
         </div>
       </div>
       <div class="ctrls">
@@ -2492,8 +2516,8 @@ function openDeliveryNote(id){
   openCart(id);
 }
 function syncCartLabels(){
-  const b=$("#backToListTxt"); if(b) b.textContent=DN_MODE?"חזרה לתעודות המשלוח":"חזרה לרשימת העגלות";
-  const d=$("#delCartBtn"); if(d) d.textContent=DN_MODE?"מחק תעודת משלוח":"מחק עגלה (שולם בקופה)";
+  const b=$("#backToListTxt"); if(b) b.textContent=DN_MODE?"חזרה לתעודות המשלוח":window.FIELD_MODE?"חזרה לקטלוג השטח":"חזרה לרשימת העגלות";
+  const d=$("#delCartBtn"); if(d) d.textContent=DN_MODE?"מחק תעודת משלוח":window.FIELD_MODE?"מחק עגלת שטח":"מחק עגלה (שולם בקופה)";
   const w=$("#waQuoteTxt"); if(w) w.textContent=DN_MODE?"שיתוף תעודת משלוח בוואטסאפ":"שיתוף פירוט מוצרים בוואטסאפ";
 }
 function dnQtyOpen(){ const q=$("#dnQty"); return !!(q && q.classList.contains("open")); }
@@ -3813,7 +3837,7 @@ function quickProdSearch(){
         '<span class="pq-lbl">מלאי נוכחי</span><span class="pq-val">'+esc(stock)+'</span>'+
         '<span class="pq-lbl">ברקוד</span><span class="pq-val">'+esc(p.barcode||"—")+'</span>'+
         '<span class="pq-lbl">'+(isClearance(p.mktt)?"מחיר חיסול":"מחיר")+'</span><span class="pq-val pq-price">'+esc(effPrice(p)!=null?fmtPrice(effPrice(p)):"—")+'</span>'+(clrCheapest(p.mktt)!=null?'<span class="pq-lbl">הזול בישראל</span><span class="pq-val" style="text-decoration:line-through;color:#a0a4a8">'+esc(fmtPrice(clrCheapest(p.mktt)))+'</span>':'')+
-      '</div><div class="pq-ai"><button class="ai-btn" data-mktt="'+esc(p.mktt)+'">✨ AI</button></div></div></div>';
+      '</div><div class="pq-ai"><button class="ai-btn" data-mktt="'+esc(p.mktt)+'">✨ AI</button><button class="spec-btn" data-mktt="'+esc(p.mktt)+'" type="button">📋 מפרט טכני</button></div></div></div>';
   }).join("");
 }
 /* ================= סוף חיפוש מוצר מהיר ================= */
@@ -5321,6 +5345,494 @@ async function adminSendPush(){
 })();
 </script>
 <!-- ================= סוף סוכן מסמכים ================= -->
+
+<!-- ================= מפרט טכני מהאתר ================= -->
+<style>
+.spec-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border:1px solid #cfe5e1;background:#eef7f5;color:#075E54;border-radius:9px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;margin-inline-start:6px}
+.spec-btn:active{background:#dff0ec}
+#specSheet .card{max-width:640px}
+.sp-hd{display:flex;gap:12px;align-items:center;margin:4px 0 12px}
+.sp-hd img{width:74px;height:74px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:12px;flex:none}
+.sp-hd b{display:block;font-size:16px;line-height:1.35}
+.sp-hd small{display:block;color:var(--ink2);font-size:12.5px;margin-top:3px}
+.sp-tbl{width:100%;border-collapse:collapse;font-size:14px;margin-top:4px}
+.sp-tbl td{padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.sp-tbl td.k{color:var(--ink2);font-weight:700;width:42%}
+.sp-tbl tr.g td{background:#eef7f5;color:#075E54;font-weight:800;font-size:12.5px;padding:6px}
+.sp-sec{margin-top:14px}
+.sp-sec>summary{cursor:pointer;font-weight:800;color:#075E54;padding:8px 0;list-style:none}
+.sp-sec>summary::-webkit-details-marker{display:none}
+.sp-sec>summary:before{content:"◂ ";}
+.sp-sec[open]>summary:before{content:"▾ ";}
+.sp-txt{white-space:pre-wrap;font-size:14px;line-height:1.7;color:var(--ink)}
+.sp-faq b{display:block;margin-top:10px;font-size:14px}
+.sp-faq p{margin:3px 0 0;font-size:13.5px;line-height:1.65;color:var(--ink2)}
+.sp-foot{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;align-items:center}
+.sp-foot a,.sp-foot button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:9px 12px;font-family:inherit;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer}
+.sp-foot .sp-age{flex:1;font-size:12px;color:var(--ink2);min-width:120px}
+.sp-load{padding:30px 0;text-align:center;color:var(--ink2)}
+.sp-empty{padding:18px 0;text-align:center;color:var(--ink2);line-height:1.7}
+#specSync .sbar{height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin:10px 0 6px}
+#specSync .sbar i{display:block;height:100%;background:#0B7D71;width:0;transition:width .4s}
+#specSync .sst{font-size:13.5px;color:var(--ink2);line-height:1.6}
+</style>
+<div class="sheet" id="specSheet">
+  <div class="card">
+    <div class="chat-head"><span>📋 מפרט טכני</span><button id="specClose" type="button" aria-label="סגור">✕</button></div>
+    <div id="specBody"></div>
+  </div>
+</div>
+<script>
+(function(){
+  var SPECS=new Map(), SPEC_TS="", SPEC_LOADING=null, CUR=null;
+  var STALE=30*864e5;
+  var $i=function(x){ return document.getElementById(x); };
+
+  /* ---------- מטמון בטלפון + עדכון חלקי מהענן ---------- */
+  async function loadSpecs(){
+    if(SPEC_LOADING) return SPEC_LOADING;
+    SPEC_LOADING=(async function(){
+      try{
+        var c=await PCACHE.get("specs");
+        if(c&&Array.isArray(c.rows)){ c.rows.forEach(function(r){ SPECS.set(String(r.mktt),r); }); SPEC_TS=c.ts||""; }
+      }catch(e){}
+      if(!CLOUD||!sb) return;
+      try{
+        var got=0, page=1000, from=0, maxTs=SPEC_TS;
+        while(true){
+          var q=sb.from("product_specs").select("mktt,url,title,image_url,specs,description,faq,sub,found,fetched_at").order("fetched_at",{ascending:true}).range(from,from+page-1);
+          if(SPEC_TS) q=q.gt("fetched_at",SPEC_TS);
+          var r=await q; if(r.error) throw r.error;
+          (r.data||[]).forEach(function(x){ SPECS.set(String(x.mktt),x); if(!maxTs||x.fetched_at>maxTs) maxTs=x.fetched_at; });
+          got+=(r.data||[]).length;
+          if(!r.data||r.data.length<page) break; from+=page;
+        }
+        if(got){ SPEC_TS=maxTs; PCACHE.set("specs",{ts:SPEC_TS,rows:Array.from(SPECS.values())}); }
+      }catch(e){ console.warn("specs sync",e); }
+    })();
+    var p=SPEC_LOADING; p.finally(function(){ SPEC_LOADING=null; });
+    return p;
+  }
+  function saveOne(r){ SPECS.set(String(r.mktt),r); if(!SPEC_TS||r.fetched_at>SPEC_TS) {} PCACHE.set("specs",{ts:SPEC_TS,rows:Array.from(SPECS.values())}); }
+
+  /* ---------- פתיחה ---------- */
+  async function openSpec(mktt,force){
+    mktt=String(mktt); CUR=mktt;
+    var p=PRODMAP.get(mktt)||{mktt:mktt};
+    $i("specSheet").classList.add("open");
+    var s=SPECS.get(mktt);
+    if(!s&&SPEC_LOADING){ $i("specBody").innerHTML=head(p,null)+'<div class="sp-load">טוען…</div>'; await SPEC_LOADING; s=SPECS.get(mktt); }
+    var stale=s&&(Date.now()-new Date(s.fetched_at).getTime()>STALE);
+    if(s&&!force){ render(p,s); if(stale) fetchOne(mktt,true,true); return; }
+    $i("specBody").innerHTML=head(p,s)+'<div class="sp-load">שולף מהאתר…</div>';
+    await fetchOne(mktt,!!force,false);
+  }
+  async function fetchOne(mktt,force,silent){
+    if(!CLOUD||!sb){ if(!silent) $i("specBody").innerHTML='<div class="sp-empty">אין חיבור לענן</div>'; return; }
+    try{
+      var r=await sb.functions.invoke("product-specs",{body:{action:"get",mktt:mktt,force:!!force}});
+      if(r.error||!r.data||!r.data.spec) throw (r.error||new Error("no data"));
+      saveOne(r.data.spec);
+      if(CUR===mktt&&$i("specSheet").classList.contains("open")) render(PRODMAP.get(mktt)||{mktt:mktt},r.data.spec);
+    }catch(e){
+      console.error("spec",e);
+      if(!silent&&CUR===mktt) $i("specBody").innerHTML=head(PRODMAP.get(mktt)||{mktt:mktt},null)+'<div class="sp-empty">לא הצלחתי לשלוף מהאתר.<br><button class="btn" type="button" data-spec-retry>נסה שוב</button></div>';
+    }
+  }
+  function head(p,s){
+    var img=(p&&p.image_url)||(s&&s.image_url)||"";
+    return '<div class="sp-hd">'+(img?'<img src="'+esc(img)+'" alt="" onerror="this.style.display=\'none\'">':'')+'<div><b>'+esc((p&&p.name)||(s&&s.title)||"")+'</b><small>מק״ט '+esc((p&&p.mktt)||"")+'</small></div></div>';
+  }
+  function render(p,s){
+    if(!s||s.found===false){
+      $i("specBody").innerHTML=head(p,s)+'<div class="sp-empty">המוצר לא נמצא באתר לפי המק״ט.<br>אם הוא הועלה לאתר לאחרונה — לחץ "רענן מהאתר".</div>'+foot(s);
+      return;
+    }
+    var h=head(p,s), specs=s.specs||[], lastG=null;
+    if(specs.length){
+      h+='<table class="sp-tbl">';
+      specs.forEach(function(x){ if(x.g&&x.g!==lastG){ h+='<tr class="g"><td colspan="2">'+esc(x.g)+'</td></tr>'; lastG=x.g; } h+='<tr><td class="k">'+esc(x.k)+'</td><td>'+esc(x.v)+'</td></tr>'; });
+      h+='</table>';
+    }
+    var desc=s.description||"", sub=s.sub||"";
+    if(desc) h+='<details class="sp-sec"'+(specs.length?'':' open')+'><summary>תיאור המוצר</summary><div class="sp-txt">'+esc(desc)+'</div></details>';
+    else if(sub&&!specs.length) h+='<div class="sp-txt" style="margin-top:6px">'+esc(sub)+'</div>';
+    if((s.faq||[]).length) h+='<details class="sp-sec"><summary>שאלות ותשובות ('+s.faq.length+')</summary><div class="sp-faq">'+s.faq.map(function(f){ return '<b>'+esc(f.q)+'</b><p>'+esc(f.a)+'</p>'; }).join("")+'</div></details>';
+    if(!specs.length&&!desc&&!sub) h+='<div class="sp-empty">בדף המוצר באתר אין מפרט טכני.</div>';
+    $i("specBody").innerHTML=h+foot(s);
+  }
+  function foot(s){
+    var age=s&&s.fetched_at?"עודכן "+timeAgo(new Date(s.fetched_at).getTime()):"";
+    return '<div class="sp-foot"><span class="sp-age">'+esc(age)+'</span>'+
+      (s&&s.url?'<a href="'+esc(s.url)+'" target="_blank" rel="noopener">לדף באתר ↗</a>':'')+
+      (s&&s.found!==false&&(s.specs||[]).length?'<button type="button" data-spec-share>שיתוף</button>':'')+
+      '<button type="button" data-spec-retry>↻ רענן מהאתר</button></div>';
+  }
+  function shareText(){
+    var s=SPECS.get(CUR), p=PRODMAP.get(CUR)||{}; if(!s) return "";
+    var L=["*"+(p.name||s.title||"")+"*","מק״ט: "+CUR,""];
+    (s.specs||[]).forEach(function(x){ L.push(x.k+": "+x.v); });
+    if(s.url) L.push("",s.url);
+    L.push("","עץ האורן — המרכז לכלי עבודה · 04-6156146");
+    return L.join("\n");
+  }
+
+  /* ---------- סריקת כל האתר (מסך ניהול) ---------- */
+  var POLL=null;
+  async function syncStatus(){
+    if(!CLOUD||!sb) return;
+    try{
+      var r=await sb.from("spec_sync").select("status,cursor,total,done,found,errors,started_at,updated_at").eq("id",1).maybeSingle();
+      var st=r.data, box=$i("specSync"); if(!box) return;
+      var cnt=SPECS.size;
+      if(!st){ box.querySelector(".sst").textContent="עוד לא בוצעה סריקה. מפרטים שמורים: "+cnt; box.querySelector(".sbar i").style.width="0"; btns("idle"); return; }
+      var pct=st.total?Math.round(st.cursor/st.total*100):0;
+      box.querySelector(".sbar i").style.width=pct+"%";
+      var stuck=st.status==="running"&&st.updated_at&&(Date.now()-new Date(st.updated_at).getTime()>3*60*1000);
+      var lbl=st.status==="running"?(stuck?"⚠ הסריקה נעצרה באמצע":"⏳ סורק…"):st.status==="done"?"✓ הסריקה הושלמה":st.status==="stopped"?"⏸ הסריקה הופסקה":st.status;
+      box.querySelector(".sst").innerHTML=esc(lbl)+" · "+st.cursor+" מתוך "+st.total+" דפים ("+pct+"%) · נמצאו "+st.found+(st.errors?" · שגיאות "+st.errors:"")+"<br>עודכן "+esc(timeAgo(new Date(st.updated_at||st.started_at).getTime()))+" · מפרטים שמורים במכשיר: "+cnt;
+      btns(st.status==="running"&&!stuck?"running":(st.cursor<st.total&&st.status!=="done"?"partial":"idle"));
+      if(st.status==="done"&&!syncStatus._loaded){ syncStatus._loaded=true; loadSpecs(); }
+    }catch(e){}
+  }
+  function btns(mode){
+    var b=$i("specSync"); if(!b) return;
+    b.querySelector("[data-sync=start]").style.display=mode==="running"?"none":"";
+    b.querySelector("[data-sync=resume]").style.display=mode==="partial"?"":"none";
+    b.querySelector("[data-sync=stop]").style.display=mode==="running"?"":"none";
+  }
+  async function syncCall(action){
+    var pin=null; try{ pin=sessionStorage.getItem("etz_agent_pin"); }catch(e){}
+    if(!pin){ pin=prompt("קוד מנהל:"); if(!pin) return; }
+    if(action==="sync_start"&&!confirm("לסרוק את כל דפי המוצרים באתר ולשמור מפרט לכל מוצר?\nזה רץ ברקע בשרת, בערך 15–30 דקות. אפשר לסגור את האפליקציה.")) return;
+    var r=await sb.functions.invoke("product-specs",{body:{action:action,pin:pin}});
+    var d=r.data; if(r.error){ try{ d=await r.error.context.json(); }catch(_){ d=null; } }
+    if(d&&d.ok){ try{ sessionStorage.setItem("etz_agent_pin",pin); }catch(e){} toast(action==="sync_stop"?"הסריקה נעצרה":"הסריקה התחילה"+(d.total?" — "+d.total+" דפים":"")); syncStatus._loaded=false; }
+    else { if(d&&d.error==="bad_pin"){ try{ sessionStorage.removeItem("etz_agent_pin"); }catch(e){} } toast((d&&d.text)||"שגיאה — ודא שפונקציית product-specs פרוסה"); }
+    syncStatus();
+  }
+  function startPoll(){ if(POLL) return; syncStatus(); POLL=setInterval(function(){ var t=$i("tab-admin"); if(!t||!t.classList.contains("active")||document.hidden){ clearInterval(POLL); POLL=null; return; } syncStatus(); },5000); }
+
+  /* ---------- חיווט ---------- */
+  document.addEventListener("click",function(e){
+    var t=e.target&&e.target.closest?e.target:null; if(!t) return;
+    var b=t.closest(".spec-btn"); if(b){ e.preventDefault(); e.stopPropagation(); openSpec(b.getAttribute("data-mktt")); return; }
+    if(t.closest("#specInSheet")){ e.preventDefault(); if(typeof CURRENT!=="undefined"&&CURRENT) openSpec(CURRENT.mktt); return; }
+    if(t.closest("#specClose")||t.id==="specSheet"){ $i("specSheet").classList.remove("open"); return; }
+    if(t.closest("[data-spec-retry]")){ openSpec(CUR,true); return; }
+    if(t.closest("[data-spec-share]")){ var tx=shareText(); if(navigator.share){ navigator.share({text:tx}).catch(function(){}); } else { window.open("https://wa.me/?text="+encodeURIComponent(tx),"_blank"); } return; }
+    var sy=t.closest("[data-sync]"); if(sy){ syncCall("sync_"+sy.getAttribute("data-sync")); return; }
+  },true);
+  window.openSpec=openSpec; window.__specPoll=startPoll; window.__SPECS=SPECS; window.loadSpecs=loadSpecs;
+  /* טעינה ברקע אחרי שהאפליקציה עלתה */
+  setTimeout(function(){ loadSpecs(); },2500);
+  document.addEventListener("visibilitychange",function(){ if(!document.hidden) setTimeout(loadSpecs,1500); });
+})();
+</script>
+<!-- ================= סוף מפרט טכני ================= -->
+
+<!-- ================= מודול שטח — קטלוג לפי קטגוריה / מותג + עגלות שטח ================= -->
+<style>
+#fieldMain{display:none;max-width:1100px;margin:0 auto;padding:12px 14px 120px}
+body.m-field #countMain,body.m-field #countNav,body.m-field #saleMain{display:none!important}
+body.m-field #fieldMain{display:block}
+.fd-top{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.fd-cart{flex:1;min-width:0;display:flex;align-items:center;gap:10px;background:#0B7D71;color:#fff;border:none;border-radius:14px;padding:11px 14px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;text-align:right}
+.fd-cart.none{background:var(--card);color:#075E54;border:1.5px dashed #9fd2c9}
+.fd-cart span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fd-cart b{white-space:nowrap}
+.fd-carts-btn{flex:none;border:1px solid var(--line);background:var(--card);border-radius:14px;padding:11px 13px;font-family:inherit;font-weight:700;font-size:13.5px;color:var(--ink);cursor:pointer}
+.fd-search{position:relative;margin-bottom:10px}
+.fd-search input{width:100%;box-sizing:border-box;padding:13px 15px;border:1.5px solid var(--line);border-radius:14px;font-family:inherit;font-size:16px;background:var(--card);color:var(--ink)}
+.fd-search input:focus{outline:none;border-color:#0B7D71}
+.fd-chips{display:flex;gap:7px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}
+.fd-chips::-webkit-scrollbar{display:none}
+.fd-chip{flex:none;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:20px;padding:7px 13px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.fd-chip.on{background:#075E54;color:#fff;border-color:#075E54}
+.fd-chip small{opacity:.65;font-weight:600;margin-inline-start:3px}
+.fd-crumb{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13.5px;margin:4px 0 10px;color:var(--ink2)}
+.fd-crumb a{color:#075E54;font-weight:800;cursor:pointer;text-decoration:none}
+.fd-cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.fd-cat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.fd-cat img,.fd-cat .ph{width:84px;height:84px;object-fit:contain;border-radius:10px;background:#fff}
+.fd-cat .ph{display:flex;align-items:center;justify-content:center;font-size:30px;background:#eef7f5}
+.fd-cat b{font-size:13.5px;line-height:1.3}
+.fd-cat small{color:var(--ink2);font-size:12px}
+.fd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:10px}
+.fd-p{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.fd-p .im{height:130px;background:#fff;display:flex;align-items:center;justify-content:center;position:relative}
+.fd-p .im img{max-width:100%;max-height:100%;object-fit:contain}
+.fd-p .im .ph{color:var(--ink2);font-size:12px}
+.fd-st{position:absolute;top:7px;right:7px;font-size:11px;font-weight:800;border-radius:8px;padding:2px 7px}
+.fd-st.in{background:#e3f5ea;color:#1d7a3e}.fd-st.out{background:#fdecea;color:#b3261e}.fd-st.na{background:#eee;color:#666}
+.fd-p .bd{padding:9px 10px 10px;display:flex;flex-direction:column;gap:3px;flex:1}
+.fd-p .br{font-size:11.5px;color:#0B7D71;font-weight:800}
+.fd-p .nm{font-size:13px;font-weight:700;line-height:1.35;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.fd-p .sk{font-size:11px;color:var(--ink2)}
+.fd-p .pr{margin-top:auto;padding-top:6px;display:flex;align-items:flex-end;justify-content:space-between;gap:6px}
+.fd-p .pr b{font-size:16px;color:#075E54}.fd-p .pr small{display:block;font-size:10.5px;color:var(--ink2)}
+.fd-add{flex:none;width:40px;height:40px;border-radius:12px;border:none;background:#0B7D71;color:#fff;font-size:22px;font-weight:700;cursor:pointer;line-height:1}
+.fd-add:active{transform:scale(.94)}
+.fd-more{display:block;margin:14px auto 0;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:11px 18px;font-family:inherit;font-weight:700;cursor:pointer;color:var(--ink)}
+.fd-empty{text-align:center;color:var(--ink2);padding:40px 10px;line-height:1.7}
+.fd-cnt{font-size:12.5px;color:var(--ink2);margin:0 0 8px}
+/* כרטיס מוצר מלא */
+#fpSheet .card{max-width:640px}
+.fp-im{background:#fff;border-radius:14px;height:220px;display:flex;align-items:center;justify-content:center;margin:4px 0 10px}
+.fp-im img{max-width:100%;max-height:100%;object-fit:contain}
+.fp-br{font-size:12.5px;color:#0B7D71;font-weight:800}
+.fp-nm{font-size:17px;font-weight:800;line-height:1.35;margin:2px 0 4px}
+.fp-path{font-size:12.5px;color:var(--ink2)}
+.fp-price{display:flex;align-items:baseline;gap:10px;margin:10px 0 6px;flex-wrap:wrap}
+.fp-price b{font-size:24px;color:#075E54}
+.fp-price span{font-size:13px;color:var(--ink2)}
+.fp-grid{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px;background:var(--bg);border-radius:12px;padding:11px 13px;margin:8px 0}
+.fp-grid .l{color:var(--ink2);font-weight:700}
+.fp-acts{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.fp-acts button{flex:1;min-width:120px;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px;font-family:inherit;font-weight:700;font-size:13.5px;cursor:pointer;color:var(--ink)}
+.fp-add{display:flex;gap:8px;align-items:center;position:sticky;bottom:0;background:var(--card);padding:10px 0 2px;margin-top:8px}
+.fp-add .qs{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:12px;overflow:hidden}
+.fp-add .qs button{width:42px;height:46px;border:none;background:var(--bg);font-size:20px;cursor:pointer;color:var(--ink)}
+.fp-add .qs input{width:56px;height:46px;border:none;text-align:center;font-size:17px;font-weight:800;font-family:inherit;background:var(--card);color:var(--ink)}
+.fp-add .go{flex:1;height:48px;border:none;border-radius:12px;background:#0B7D71;color:#fff;font-family:inherit;font-size:16px;font-weight:800;cursor:pointer}
+.fp-spec{margin-top:6px}
+/* עגלות שטח */
+#fcSheet .row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+#fcSheet .row.on{background:#eef7f5;border-radius:10px}
+#fcSheet .row b{display:block}
+#fcSheet .row small{color:var(--ink2);font-size:12.5px}
+#fcSheet .row .t{font-weight:800;color:#075E54;white-space:nowrap}
+#fcSheet .row .op{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:7px 11px;font-family:inherit;font-weight:700;cursor:pointer;flex:none}
+</style>
+<main id="fieldMain">
+  <div class="fd-top">
+    <button class="fd-cart none" id="fdCart" type="button"><span>🛒 בחר או צור עגלת שטח</span></button>
+    <button class="fd-carts-btn" id="fdCartsBtn" type="button">עגלות</button>
+  </div>
+  <div class="fd-search"><input id="fdQ" type="search" placeholder="חיפוש מוצר, דגם או מק״ט…" autocomplete="off" enterkeyhint="search"></div>
+  <div class="fd-chips" id="fdBrands"></div>
+  <div class="fd-crumb" id="fdCrumb"></div>
+  <div class="fd-chips" id="fdSubs"></div>
+  <div id="fdBody"></div>
+</main>
+<div class="sheet" id="fpSheet"><div class="card"><div class="chat-head"><span>פרטי מוצר</span><button id="fpClose" type="button" aria-label="סגור">✕</button></div><div id="fpBody"></div></div></div>
+<div class="sheet" id="fcSheet"><div class="card"><div class="chat-head"><span>🛒 עגלות שטח</span><button id="fcClose" type="button" aria-label="סגור">✕</button></div>
+  <button class="btn primary" id="fcNew" type="button" style="width:100%;margin:6px 0 8px">+ עגלת שטח חדשה</button>
+  <div id="fcList"></div></div></div>
+<script>
+(function(){
+  var META=new Map(), META_TS="", META_LOADING=null;
+  var F={cat:null,sub:null,brand:null,q:"",limit:40};
+  var $i=function(x){ return document.getElementById(x); };
+  var ACTIVE=null; try{ ACTIVE=localStorage.getItem("etz_field_cart")||null; }catch(e){}
+
+  /* ---------- נתוני קטגוריה / מותג (טבלת product_meta) ---------- */
+  async function loadMeta(){
+    if(META_LOADING) return META_LOADING;
+    META_LOADING=(async function(){
+      try{ var c=await PCACHE.get("meta"); if(c&&Array.isArray(c.rows)){ c.rows.forEach(function(r){ META.set(String(r.mktt),r); }); META_TS=c.ts||""; } }catch(e){}
+      if(MODE==="field") render();
+      if(!CLOUD||!sb) return;
+      try{
+        var page=1000, from=0, got=0, maxTs=META_TS;
+        while(true){
+          var q=sb.from("product_meta").select("mktt,brand,cats,model,updated_at").order("updated_at",{ascending:true}).range(from,from+page-1);
+          if(META_TS) q=q.gt("updated_at",META_TS);
+          var r=await q; if(r.error) throw r.error;
+          (r.data||[]).forEach(function(x){ META.set(String(x.mktt),x); if(!maxTs||x.updated_at>maxTs) maxTs=x.updated_at; });
+          got+=(r.data||[]).length; if(!r.data||r.data.length<page) break; from+=page;
+        }
+        if(got){ META_TS=maxTs; PCACHE.set("meta",{ts:META_TS,rows:Array.from(META.values())}); if(MODE==="field") render(); }
+      }catch(e){ console.warn("meta",e); }
+    })();
+    var p=META_LOADING; p.finally(function(){ META_LOADING=null; }); return p;
+  }
+  function cats(p){ var m=META.get(String(p.mktt)); return (m&&Array.isArray(m.cats))?m.cats:[]; }
+  function brand(p){ var m=META.get(String(p.mktt)); return (m&&m.brand)||""; }
+  function stockN(p){ var s=p.stock; if(s==null||String(s).trim()==="") return null; var n=parseFloat(String(s).replace(/,/g,"")); return isNaN(n)?null:n; }
+  function rank(a,b){ var sa=stockN(a), sb2=stockN(b); var ta=sa==null?1:(sa>0?0:2), tb=sb2==null?1:(sb2>0?0:2); return (ta-tb)||String(a.name||"").localeCompare(String(b.name||""),"he"); }
+
+  /* ---------- סינון ---------- */
+  function pool(){
+    var list;
+    if(F.q.length>=2) list=search(F.q).concat([]);
+    else list=PRODUCTS.filter(function(p){ return META.has(String(p.mktt)); });
+    if(F.brand) list=list.filter(function(p){ return brand(p)===F.brand; });
+    if(F.cat) list=list.filter(function(p){ return cats(p).some(function(c){ return c.p===F.cat&&(!F.sub||c.s===F.sub); }); });
+    if(F.q.length<2) list.sort(rank);
+    return list;
+  }
+  function brandCounts(){
+    var m={}; PRODUCTS.forEach(function(p){ var b=brand(p); if(!b) return; if(F.cat&&!cats(p).some(function(c){ return c.p===F.cat; })) return; m[b]=(m[b]||0)+1; });
+    return Object.keys(m).map(function(k){ return [k,m[k]]; }).sort(function(a,b){ return b[1]-a[1]; });
+  }
+  function catTree(){
+    var t={};
+    PRODUCTS.forEach(function(p){ if(F.brand&&brand(p)!==F.brand) return; cats(p).forEach(function(c){ if(!c.p) return; var o=t[c.p]||(t[c.p]={n:0,subs:{},img:null,imgIn:false}); o.n++; if(c.s) o.subs[c.s]=(o.subs[c.s]||0)+1; if(p.image_url&&(!o.img||(!o.imgIn&&(stockN(p)||0)>0))){ o.img=p.image_url; o.imgIn=(stockN(p)||0)>0; } }); });
+    return t;
+  }
+
+  /* ---------- תצוגה ---------- */
+  var CAT_IC={"כלי עבודה נטענים וחשמליים":"🔋","כלי עבודה ידניים":"🔧","אביזרים נלווים לכלי העבודה":"🧰","מסורים":"🪚","לבית, לגינה ולקמפינג":"🏡","כלים למוסך":"🚗","אחסון, בגדים ונעלי עבודה":"🦺","ציוד לבניין ולתעשייה":"🏗","ציוד טכני":"⚙️"};
+  function render(){
+    if(!$i("fieldMain")) return;
+    renderCartBar();
+    var bc=brandCounts();
+    $i("fdBrands").innerHTML='<button class="fd-chip'+(F.brand?'':' on')+'" data-fb="">כל המותגים</button>'+bc.slice(0,40).map(function(x){ return '<button class="fd-chip'+(F.brand===x[0]?' on':'')+'" data-fb="'+esc(x[0])+'">'+esc(x[0])+'<small>'+x[1]+'</small></button>'; }).join("");
+    var cr='<a data-fc="">כל הקטגוריות</a>';
+    if(F.cat) cr+=' › <a data-fc="'+esc(F.cat)+'">'+esc(F.cat)+'</a>';
+    if(F.sub) cr+=' › <b>'+esc(F.sub)+'</b>';
+    if(F.brand) cr+=' · מותג: <b>'+esc(F.brand)+'</b>';
+    $i("fdCrumb").innerHTML=(F.cat||F.brand||F.q)?cr:'';
+    var tree=catTree();
+    if(F.cat&&tree[F.cat]){
+      var subs=Object.keys(tree[F.cat].subs).map(function(k){ return [k,tree[F.cat].subs[k]]; }).sort(function(a,b){ return b[1]-a[1]; });
+      $i("fdSubs").innerHTML=subs.length>1?'<button class="fd-chip'+(F.sub?'':' on')+'" data-fs="">הכול</button>'+subs.map(function(x){ return '<button class="fd-chip'+(F.sub===x[0]?' on':'')+'" data-fs="'+esc(x[0])+'">'+esc(x[0])+'<small>'+x[1]+'</small></button>'; }).join(""):"";
+    } else $i("fdSubs").innerHTML="";
+    var body=$i("fdBody");
+    if(!META.size&&F.q.length<2){ body.innerHTML='<div class="fd-empty">'+(META_LOADING?'טוען קטגוריות…':'עוד לא יובאו קטגוריות ומותגים.<br>מנהל: מסך הניהול ← "קטגוריות ומותגים מהאתר".<br>בינתיים אפשר לחפש למעלה.')+'</div>'; return; }
+    if(!F.cat&&F.q.length<2){
+      var keys=Object.keys(tree).sort(function(a,b){ return tree[b].n-tree[a].n; });
+      body.innerHTML='<div class="fd-cats">'+keys.map(function(k){ var o=tree[k]; return '<div class="fd-cat" data-fc="'+esc(k)+'">'+(o.img?'<img loading="lazy" src="'+esc(o.img)+'" alt="" onerror="this.outerHTML=\'<div class=ph>'+(CAT_IC[k]||"📦")+'</div>\'">':'<div class="ph">'+(CAT_IC[k]||"📦")+'</div>')+'<b>'+esc(k)+'</b><small>'+o.n+' מוצרים</small></div>'; }).join("")+'</div>';
+      return;
+    }
+    var list=pool();
+    if(!list.length){ body.innerHTML='<div class="fd-empty">לא נמצאו מוצרים</div>'; return; }
+    body.innerHTML='<div class="fd-cnt">'+list.length+' מוצרים · קודם מה שבמלאי</div><div class="fd-grid">'+list.slice(0,F.limit).map(card).join("")+'</div>'+(list.length>F.limit?'<button class="fd-more" data-fmore>הצג עוד ('+(list.length-F.limit)+')</button>':'');
+  }
+  function stBadge(p,inl){ var n=stockN(p), st=inl?' style="position:static"':''; if(n==null) return '<span class="fd-st na"'+st+'>מלאי —</span>'; return n>0?'<span class="fd-st in"'+st+'>במלאי '+n+'</span>':'<span class="fd-st out"'+st+'>אזל</span>'; }
+  function card(p){
+    var pr=effPrice(p), b=brand(p);
+    return '<div class="fd-p" data-fp="'+esc(p.mktt)+'"><div class="im">'+(p.image_url?'<img loading="lazy" src="'+esc(p.image_url)+'" alt="" onerror="this.style.display=\'none\'">':'<span class="ph">אין תמונה</span>')+stBadge(p)+'</div>'+
+      '<div class="bd">'+(b?'<span class="br">'+esc(b)+'</span>':'')+'<span class="nm">'+esc(p.name||"")+'</span><span class="sk">מק״ט '+esc(p.mktt)+'</span>'+
+      '<div class="pr"><div>'+(pr!=null?'<b>'+esc(fmtNis(pr))+(isClearance(p.mktt)?' 🔥':'')+'</b><small>לפני מע״מ '+esc(fmtNis(exVat(pr)))+'</small>':'<small>אין מחיר</small>')+'</div>'+
+      '<button class="fd-add" data-fadd="'+esc(p.mktt)+'" aria-label="הוסף לעגלה">+</button></div></div></div>';
+  }
+
+  /* ---------- כרטיס מוצר מלא ---------- */
+  function openProduct(mktt){
+    var p=PRODMAP.get(String(mktt)); if(!p) return;
+    var pr=effPrice(p), m=META.get(String(p.mktt))||{}, cs=cats(p), s=(window.__SPECS&&window.__SPECS.get(String(p.mktt)))||null;
+    var g=[["מק״ט",p.mktt],["ברקוד",p.barcode],["דגם",m.model],["יחידה",p.unit],["מלאי",stockN(p)==null?"—":p.stock]];
+    if(isClearance(p.mktt)){ g.push(["מחיר רגיל",p.price!=null&&p.price!==""?fmtNis(pnum(p.price)):"—"]); if(clrCheapest(p.mktt)!=null) g.push(["הזול בישראל",fmtNis(clrCheapest(p.mktt))]); }
+    var specHtml="";
+    if(s&&s.found!==false&&(s.specs||[]).length){ specHtml='<div class="fp-spec"><b style="color:#075E54">מפרט טכני</b><table class="sp-tbl">'+s.specs.slice(0,14).map(function(x){ return '<tr><td class="k">'+esc(x.k)+'</td><td>'+esc(x.v)+'</td></tr>'; }).join("")+'</table></div>'; }
+    $i("fpBody").innerHTML=
+      '<div class="fp-im">'+(p.image_url?'<img src="'+esc(p.image_url)+'" alt="" onerror="this.style.display=\'none\'">':'<span style="color:var(--ink2)">אין תמונה</span>')+'</div>'+
+      (brand(p)?'<div class="fp-br">'+esc(brand(p))+'</div>':'')+'<div class="fp-nm">'+esc(p.name||"")+'</div>'+
+      (cs.length?'<div class="fp-path">'+cs.map(function(c){ return esc(c.p)+(c.s?' › '+esc(c.s):''); }).join(' · ')+'</div>':'')+
+      '<div class="fp-price">'+(pr!=null?'<b>'+esc(fmtNis(pr))+(isClearance(p.mktt)?' 🔥':'')+'</b><span>לפני מע״מ '+esc(fmtNis(exVat(pr)))+'</span>':'<span>אין מחיר</span>')+stBadge(p,true)+'</div>'+
+      '<div class="fp-grid">'+g.filter(function(x){ return x[1]!=null&&String(x[1]).trim()!==""; }).map(function(x){ return '<span class="l">'+esc(x[0])+'</span><span>'+esc(String(x[1]))+'</span>'; }).join("")+'</div>'+
+      '<div class="fp-acts"><button class="spec-btn" data-mktt="'+esc(p.mktt)+'" type="button" style="margin:0">📋 מפרט מלא</button><button class="ai-btn" data-mktt="'+esc(p.mktt)+'" type="button">✨ AI</button></div>'+
+      specHtml+
+      '<div class="fp-add"><div class="qs"><button type="button" data-fq="-1">−</button><input id="fpQty" type="number" inputmode="numeric" value="1" min="1"><button type="button" data-fq="1">+</button></div><button class="go" type="button" data-fpadd="'+esc(p.mktt)+'">הוסף לעגלה</button></div>';
+    $i("fpSheet").classList.add("open");
+  }
+
+  /* ---------- עגלות שטח ---------- */
+  function fieldCarts(){ return CARTS.filter(function(c){ return c.kind==="field"; }); }
+  function activeCart(){ return ACTIVE!=null?CARTS.find(function(c){ return String(c.id)===String(ACTIVE); }):null; }
+  function setActive(id){ ACTIVE=id==null?null:String(id); try{ if(ACTIVE) localStorage.setItem("etz_field_cart",ACTIVE); else localStorage.removeItem("etz_field_cart"); }catch(e){} renderCartBar(); }
+  function renderCartBar(){
+    var b=$i("fdCart"); if(!b) return; var c=activeCart();
+    if(!c){ b.className="fd-cart none"; b.innerHTML="<span>🛒 בחר או צור עגלת שטח</span>"; return; }
+    var its=cartItems(c.id), n=its.reduce(function(s,i){ return s+(Number(i.qty)||0); },0);
+    b.className="fd-cart"; b.innerHTML="<span>🛒 "+esc(c.customer||"לקוח")+" · "+n+" פריטים</span><b>"+esc(fmtNis(cartTotal(c.id)))+"</b>";
+  }
+  function renderCartsSheet(){
+    var L=fieldCarts();
+    $i("fcList").innerHTML=L.length?L.map(function(c){ var n=cartItems(c.id).reduce(function(s,i){ return s+(Number(i.qty)||0); },0);
+      return '<div class="row'+(String(c.id)===String(ACTIVE)?' on':'')+'" data-fcsel="'+c.id+'"><div><b>'+esc(c.customer||"לקוח")+'</b><small>'+esc(displayName(c.salesperson))+' · '+n+' פריטים · '+esc(timeAgo(cartActivity(c)))+'</small></div><span class="t">'+esc(fmtNis(cartTotal(c.id)))+'</span><button class="op" type="button" data-fcopen="'+c.id+'">פתח</button></div>'; }).join(""):'<div class="fd-empty">אין עגלות שטח פתוחות</div>';
+  }
+  async function newCart(){
+    var who=($i("counter").value||"").trim(); if(!who){ toast("יש להזין את שמך למעלה"); try{ nameReq(); $i("counter").focus(); }catch(e){} return null; }
+    var cust=(prompt("שם הלקוח:")||"").trim(); if(!cust) return null;
+    try{
+      var r=await sb.from("carts").insert({customer:cust,salesperson:who,status:"open",kind:"field"}).select(); if(r.error) throw r.error;
+      if(!CARTS.some(function(c){ return c.id===r.data[0].id; })) CARTS.unshift(r.data[0]);
+      setActive(r.data[0].id); toast("נפתחה עגלה ל"+cust); return r.data[0];
+    }catch(e){ console.error(e); toast("שגיאה ביצירת עגלה"); return null; }
+  }
+  async function addToActive(mktt,qty){
+    var p=PRODMAP.get(String(mktt)); if(!p) return;
+    var c=activeCart();
+    if(!c){ c=await newCart(); if(!c) return; }
+    var price=isClearance(p.mktt)?clearancePrice(p.mktt):pnum(p.price);
+    var ex=cartItems(c.id).find(function(i){ return String(i.mktt)===String(p.mktt); });
+    var save=CUR_CART; CUR_CART=c.id;
+    var ok=await cartWrite(ex||null,p,price,false,Math.max(1,Math.round(Number(qty)||1)));
+    CUR_CART=save;
+    if(ok){ touchCart(c.id); renderCartBar(); toast("✓ נוסף: "+(p.name||p.mktt).slice(0,40)); try{ navigator.vibrate&&navigator.vibrate(20); }catch(e){} }
+    else toast("שגיאה בהוספה");
+  }
+  function openFieldCart(id){
+    setActive(id);
+    $i("fcSheet").classList.remove("open");
+    setMode("sale"); window.FIELD_MODE=true; document.body.classList.add("field-cart");
+    document.querySelectorAll("#modebar button").forEach(function(b){ b.classList.toggle("active",b.dataset.mode==="field"); });
+    $i("nameLabel").textContent="סוכן שטח:";
+    openCart(id);
+  }
+
+  /* ---------- חיווט ---------- */
+  var qT=null;
+  document.addEventListener("input",function(e){ if(e.target&&e.target.id==="fdQ"){ clearTimeout(qT); qT=setTimeout(function(){ F.q=e.target.value.trim(); F.limit=40; if(F.q.length>=2){ F.sub=null; } render(); },180); } });
+  document.addEventListener("click",function(e){
+    var t=e.target&&e.target.closest?e.target:null; if(!t) return;
+    var x;
+    if((x=t.closest("[data-fadd]"))){ e.stopPropagation(); addToActive(x.getAttribute("data-fadd"),1); return; }
+    if((x=t.closest("[data-fpadd]"))){ addToActive(x.getAttribute("data-fpadd"),$i("fpQty").value); $i("fpSheet").classList.remove("open"); return; }
+    if((x=t.closest("[data-fq]"))){ var q=$i("fpQty"); q.value=Math.max(1,(parseInt(q.value,10)||1)+Number(x.getAttribute("data-fq"))); return; }
+    if(t.closest("#fpClose")||t.id==="fpSheet"){ $i("fpSheet").classList.remove("open"); return; }
+    if((x=t.closest("[data-fp]"))&&t.closest("#fieldMain")){ openProduct(x.getAttribute("data-fp")); return; }
+    if((x=t.closest("[data-fb]"))){ F.brand=x.getAttribute("data-fb")||null; F.limit=40; render(); return; }
+    if((x=t.closest("[data-fc]"))&&t.closest("#fieldMain")){ var v=x.getAttribute("data-fc"); F.cat=v||null; F.sub=null; F.limit=40; if(!v){ F.q=""; $i("fdQ").value=""; } render(); window.scrollTo({top:0,behavior:"smooth"}); return; }
+    if((x=t.closest("[data-fs]"))){ F.sub=x.getAttribute("data-fs")||null; F.limit=40; render(); return; }
+    if(t.closest("[data-fmore]")){ F.limit+=40; render(); return; }
+    if(t.closest("#fdCart")){ var c=activeCart(); if(c) openFieldCart(c.id); else { renderCartsSheet(); $i("fcSheet").classList.add("open"); } return; }
+    if(t.closest("#fdCartsBtn")){ renderCartsSheet(); $i("fcSheet").classList.add("open"); return; }
+    if(t.closest("#fcClose")||t.id==="fcSheet"){ $i("fcSheet").classList.remove("open"); return; }
+    if(t.closest("#fcNew")){ newCart().then(function(c){ if(c){ $i("fcSheet").classList.remove("open"); render(); } }); return; }
+    if((x=t.closest("[data-fcopen]"))){ e.stopPropagation(); openFieldCart(x.getAttribute("data-fcopen")); return; }
+    if((x=t.closest("[data-fcsel]"))){ setActive(x.getAttribute("data-fcsel")); $i("fcSheet").classList.remove("open"); toast("עגלה פעילה: "+(activeCart()||{}).customer); return; }
+  });
+
+  /* ---------- ייבוא קטגוריות ומותגים (קובץ ייצוא מקונימבו) ---------- */
+  async function importMeta(file){
+    var st=$i("metaImpSt"); st.textContent="קורא קובץ…";
+    try{
+      var wb=XLSX.read(await file.arrayBuffer(),{type:"array"}), ws=wb.Sheets[wb.SheetNames[0]];
+      var rows=XLSX.utils.sheet_to_json(ws,{defval:"",raw:false});
+      if(!rows.length||!("code" in rows[0])) throw new Error("לא זוהה קובץ ייצוא של קונימבו (חסרה עמודה code)");
+      var by={};
+      rows.forEach(function(r){
+        var code=String(r.code||"").trim(); if(!code) return;
+        var o=by[code]||(by[code]={mktt:code,brand:"",cats:[],model:"",updated_at:new Date().toISOString()});
+        var b=String(r.product_brand_he||r.product_brand||"").trim(); if(b&&!o.brand) o.brand=b;
+        var md=String(r.model_title||"").trim(); if(md&&!o.model) o.model=md;
+        var p=String(r.store_category_parent_title||"").trim(), s=String(r.store_category_title_he||"").trim();
+        if(/מומלצים/.test(p)) return;
+        if(!p&&s){ p=s; s=""; }
+        if(p&&!o.cats.some(function(c){ return c.p===p&&c.s===s; })) o.cats.push({p:p,s:s});
+      });
+      var list=Object.values(by), inApp=list.filter(function(o){ return PRODMAP.has(o.mktt); }).length;
+      if(!confirm("נמצאו "+list.length+" מק״טים בקובץ ("+inApp+" מהם קיימים בקטלוג של האפליקציה).\nלעדכן קטגוריות ומותגים?")){ st.textContent="בוטל"; return; }
+      for(var i=0;i<list.length;i+=500){
+        st.textContent="שומר… "+Math.min(i+500,list.length)+" / "+list.length;
+        var r=await sb.from("product_meta").upsert(list.slice(i,i+500),{onConflict:"mktt"}); if(r.error) throw r.error;
+      }
+      list.forEach(function(o){ META.set(o.mktt,o); }); META_TS=list.reduce(function(a,o){ return o.updated_at>a?o.updated_at:a; },META_TS);
+      PCACHE.set("meta",{ts:META_TS,rows:Array.from(META.values())});
+      st.textContent="✓ עודכנו "+list.length+" מק״טים ("+inApp+" קיימים בקטלוג)";
+    }catch(e){ console.error(e); st.textContent="שגיאה: "+String((e&&e.message)||e)+(/product_meta/.test(String(e&&e.message))?" — הרץ field-setup.sql":""); }
+  }
+  document.addEventListener("change",function(e){ if(e.target&&e.target.id==="metaFile"&&e.target.files[0]){ importMeta(e.target.files[0]); e.target.value=""; } });
+
+  window.renderField=render; window.loadMeta=loadMeta; window.__META=META; window.fieldRenderCartBar=renderCartBar;
+  setTimeout(loadMeta,2000);
+})();
+</script>
+<!-- ================= סוף מודול שטח ================= -->
 
 </body>
 </html>
