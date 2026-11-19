@@ -5928,7 +5928,7 @@ body.m-field #fieldMain{display:block}
       if(!pin){ pin=prompt("קוד מנהל (לשמירת המפרטים):")||""; }
       for(var j=0;j<P.specs.length&&pin;j+=300){
         prog("שומר מפרטים… "+Math.min(j+300,P.specs.length)+" / "+P.specs.length);
-        var rr=await sb.functions.invoke("product-specs",{body:{action:"import",pin:pin,rows:P.specs.slice(j,j+300)}});
+        var rr=await sb.functions.invoke("product-specs",{body:{action:"import",pin:pin,force:true,rows:P.specs.slice(j,j+300)}});
         var d=rr.data; if(rr.error){ try{ d=await rr.error.context.json(); }catch(_){ d=null; } }
         if(!d||!d.ok){ specErr=(d&&d.text)||"שמירת המפרטים נכשלה (ודא שפונקציית product-specs פרוסה בגרסה החדשה)"; break; }
         savedSpecs+=d.saved||0;
