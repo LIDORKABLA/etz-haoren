@@ -5666,18 +5666,107 @@ body.m-field #fieldMain{display:block}
 #fcSheet .row small{color:var(--ink2);font-size:12.5px}
 #fcSheet .row .t{font-weight:800;color:#075E54;white-space:nowrap}
 #fcSheet .row .op{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:7px 11px;font-family:inherit;font-weight:700;cursor:pointer;flex:none}
+/* ===== שטח: חנות ===== */
+.fd-tabs{display:flex;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:10px}
+.fd-tabs button{flex:1;border:none;background:transparent;border-radius:10px;padding:9px 6px;font-family:inherit;font-size:14px;font-weight:800;color:var(--ink2);cursor:pointer}
+.fd-tabs button.on{background:var(--card);color:#075E54;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.fh-sec{display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px}
+.fh-sec:first-child{margin-top:4px}
+.fh-sec h3{margin:0;font-size:17px;font-weight:800;color:var(--ink)}
+.fh-sec button{border:none;background:none;color:#0B7D71;font-family:inherit;font-weight:800;font-size:13.5px;cursor:pointer;padding:4px 2px}
+.fh-scroll{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x proximity;scrollbar-width:none;margin:0 -2px}
+.fh-scroll::-webkit-scrollbar{display:none}
+.fh-scroll>*{scroll-snap-align:start;flex:none}
+.fh-scroll .fb-tile{width:128px}
+.fh-scroll.prods .fd-p{width:165px}
+.fb-tile{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 8px 9px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-family:inherit;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.fb-tile:active{transform:scale(.97)}
+.fb-tile .lg{width:100%;height:64px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.fb-tile .lg img{max-width:92%;max-height:56px;object-fit:contain}
+.fh-top{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:2px 0 6px}
+.fb-tile.big{padding:12px 10px 10px;border-radius:18px;box-shadow:0 2px 10px rgba(7,94,84,.08)}
+.fb-tile.big .lg{height:84px}
+.fb-tile.big .lg img{max-height:76px}
+.fd-hero{flex:1;min-width:0}
+.fd-hero .lg{display:flex;align-items:center;justify-content:center;height:64px;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.fd-hero .lg img{max-height:54px;max-width:70%;object-fit:contain}
+.fd-hero .lg.nm{background:var(--bc);color:#fff;font-weight:900;font-size:18px}
+.lg.nm{background:var(--bc);color:#fff;font-weight:900;font-size:15px;letter-spacing:.3px;padding:0 6px;text-align:center;line-height:1.15;text-transform:uppercase}
+.fb-tile .bn{font-size:13px;font-weight:800;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fb-tile small{font-size:11.5px;color:var(--ink2)}
+.fb-tile.edit{border:1.5px dashed #0B7D71}
+.fb-tile .ed{position:absolute;top:6px;left:6px;background:#0B7D71;color:#fff;border-radius:8px;font-size:12px;padding:2px 5px}
+.fb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
+.fb-tools{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.fb-tools input{flex:1;min-width:0;padding:10px 13px;border:1.5px solid var(--line);border-radius:12px;font-family:inherit;font-size:15px;background:var(--card);color:var(--ink)}
+.fb-hint{font-size:12.5px;color:#075E54;background:#eef7f5;border-radius:10px;padding:8px 11px;margin-bottom:10px}
+.fd-back{display:flex;align-items:center;gap:10px;margin:2px 0 10px}
+.fd-back button{flex:none;width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-size:18px;font-weight:800;color:var(--ink);cursor:pointer;font-family:inherit}
+.fd-back b{font-size:18px;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fd-back .lgs .lg{display:flex;align-items:center;justify-content:center;height:34px;min-width:34px;max-width:110px;border-radius:8px;background:#fff;border:1px solid var(--line);overflow:hidden;padding:0 6px}
+.fd-back .lgs .lg img{max-height:28px;max-width:100px;object-fit:contain}
+.fd-back .lgs .lg.nm{font-size:11px;border:none;background:var(--bc);color:#fff}
+.fc-list{display:flex;flex-direction:column;gap:8px}
+.fc-item{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.fc-item summary{display:flex;align-items:center;gap:11px;padding:10px 12px;cursor:pointer;list-style:none}
+.fc-item summary::-webkit-details-marker{display:none}
+.fc-item summary::after{content:"‹";margin-inline-start:auto;font-size:20px;color:var(--ink2);transition:transform .2s}
+.fc-item[open] summary::after{transform:rotate(-90deg)}
+.fc-item .ic{flex:none;width:46px;height:46px;border-radius:10px;background:#eef7f5;display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden}
+.fc-item .ic img{width:100%;height:100%;object-fit:contain;background:#fff}
+.fc-item summary b{font-size:14.5px}
+.fc-item summary small{color:var(--ink2);font-size:12px}
+.fc-subs{display:flex;flex-wrap:wrap;gap:7px;padding:2px 12px 12px}
+.fd-chip.x{padding-inline-end:10px}
+.fd-chips.br .fd-chip{background:var(--bg)}
+.fd-chips.br .fd-chip.on{background:#075E54}
+.fd-bar{display:flex;align-items:center;gap:7px;margin:4px 0 10px;flex-wrap:wrap}
+.fd-bar .cnt{font-size:13px;color:var(--ink2);font-weight:700;margin-inline-end:auto}
+.fd-tb{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 11px;font-family:inherit;font-weight:800;font-size:13px;color:var(--ink);cursor:pointer}
+.fd-tb.on{border-color:#0B7D71;color:#075E54;background:#eef7f5}
+#fdSort{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 8px;font-family:inherit;font-weight:700;font-size:13px;color:var(--ink);max-width:180px}
+.fd-lay{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.fd-lay button{border:none;background:var(--card);width:36px;height:34px;font-size:16px;cursor:pointer;color:var(--ink2)}
+.fd-lay button.on{background:#075E54;color:#fff}
+.fd-rows{display:flex;flex-direction:column;gap:8px}
+.fd-row{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 10px;cursor:pointer}
+.fd-row .th{flex:none;width:64px;height:64px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.fd-row .th img{max-width:100%;max-height:100%;object-fit:contain}
+.fd-row .bd{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;align-items:flex-start}
+.fd-row .nm{font-size:13.5px;font-weight:700;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.fd-row .sk{font-size:11.5px;color:var(--ink2)}
+.fd-row .pr{flex:none;display:flex;flex-direction:column;align-items:center;gap:5px}
+.fd-row .pr b{font-size:15px;color:#075E54;white-space:nowrap}
+.fd-row .fd-add{width:36px;height:36px;font-size:20px}
+.fq-list{display:flex;flex-direction:column;gap:12px}
+.fq-list .pq-img{cursor:pointer}
+.fq-add{display:block;width:100%;margin-top:10px;border:none;border-radius:12px;background:#0B7D71;color:#fff;font-family:inherit;font-size:15px;font-weight:800;padding:12px;cursor:pointer}
+.fq-carts{display:flex;flex-direction:column;gap:8px}
+.fq-cart{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;cursor:pointer}
+.fq-cart.on{border-color:#0B7D71;background:#eef7f5}
+.fq-cart b{display:block}.fq-cart small{color:var(--ink2);font-size:12.5px}
+.fq-cart .t{font-weight:800;color:#075E54;white-space:nowrap}
+#ffSheet .card{max-width:560px}
+.ff-sec{padding:10px 0;border-bottom:1px solid var(--line)}
+.ff-sec>b{display:block;font-size:14px;margin-bottom:6px;color:var(--ink)}
+.ff-o{display:flex;align-items:center;gap:10px;padding:7px 2px;font-size:14.5px;cursor:pointer}
+.ff-o input{width:19px;height:19px;accent-color:#0B7D71;flex:none}
+.ff-price{display:flex;align-items:center;gap:8px}
+.ff-price input,.ff-sec select{flex:1;min-width:0;width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;font-family:inherit;font-size:15px;background:var(--card);color:var(--ink)}
+.ff-btns{display:flex;gap:8px;padding-top:12px;position:sticky;bottom:0;background:var(--card)}
+.ff-btns .btn{flex:1;margin:0}
 </style>
 <main id="fieldMain">
   <div class="fd-top">
     <button class="fd-cart none" id="fdCart" type="button"><span>🛒 בחר או צור עגלת שטח</span></button>
     <button class="fd-carts-btn" id="fdCartsBtn" type="button">עגלות</button>
   </div>
+  <div class="fd-tabs" id="fdTabs"></div>
   <div class="fd-search"><input id="fdQ" type="search" placeholder="חיפוש מוצר, דגם או מק״ט…" autocomplete="off" enterkeyhint="search"></div>
-  <div class="fd-chips" id="fdBrands"></div>
-  <div class="fd-crumb" id="fdCrumb"></div>
-  <div class="fd-chips" id="fdSubs"></div>
   <div id="fdBody"></div>
+  <input type="file" id="fdLogoFile" accept="image/*" style="display:none">
 </main>
+<div class="sheet" id="ffSheet"><div class="card"><div class="chat-head"><span>⚙︎ סינון ומיון</span><button id="ffClose" type="button" aria-label="סגור">✕</button></div><div id="ffBody"></div></div></div>
 <div class="sheet" id="fpSheet"><div class="card"><div class="chat-head"><span>פרטי מוצר</span><button id="fpClose" type="button" aria-label="סגור">✕</button></div><div id="fpBody"></div></div></div>
 <div class="sheet" id="fcSheet"><div class="card"><div class="chat-head"><span>🛒 עגלות שטח</span><button id="fcClose" type="button" aria-label="סגור">✕</button></div>
   <button class="btn primary" id="fcNew" type="button" style="width:100%;margin:6px 0 8px">+ עגלת שטח חדשה</button>
@@ -5715,62 +5804,229 @@ body.m-field #fieldMain{display:block}
   function stockN(p){ var s=p.stock; if(s==null||String(s).trim()==="") return null; var n=parseFloat(String(s).replace(/,/g,"")); return isNaN(n)?null:n; }
   function rank(a,b){ var sa=stockN(a), sb2=stockN(b); var ta=sa==null?1:(sa>0?0:2), tb=sb2==null?1:(sb2>0?0:2); return (ta-tb)||String(a.name||"").localeCompare(String(b.name||""),"he"); }
 
-  /* ---------- סינון ---------- */
+  /* ---------- מצב תצוגה (חנות / חיפוש מהיר) ---------- */
+  var LS_F="etz_field_ui";
+  try{ var _s=JSON.parse(localStorage.getItem(LS_F)||"{}"); F.tab=_s.tab; F.layout=_s.layout; F.sort=_s.sort; }catch(e){}
+  F.tab=F.tab||"shop"; F.layout=F.layout||"grid"; F.sort=F.sort||"rel"; F.view="home"; F.stock=false; F.pmin=null; F.pmax=null; F.clr=false; F.bq=""; F.logoEdit=false;
+  function saveUi(){ try{ localStorage.setItem(LS_F,JSON.stringify({tab:F.tab,layout:F.layout,sort:F.sort})); }catch(e){} }
+  var SORTS=[["rel","מומלץ — במלאי קודם"],["price_desc","מחיר: מהגבוה לנמוך"],["price_asc","מחיר: מהנמוך לגבוה"],["name","שם: א–ת"],["stock","מלאי: הכי הרבה"]];
+
+  /* ---------- לוגו מותגים (טבלת brand_logos + תיקיית brand-logos) ---------- */
+  var LOGOS=new Map(), LOGO_FOR=null;
+  /* לוגואים מדפי היצרנים באתר עץ האורן (ברירת מחדל; לוגו שהועלה באפליקציה גובר) */
+  var LOGO_CDN="https://d3m9l0v76dty0.cloudfront.net/system/photos/", DEF_LOGO={"מקיטה":"821709/original/0d2cded6981f783e6505a82855af3e0e.jpg","דיוולט":"821765/original/3cb4219382bcd9db6082622d3db94627.png","מילווקי":"821732/original/b0e32bd85126941c75b4a97a5671cfb9.png","בול ליאון":"895480/original/e55a1410f2ea1b42f70a18bc96ff401a.png","WOKIN":"971880/original/c4f7de9ffce81009ccf141337eb2b84d.png","רוהר":"821731/original/9b8cab040ed9c9e199e9e89330d98ff2.png","בורמן":"885298/original/1f15bf2fb9f322e02f16a6219d5a3107.png","מקספאוור":"976280/original/a3569bdb85ac20e08677e22f2d9fb34c.png","סטנלי":"821781/original/051f812bb22c32936aab04139e128817.png","קניפקס":"975766/original/89a81ecdc5557b79dcddabe700c70172.jpg","ווסקו":"821774/original/a5faa6a0f3e30efae605202d739f7258.png","HOTECHE":"821761/original/2c5d718f5299f6c09d437c6207435601.png","דיאבלו":"873348/original/748f5351d0c6147f7794e1386415b627.png","יאטו":"821739/original/8bc8a95957420d83b43c1525f60f3220.png","DAEWOO":"880806/original/136334ed2a47d9b060d009e21b5eb7fa.jpeg","האנטר":"821752/original/f2c52731ae47302c0eea59da832c60a2.jpg","קשקו":"821751/original/104c6110eac5efb2209eb54ffda53075.png","gpt":"821784/original/6f2806003c149c7dc615c1f954b74018.jpg","דקו":"821769/original/43252bbc66668e16682851144dbe540f.png","מטאבו":"821767/original/87c8ec1b8dd7f55d8f20e70aba9f1c1b.png","מולר":"821753/original/282bb1eeedbd4ad6c4434fb8d1849406.png","אמריקן איגל":"821723/original/debaa1ed8dd1b44603fbaaa15f272e4d.png","בוש":"821745/original/a30e733b2fb44b992861600c4a65204e.png","אורן מכניקס":"823779/original/12ae7192fec88f64d46bfb6e96a62a21.png","וורקס":"821734/original/18334a64be8591ed1a8be0429572f447.jpg","יונדאי":"821787/original/1f0410a7127bf847e7f7113d68e674e4.png","היקוקי":"821768/original/1d5b4a71363ae7e8bbf0a857121732b4.png","קראס":"821766/original/d92183a9e259c26c1309a60f9f87cb4d.png","סמיקום":"821782/original/a67458a15909995de675a812b9e975ea.png","קאיופי":"823642/original/5aadc0a33e078c2187d49532d38eba09.png","קראוס":"821713/original/b7e786096867fdbb19c8aa93029f65a9.png","דלתא":"821788/original/0013c32fe183d2e4d911bbe785050d41.png","טוטאל טולס":"821762/original/8de0dd47c6f61bfd9978dcb9ffb84fc3.png","פרימיום":"821748/original/d917ff5991229f5adac56fba5533d1cc.png","DELTAFR":"821741/original/4f10d385edbe0cf92c9d3381a9ec79cb.png","קרשר":"821780/original/af1cd3796ecb12df67ca2088adbcc2f5.png","שפך":"821779/original/cfdc5a78ec26e72540364f8c3e71f300.png","הוגונג":"821793/original/c45972a587d2f93ce874744a8aba8c3d.jpg","פמי":"821714/original/ec1344b8565dfd93a494fe9055907e24.png","סיגמה":"821776/original/f714810076832f7d5c140320bbbdd5cd.jpg","קרג":"821790/original/125f8a9aa5f45fb1fcd6aa9c33ea55a8.png","טקטיקס":"821799/original/9792a9cad1879baf9797bcb95800c93b.png","קופר":"821719/original/4a0d3d1a146b1332f5f56e7d5da695de.png","דואל פאוור":"823861/original/804820787a5acf57e4157301e0ec63a0.png","איי ג'י פי":"821789/original/5d34fb98e1cf475a39ed58560b9f159a.png","סטאייר":"821777/original/162476d70cb4123b98dfc0c698bda916.png"};
+  var TOP_BRANDS=["מקיטה","דיוולט","מילווקי","בול ליאון"];
+  function logoUrl(b){ if(LOGOS.has(b)) return LOGOS.get(b); var k=String(b||"").trim(); return DEF_LOGO[k]?LOGO_CDN+DEF_LOGO[k]:null; }
+  async function loadLogos(){
+    try{ var c=await PCACHE.get("brand_logos"); if(c&&Array.isArray(c.rows)) c.rows.forEach(function(r){ LOGOS.set(r.brand,r.url); }); }catch(e){}
+    if(!CLOUD||!sb) return;
+    try{
+      var r=await sb.from("brand_logos").select("brand,url"); if(r.error) return;
+      LOGOS.clear(); (r.data||[]).forEach(function(x){ LOGOS.set(x.brand,x.url); });
+      PCACHE.set("brand_logos",{rows:r.data||[]}); if(MODE==="field") render();
+    }catch(e){}
+  }
+  function fileToPng(file){
+    return new Promise(function(res,rej){
+      var u=URL.createObjectURL(file), im=new Image();
+      im.onload=function(){ var w=im.naturalWidth||320, h=im.naturalHeight||160, sc=Math.min(1,360/Math.max(w,h)), cv=document.createElement("canvas");
+        cv.width=Math.max(1,Math.round(w*sc)); cv.height=Math.max(1,Math.round(h*sc)); cv.getContext("2d").drawImage(im,0,0,cv.width,cv.height);
+        URL.revokeObjectURL(u); cv.toBlob(function(b){ b?res(b):rej(new Error("png")); },"image/png"); };
+      im.onerror=function(){ URL.revokeObjectURL(u); rej(new Error("לא ניתן לקרוא את התמונה")); };
+      im.src=u;
+    });
+  }
+  async function uploadLogo(file,b){
+    if(!CLOUD||!sb){ toast("נדרש חיבור לענן"); return; }
+    toast("מעלה לוגו…");
+    try{
+      var blob=await fileToPng(file), path="b-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)+".png";
+      var up=await sb.storage.from("brand-logos").upload(path,blob,{contentType:"image/png",cacheControl:"31536000",upsert:false}); if(up.error) throw up.error;
+      var url=sb.storage.from("brand-logos").getPublicUrl(path).data.publicUrl;
+      var r=await sb.from("brand_logos").upsert({brand:b,url:url,updated_at:new Date().toISOString()},{onConflict:"brand"}); if(r.error) throw r.error;
+      LOGOS.set(b,url); PCACHE.set("brand_logos",{rows:Array.from(LOGOS,function(e){ return {brand:e[0],url:e[1]}; })});
+      toast("✓ לוגו נשמר: "+b); render();
+    }catch(e){ console.error("logo",e); toast("שמירת הלוגו נכשלה — ודא שהרצת brand-logos.sql"); }
+  }
+  var BR_CLR={"makita":"#00909E","מקיטה":"#00909E","dewalt":"#1a1a1a","דיוולט":"#1a1a1a","milwaukee":"#DB011C","מילווקי":"#DB011C","bosch":"#EA0016","בוש":"#EA0016","metabo":"#D9001A","מטאבו":"#D9001A","hikoki":"#00894B","stanley":"#E8B100","סטנלי":"#E8B100","ryobi":"#8DA400","einhell":"#C8102E","karcher":"#E9B500","קרשר":"#E9B500","knipex":"#C4001A","wera":"#3F3F3F","bahco":"#E2591B"};
+  function brClr(b){ var k=String(b||"").toLowerCase().trim(); if(BR_CLR[k]) return BR_CLR[k]; var h=0; for(var i=0;i<k.length;i++) h=(h*31+k.charCodeAt(i))>>>0; return "hsl("+(h%360)+",42%,34%)"; }
+
+  /* ---------- סינון ומיון ---------- */
+  function inList(){ return F.q.length>=2||!!F.brand||!!F.cat||F.clr; }
   function pool(){
-    var list;
-    if(F.q.length>=2) list=search(F.q).concat([]);
-    else list=PRODUCTS.filter(function(p){ return META.has(String(p.mktt)); });
+    var list=F.q.length>=2?search(F.q).slice():PRODUCTS.filter(function(p){ return META.has(String(p.mktt))||(F.clr&&isClearance(p.mktt)); });
+    if(F.clr) list=list.filter(function(p){ return isClearance(p.mktt); });
     if(F.brand) list=list.filter(function(p){ return brand(p)===F.brand; });
     if(F.cat) list=list.filter(function(p){ return cats(p).some(function(c){ return c.p===F.cat&&(!F.sub||c.s===F.sub); }); });
-    if(F.q.length<2) list.sort(rank);
+    if(F.stock) list=list.filter(function(p){ return (stockN(p)||0)>0; });
+    if(F.pmin!=null||F.pmax!=null) list=list.filter(function(p){ var v=effPrice(p); if(v==null) return false; return (F.pmin==null||v>=F.pmin)&&(F.pmax==null||v<=F.pmax); });
+    var s=F.sort;
+    if(s==="price_desc"||s==="price_asc"){ var d=s==="price_desc"?-1:1; list.sort(function(a,b){ var x=effPrice(a), y=effPrice(b); if(x==null&&y==null) return 0; if(x==null) return 1; if(y==null) return -1; return (x-y)*d; }); }
+    else if(s==="name") list.sort(function(a,b){ return String(a.name||"").localeCompare(String(b.name||""),"he"); });
+    else if(s==="stock") list.sort(function(a,b){ return (stockN(b)||0)-(stockN(a)||0); });
+    else if(F.q.length<2) list.sort(rank);
     return list;
   }
-  function brandCounts(){
-    var m={}; PRODUCTS.forEach(function(p){ var b=brand(p); if(!b) return; if(F.cat&&!cats(p).some(function(c){ return c.p===F.cat; })) return; m[b]=(m[b]||0)+1; });
-    return Object.keys(m).map(function(k){ return [k,m[k]]; }).sort(function(a,b){ return b[1]-a[1]; });
+  function brandCounts(cat){
+    var m={}; PRODUCTS.forEach(function(p){ var b=brand(p); if(!b) return; if(cat&&!cats(p).some(function(c){ return c.p===cat; })) return; m[b]=(m[b]||0)+1; });
+    return Object.keys(m).map(function(k){ return [k,m[k]]; }).sort(function(a,b){ var ta=TOP_BRANDS.indexOf(a[0]), tb=TOP_BRANDS.indexOf(b[0]); ta=ta<0?99:ta; tb=tb<0?99:tb; return (ta-tb)||(b[1]-a[1]); });
   }
-  function catTree(){
+  function catTree(br){
     var t={};
-    PRODUCTS.forEach(function(p){ if(F.brand&&brand(p)!==F.brand) return; cats(p).forEach(function(c){ if(!c.p) return; var o=t[c.p]||(t[c.p]={n:0,subs:{},img:null,imgIn:false}); o.n++; if(c.s) o.subs[c.s]=(o.subs[c.s]||0)+1; if(p.image_url&&(!o.img||(!o.imgIn&&(stockN(p)||0)>0))){ o.img=p.image_url; o.imgIn=(stockN(p)||0)>0; } }); });
+    PRODUCTS.forEach(function(p){ if(br&&brand(p)!==br) return; cats(p).forEach(function(c){ if(!c.p) return; var o=t[c.p]||(t[c.p]={n:0,subs:{},img:null,imgIn:false}); o.n++; if(c.s) o.subs[c.s]=(o.subs[c.s]||0)+1; if(p.image_url&&(!o.img||(!o.imgIn&&(stockN(p)||0)>0))){ o.img=p.image_url; o.imgIn=(stockN(p)||0)>0; } }); });
     return t;
   }
+  function catKeys(t){ return Object.keys(t).sort(function(a,b){ return t[b].n-t[a].n; }); }
+  function nFilters(){ return (F.stock?1:0)+((F.pmin!=null||F.pmax!=null)?1:0); }
 
-  /* ---------- תצוגה ---------- */
+  /* ---------- רכיבי תצוגה ---------- */
   var CAT_IC={"כלי עבודה נטענים וחשמליים":"🔋","כלי עבודה ידניים":"🔧","אביזרים נלווים לכלי העבודה":"🧰","מסורים":"🪚","לבית, לגינה ולקמפינג":"🏡","כלים למוסך":"🚗","אחסון, בגדים ונעלי עבודה":"🦺","ציוד לבניין ולתעשייה":"🏗","ציוד טכני":"⚙️"};
-  function render(){
-    if(!$i("fieldMain")) return;
-    renderCartBar();
-    var bc=brandCounts();
-    $i("fdBrands").innerHTML='<button class="fd-chip'+(F.brand?'':' on')+'" data-fb="">כל המותגים</button>'+bc.slice(0,40).map(function(x){ return '<button class="fd-chip'+(F.brand===x[0]?' on':'')+'" data-fb="'+esc(x[0])+'">'+esc(x[0])+'<small>'+x[1]+'</small></button>'; }).join("");
-    var cr='<a data-fc="">כל הקטגוריות</a>';
-    if(F.cat) cr+=' › <a data-fc="'+esc(F.cat)+'">'+esc(F.cat)+'</a>';
-    if(F.sub) cr+=' › <b>'+esc(F.sub)+'</b>';
-    if(F.brand) cr+=' · מותג: <b>'+esc(F.brand)+'</b>';
-    $i("fdCrumb").innerHTML=(F.cat||F.brand||F.q)?cr:'';
-    var tree=catTree();
-    if(F.cat&&tree[F.cat]){
-      var subs=Object.keys(tree[F.cat].subs).map(function(k){ return [k,tree[F.cat].subs[k]]; }).sort(function(a,b){ return b[1]-a[1]; });
-      $i("fdSubs").innerHTML=subs.length>1?'<button class="fd-chip'+(F.sub?'':' on')+'" data-fs="">הכול</button>'+subs.map(function(x){ return '<button class="fd-chip'+(F.sub===x[0]?' on':'')+'" data-fs="'+esc(x[0])+'">'+esc(x[0])+'<small>'+x[1]+'</small></button>'; }).join(""):"";
-    } else $i("fdSubs").innerHTML="";
-    var body=$i("fdBody");
-    if(!META.size&&F.q.length<2){ body.innerHTML='<div class="fd-empty">'+(META_LOADING?'טוען קטגוריות…':'עוד לא יובאו קטגוריות ומותגים.<br>מנהל: מסך הניהול ← "קטגוריות ומותגים מהאתר".<br>בינתיים אפשר לחפש למעלה.')+'</div>'; return; }
-    if(!F.cat&&F.q.length<2){
-      var keys=Object.keys(tree).sort(function(a,b){ return tree[b].n-tree[a].n; });
-      body.innerHTML='<div class="fd-cats">'+keys.map(function(k){ var o=tree[k]; return '<div class="fd-cat" data-fc="'+esc(k)+'">'+(o.img?'<img loading="lazy" src="'+esc(o.img)+'" alt="" onerror="this.outerHTML=\'<div class=ph>'+(CAT_IC[k]||"📦")+'</div>\'">':'<div class="ph">'+(CAT_IC[k]||"📦")+'</div>')+'<b>'+esc(k)+'</b><small>'+o.n+' מוצרים</small></div>'; }).join("")+'</div>';
-      return;
-    }
-    var list=pool();
-    if(!list.length){ body.innerHTML='<div class="fd-empty">לא נמצאו מוצרים</div>'; return; }
-    body.innerHTML='<div class="fd-cnt">'+list.length+' מוצרים · קודם מה שבמלאי</div><div class="fd-grid">'+list.slice(0,F.limit).map(card).join("")+'</div>'+(list.length>F.limit?'<button class="fd-more" data-fmore>הצג עוד ('+(list.length-F.limit)+')</button>':'');
-  }
+  function catTile(k,o){ var ic=CAT_IC[k]||"📦"; return '<div class="fd-cat" data-fc="'+esc(k)+'">'+(o.img?'<img loading="lazy" src="'+esc(o.img)+'" alt="" onerror="this.outerHTML=\'<div class=ph>'+ic+'</div>\'">':'<div class="ph">'+ic+'</div>')+'<b>'+esc(k)+'</b><small>'+o.n+' מוצרים</small></div>'; }
+  function brandMark(b){ var u=logoUrl(b); return u?'<span class="lg"><img loading="lazy" src="'+esc(u)+'" alt="'+esc(b)+'" onerror="this.parentNode.className=\'lg nm\';this.parentNode.style.setProperty(\'--bc\',\''+brClr(b)+'\');this.outerHTML=\''+esc(b).replace(/'/g,"")+'\'"></span>':'<span class="lg nm" style="--bc:'+brClr(b)+'">'+esc(b)+'</span>'; }
+  function brandTile(b,n,big){ return '<button class="fb-tile'+(big?' big':'')+(F.logoEdit?' edit':'')+'" type="button" data-fbr="'+esc(b)+'" aria-label="'+esc(b)+'">'+brandMark(b)+'<small>'+n+' מוצרים</small>'+(F.logoEdit?'<span class="ed">📷</span>':'')+'</button>'; }
+  function sec(t,attr,n){ return '<div class="fh-sec"><h3>'+t+'</h3>'+(attr?'<button type="button" '+attr+'>הכול'+(n?' ('+n+')':'')+' ←</button>':'')+'</div>'; }
+  function backBar(title,logo){ return '<div class="fd-back"><button type="button" data-fback aria-label="חזרה">→</button>'+(logo?'<span class="lgs">'+logo+'</span>':'')+'<b>'+title+'</b></div>'; }
   function stBadge(p,inl){ var n=stockN(p), st=inl?' style="position:static"':''; if(n==null) return '<span class="fd-st na"'+st+'>מלאי —</span>'; return n>0?'<span class="fd-st in"'+st+'>במלאי '+n+'</span>':'<span class="fd-st out"'+st+'>אזל</span>'; }
   function card(p){
     var pr=effPrice(p), b=brand(p);
     return '<div class="fd-p" data-fp="'+esc(p.mktt)+'"><div class="im">'+(p.image_url?'<img loading="lazy" src="'+esc(p.image_url)+'" alt="" onerror="this.style.display=\'none\'">':'<span class="ph">אין תמונה</span>')+stBadge(p)+'</div>'+
       '<div class="bd">'+(b?'<span class="br">'+esc(b)+'</span>':'')+'<span class="nm">'+esc(p.name||"")+'</span><span class="sk">מק״ט '+esc(p.mktt)+'</span>'+
       '<div class="pr"><div>'+(pr!=null?'<b>'+esc(fmtNis(pr))+(isClearance(p.mktt)?' 🔥':'')+'</b><small>לפני מע״מ '+esc(fmtNis(exVat(pr)))+'</small>':'<small>אין מחיר</small>')+'</div>'+
-      '<button class="fd-add" data-fadd="'+esc(p.mktt)+'" aria-label="הוסף לעגלה">+</button></div></div></div>';
+      '<button class="fd-add" type="button" data-fadd="'+esc(p.mktt)+'" aria-label="הוסף לעגלה">+</button></div></div></div>';
   }
+  function row(p){
+    var pr=effPrice(p), b=brand(p);
+    return '<div class="fd-row" data-fp="'+esc(p.mktt)+'"><div class="th">'+(p.image_url?'<img loading="lazy" src="'+esc(p.image_url)+'" alt="" onerror="this.style.display=\'none\'">':'')+'</div>'+
+      '<div class="bd"><span class="nm">'+esc(p.name||"")+'</span><span class="sk">'+(b?esc(b)+' · ':'')+'מק״ט '+esc(p.mktt)+'</span>'+stBadge(p,true)+'</div>'+
+      '<div class="pr">'+(pr!=null?'<b>'+esc(fmtNis(pr))+(isClearance(p.mktt)?' 🔥':'')+'</b>':'<small>אין מחיר</small>')+'<button class="fd-add" type="button" data-fadd="'+esc(p.mktt)+'" aria-label="הוסף לעגלה">+</button></div></div>';
+  }
+  /* כרטיס זהה לחיפוש המהיר במודול המכירות + כפתור הוספה */
+  function pqCard(p){
+    var img=p.image_url?'<img class="pq-img" loading="lazy" src="'+esc(p.image_url)+'" alt="" data-fp="'+esc(p.mktt)+'" onerror="this.style.display=\'none\'">':'<div class="pq-noimg">אין תמונה</div>';
+    var stock=(p.stock!=null&&p.stock!=="")?p.stock:"—", pr=effPrice(p);
+    return '<div class="pq-card">'+img+'<div class="pq-body">'+
+      '<div class="pq-name">'+esc(p.name||"(ללא שם)")+'</div>'+
+      '<div class="pq-grid">'+
+        (brand(p)?'<span class="pq-lbl">מותג</span><span class="pq-val">'+esc(brand(p))+'</span>':'')+
+        '<span class="pq-lbl">מק״ט</span><span class="pq-val">'+esc(p.mktt)+'</span>'+
+        '<span class="pq-lbl">מלאי נוכחי</span><span class="pq-val">'+esc(stock)+'</span>'+
+        '<span class="pq-lbl">ברקוד</span><span class="pq-val">'+esc(p.barcode||"—")+'</span>'+
+        '<span class="pq-lbl">'+(isClearance(p.mktt)?"מחיר חיסול":"מחיר")+'</span><span class="pq-val pq-price">'+esc(pr!=null?fmtNis(pr):"—")+'</span>'+
+      '</div><div class="pq-ai"><button class="ai-btn" data-mktt="'+esc(p.mktt)+'">✨ AI</button><button class="spec-btn" data-mktt="'+esc(p.mktt)+'" type="button">📋 מפרט טכני</button></div>'+
+      '<button class="fq-add" type="button" data-fadd="'+esc(p.mktt)+'">+ הוסף לעגלה</button></div></div>';
+  }
+  function cartRow(c){
+    var n=cartItems(c.id).reduce(function(s,i){ return s+(Number(i.qty)||0); },0);
+    return '<div class="fq-cart'+(String(c.id)===String(ACTIVE)?' on':'')+'" data-fcopen="'+c.id+'"><div><b>'+esc(c.customer||"לקוח")+'</b><small>'+esc(displayName(c.salesperson))+' · '+n+' פריטים · '+esc(timeAgo(cartActivity(c)))+'</small></div><span class="t">'+esc(fmtNis(cartTotal(c.id)))+'</span></div>';
+  }
+
+  /* ---------- מסכים ---------- */
+  function render(){
+    if(!$i("fieldMain")) return;
+    renderCartBar();
+    $i("fdTabs").innerHTML='<button type="button" data-ftab="shop" class="'+(F.tab==="shop"?'on':'')+'">🏬 חנות</button><button type="button" data-ftab="quick" class="'+(F.tab==="quick"?'on':'')+'">🔍 חיפוש מהיר</button>';
+    var q=$i("fdQ"); if(q){ q.placeholder=F.tab==="quick"?"חיפוש מוצר — שם, מק״ט או ברקוד…":"חיפוש בחנות — מוצר, דגם או מק״ט…"; if(q.value.trim()!==F.q&&document.activeElement!==q) q.value=F.q; }
+    var body=$i("fdBody");
+    if(F.tab==="quick") return renderQuick(body);
+    if(!META.size&&F.q.length<2&&!F.clr){ body.innerHTML='<div class="fd-empty">'+(META_LOADING?'טוען קטגוריות…':'עוד לא יובאו קטגוריות ומותגים.<br>מנהל: מסך הניהול ← "קטגוריות ומותגים".')+'</div>'; return; }
+    if(inList()) return renderList(body);
+    if(F.view==="brands") return renderBrands(body);
+    if(F.view==="cats") return renderCats(body);
+    renderHome(body);
+  }
+  function renderQuick(body){
+    if(F.q.length<2){
+      var L=fieldCarts();
+      body.innerHTML='<button class="btn primary" type="button" data-fcnew style="margin-bottom:12px">+ עגלת שטח חדשה</button>'+(L.length?'<div class="fq-carts">'+L.map(cartRow).join("")+'</div>':'<div class="fd-empty">אין עגלות שטח פתוחות</div>');
+      return;
+    }
+    var res=search(F.q);
+    body.innerHTML=res.length?'<div class="fq-list">'+res.slice(0,20).map(pqCard).join("")+'</div>':'<div class="pq-empty">לא נמצא מוצר תואם</div>';
+  }
+  function renderHome(body){
+    var bc=brandCounts(), tree=catTree(), keys=catKeys(tree);
+    var top=bc.filter(function(x){ return TOP_BRANDS.indexOf(x[0])>=0; }), rest=bc.filter(function(x){ return TOP_BRANDS.indexOf(x[0])<0; });
+    var clr=PRODUCTS.filter(function(p){ return isClearance(p.mktt); });
+    body.innerHTML=
+      (top.length?'<div class="fh-top">'+top.map(function(x){ return brandTile(x[0],x[1],true); }).join("")+'</div>':'')+
+      sec("קטגוריות","data-fview=\"cats\"",keys.length)+'<div class="fd-cats">'+keys.map(function(k){ return catTile(k,tree[k]); }).join("")+'</div>'+
+      (clr.length?sec("🔥 מחירי חיסול","data-fclrall",clr.length)+'<div class="fh-scroll prods">'+clr.slice(0,14).map(card).join("")+'</div>':'')+
+      (rest.length?sec("עוד מותגים","data-fview=\"brands\"",bc.length)+'<div class="fh-scroll">'+rest.slice(0,16).map(function(x){ return brandTile(x[0],x[1]); }).join("")+'</div>':'');
+  }
+  function renderBrands(body){
+    var bc=brandCounts(), f=F.bq.toLowerCase();
+    body.innerHTML=backBar("כל המותגים")+
+      '<div class="fb-tools"><input id="fdBq" type="search" placeholder="חיפוש מותג…" autocomplete="off" value="'+esc(F.bq)+'"><button type="button" class="fd-chip'+(F.logoEdit?' on':'')+'" data-flogo>📷 לוגואים</button></div>'+
+      (F.logoEdit?'<div class="fb-hint">לחץ על מותג כדי להעלות לוגו (PNG / JPG / SVG). לסיום — לחץ שוב על "לוגואים".</div>':'')+
+      '<div class="fb-grid">'+bc.map(function(x){ return brandTile(x[0],x[1],TOP_BRANDS.indexOf(x[0])>=0).replace('<button ','<button'+(f&&x[0].toLowerCase().indexOf(f)<0?' style="display:none"':'')+' '); }).join("")+'</div>';
+  }
+  function renderCats(body){
+    var tree=catTree(), keys=catKeys(tree);
+    body.innerHTML=backBar("כל הקטגוריות")+'<div class="fc-list">'+keys.map(function(k){
+      var o=tree[k], ic=CAT_IC[k]||"📦", subs=Object.keys(o.subs).sort(function(a,b){ return o.subs[b]-o.subs[a]; });
+      return '<details class="fc-item"><summary><span class="ic">'+(o.img?'<img loading="lazy" src="'+esc(o.img)+'" alt="" onerror="this.outerHTML=\''+ic+'\'">':ic)+'</span><b>'+esc(k)+'</b><small>'+o.n+'</small></summary>'+
+        '<div class="fc-subs"><button type="button" class="fd-chip on" data-fc="'+esc(k)+'">כל המוצרים בקטגוריה</button>'+subs.map(function(s){ return '<button type="button" class="fd-chip" data-fc="'+esc(k)+'" data-fsub="'+esc(s)+'">'+esc(s)+'<small>'+o.subs[s]+'</small></button>'; }).join("")+'</div></details>';
+    }).join("")+'</div>';
+  }
+  function renderList(body){
+    var list=pool();
+    var title=F.q.length>=2?'תוצאות: "'+esc(F.q)+'"':F.clr?'🔥 מחירי חיסול':F.cat?esc(F.sub||F.cat):esc(F.brand);
+    var h=(F.brand&&!F.cat&&F.q.length<2&&!F.clr&&logoUrl(F.brand))?'<div class="fd-back"><button type="button" data-fback aria-label="חזרה">→</button><span class="fd-hero">'+brandMark(F.brand)+'</span></div>':backBar(title);
+    var act=[];
+    if(F.brand&&(F.cat||F.q.length>=2)) act.push(["brand","מותג: "+F.brand]);
+    if(F.cat&&F.sub) act.push(["sub",F.sub]);
+    if(F.cat&&(F.brand||F.q.length>=2)) act.push(["cat",F.cat]);
+    if(F.clr&&F.q.length>=2) act.push(["clr","חיסול"]);
+    if(F.stock) act.push(["stock","במלאי בלבד"]);
+    if(F.pmin!=null||F.pmax!=null) act.push(["price",F.pmin!=null&&F.pmax!=null?"מחיר "+F.pmin+"–"+F.pmax+" ₪":F.pmin!=null?"מחיר מ-"+F.pmin+" ₪":"מחיר עד "+F.pmax+" ₪"]);
+    if(act.length) h+='<div class="fd-chips">'+act.map(function(a){ return '<button type="button" class="fd-chip on x" data-frm="'+a[0]+'">'+esc(a[1])+' ✕</button>'; }).join("")+'</div>';
+    if(F.q.length<2&&!F.clr){
+      if(F.cat){
+        var t2=catTree(F.brand)[F.cat];
+        if(t2){ var subs=Object.keys(t2.subs).sort(function(a,b){ return t2.subs[b]-t2.subs[a]; });
+          if(subs.length>1) h+='<div class="fd-chips">'+'<button type="button" class="fd-chip'+(F.sub?'':' on')+'" data-fs="">הכול</button>'+subs.map(function(s){ return '<button type="button" class="fd-chip'+(F.sub===s?' on':'')+'" data-fs="'+esc(s)+'">'+esc(s)+'<small>'+t2.subs[s]+'</small></button>'; }).join("")+'</div>'; }
+        var bcs=brandCounts(F.cat);
+        if(bcs.length>1) h+='<div class="fd-chips br">'+'<button type="button" class="fd-chip'+(F.brand?'':' on')+'" data-fb="">כל המותגים</button>'+bcs.slice(0,30).map(function(x){ return '<button type="button" class="fd-chip'+(F.brand===x[0]?' on':'')+'" data-fb="'+esc(x[0])+'">'+esc(x[0])+'<small>'+x[1]+'</small></button>'; }).join("")+'</div>';
+      } else if(F.brand){
+        var tb=catTree(F.brand), kb=catKeys(tb);
+        if(kb.length) h+='<div class="fd-chips">'+kb.map(function(k){ return '<button type="button" class="fd-chip" data-fc="'+esc(k)+'">'+(CAT_IC[k]||"📦")+' '+esc(k)+'<small>'+tb[k].n+'</small></button>'; }).join("")+'</div>';
+      }
+    }
+    var nf=nFilters();
+    h+='<div class="fd-bar"><span class="cnt">'+list.length+' מוצרים</span>'+
+      '<button type="button" class="fd-tb'+(nf?' on':'')+'" data-ffilter>⚙︎ סינון'+(nf?' ('+nf+')':'')+'</button>'+
+      '<select id="fdSort" aria-label="מיון">'+SORTS.map(function(s){ return '<option value="'+s[0]+'"'+(F.sort===s[0]?' selected':'')+'>'+s[1]+'</option>'; }).join("")+'</select>'+
+      '<div class="fd-lay"><button type="button" data-flay="grid" class="'+(F.layout==="grid"?'on':'')+'" aria-label="תצוגת תמונות">▦</button><button type="button" data-flay="list" class="'+(F.layout==="list"?'on':'')+'" aria-label="תצוגת רשימה">☰</button></div></div>';
+    if(!list.length) h+='<div class="fd-empty">לא נמצאו מוצרים'+(nf?'<br><button type="button" class="fd-more" data-ffclear>נקה סינון</button>':'')+'</div>';
+    else h+=(F.layout==="list"?'<div class="fd-rows">'+list.slice(0,F.limit).map(row).join("")+'</div>':'<div class="fd-grid">'+list.slice(0,F.limit).map(card).join("")+'</div>')+
+      (list.length>F.limit?'<button type="button" class="fd-more" data-fmore>הצג עוד ('+(list.length-F.limit)+')</button>':'');
+    body.innerHTML=h;
+  }
+
+  /* ---------- חלון סינון ---------- */
+  function openFilter(){
+    var bc=brandCounts(F.cat), tree=catTree(F.brand), keys=catKeys(tree);
+    $i("ffBody").innerHTML=
+      '<div class="ff-sec"><b>מיון</b>'+SORTS.map(function(s){ return '<label class="ff-o"><input type="radio" name="ffSort" value="'+s[0]+'"'+(F.sort===s[0]?' checked':'')+'><span>'+s[1]+'</span></label>'; }).join("")+'</div>'+
+      '<div class="ff-sec"><b>מחיר כולל מע״מ (₪)</b><div class="ff-price"><input id="ffMin" type="number" inputmode="numeric" placeholder="מ-" value="'+(F.pmin!=null?F.pmin:"")+'"><span>–</span><input id="ffMax" type="number" inputmode="numeric" placeholder="עד" value="'+(F.pmax!=null?F.pmax:"")+'"></div></div>'+
+      '<div class="ff-sec"><label class="ff-o"><input type="checkbox" id="ffStock"'+(F.stock?' checked':'')+'><span>במלאי בלבד</span></label></div>'+
+      '<div class="ff-sec"><b>מותג</b><select id="ffBrand"><option value="">כל המותגים</option>'+bc.map(function(x){ return '<option value="'+esc(x[0])+'"'+(F.brand===x[0]?' selected':'')+'>'+esc(x[0])+' ('+x[1]+')</option>'; }).join("")+'</select></div>'+
+      '<div class="ff-sec"><b>קטגוריה</b><select id="ffCat"><option value="">כל הקטגוריות</option>'+keys.map(function(k){ return '<option value="'+esc(k)+'"'+(F.cat===k?' selected':'')+'>'+esc(k)+' ('+tree[k].n+')</option>'; }).join("")+'</select></div>'+
+      '<div class="ff-btns"><button type="button" class="btn ghost" data-ffclear>נקה הכול</button><button type="button" class="btn primary" data-ffapply>הצג תוצאות</button></div>';
+    $i("ffSheet").classList.add("open");
+  }
+  function applyFilter(){
+    var r=document.querySelector('input[name="ffSort"]:checked'); if(r){ F.sort=r.value; saveUi(); }
+    var mn=parseFloat($i("ffMin").value), mx=parseFloat($i("ffMax").value);
+    F.pmin=isNaN(mn)?null:mn; F.pmax=isNaN(mx)?null:mx;
+    F.stock=$i("ffStock").checked;
+    var b=$i("ffBrand").value||null, c=$i("ffCat").value||null;
+    if(c!==F.cat) F.sub=null;
+    F.brand=b; F.cat=c; F.limit=40;
+    $i("ffSheet").classList.remove("open"); render();
+  }
+  function clearFilter(){ F.stock=false; F.pmin=null; F.pmax=null; F.sort="rel"; saveUi(); F.limit=40; $i("ffSheet").classList.remove("open"); render(); }
+  function top(){ try{ window.scrollTo({top:0,behavior:"smooth"}); }catch(e){ window.scrollTo(0,0); } }
 
   /* ---------- כרטיס מוצר מלא ---------- */
   function openProduct(mktt){
@@ -5839,7 +6095,16 @@ body.m-field #fieldMain{display:block}
 
   /* ---------- חיווט ---------- */
   var qT=null;
-  document.addEventListener("input",function(e){ if(e.target&&e.target.id==="fdQ"){ clearTimeout(qT); qT=setTimeout(function(){ F.q=e.target.value.trim(); F.limit=40; if(F.q.length>=2){ F.sub=null; } render(); },180); } });
+  document.addEventListener("input",function(e){
+    var el=e.target; if(!el) return;
+    if(el.id==="fdQ"){ clearTimeout(qT); qT=setTimeout(function(){ F.q=el.value.trim(); F.limit=40; if(F.q.length>=2) F.sub=null; render(); },180); return; }
+    if(el.id==="fdBq"){ F.bq=el.value.trim(); var f=F.bq.toLowerCase(); document.querySelectorAll("#fdBody .fb-grid [data-fbr]").forEach(function(b){ b.style.display=(!f||b.getAttribute("data-fbr").toLowerCase().indexOf(f)>=0)?"":"none"; }); }
+  });
+  document.addEventListener("change",function(e){
+    var el=e.target; if(!el) return;
+    if(el.id==="fdSort"){ F.sort=el.value; saveUi(); F.limit=40; render(); return; }
+    if(el.id==="fdLogoFile"&&el.files&&el.files[0]&&LOGO_FOR){ uploadLogo(el.files[0],LOGO_FOR); el.value=""; }
+  });
   document.addEventListener("click",function(e){
     var t=e.target&&e.target.closest?e.target:null; if(!t) return;
     var x;
@@ -5848,8 +6113,21 @@ body.m-field #fieldMain{display:block}
     if((x=t.closest("[data-fq]"))){ var q=$i("fpQty"); q.value=Math.max(1,(parseInt(q.value,10)||1)+Number(x.getAttribute("data-fq"))); return; }
     if(t.closest("#fpClose")||t.id==="fpSheet"){ $i("fpSheet").classList.remove("open"); return; }
     if((x=t.closest("[data-fp]"))&&t.closest("#fieldMain")){ openProduct(x.getAttribute("data-fp")); return; }
+    if((x=t.closest("[data-ftab]"))){ F.tab=x.getAttribute("data-ftab"); saveUi(); render(); return; }
+    if((x=t.closest("[data-fview]"))){ F.view=x.getAttribute("data-fview"); F.brand=F.cat=F.sub=null; F.clr=false; F.bq=""; F.limit=40; render(); top(); return; }
+    if(t.closest("[data-fback]")){ if(inList()){ F.brand=F.cat=F.sub=null; F.clr=false; if(F.q){ F.q=""; $i("fdQ").value=""; } } else { F.view="home"; F.logoEdit=false; } F.limit=40; render(); top(); return; }
+    if((x=t.closest("[data-fbr]"))){ var bn=x.getAttribute("data-fbr"); if(F.logoEdit){ LOGO_FOR=bn; $i("fdLogoFile").click(); return; } F.brand=bn; F.cat=F.sub=null; F.limit=40; render(); top(); return; }
+    if(t.closest("[data-flogo]")){ F.logoEdit=!F.logoEdit; render(); return; }
+    if(t.closest("[data-fclrall]")){ F.clr=true; F.limit=40; render(); top(); return; }
+    if((x=t.closest("[data-frm]"))){ var k=x.getAttribute("data-frm"); if(k==="brand") F.brand=null; else if(k==="cat"){ F.cat=null; F.sub=null; } else if(k==="sub") F.sub=null; else if(k==="clr") F.clr=false; else if(k==="stock") F.stock=false; else if(k==="price"){ F.pmin=null; F.pmax=null; } F.limit=40; render(); return; }
+    if(t.closest("[data-ffilter]")){ openFilter(); return; }
+    if(t.closest("[data-ffapply]")){ applyFilter(); return; }
+    if(t.closest("[data-ffclear]")){ clearFilter(); return; }
+    if(t.closest("#ffClose")||t.id==="ffSheet"){ $i("ffSheet").classList.remove("open"); return; }
+    if((x=t.closest("[data-flay]"))){ F.layout=x.getAttribute("data-flay"); saveUi(); render(); return; }
+    if(t.closest("[data-fcnew]")){ newCart().then(function(c){ if(c) render(); }); return; }
     if((x=t.closest("[data-fb]"))){ F.brand=x.getAttribute("data-fb")||null; F.limit=40; render(); return; }
-    if((x=t.closest("[data-fc]"))&&t.closest("#fieldMain")){ var v=x.getAttribute("data-fc"); F.cat=v||null; F.sub=null; F.limit=40; if(!v){ F.q=""; $i("fdQ").value=""; } render(); window.scrollTo({top:0,behavior:"smooth"}); return; }
+    if((x=t.closest("[data-fc]"))&&t.closest("#fieldMain")){ F.cat=x.getAttribute("data-fc")||null; F.sub=x.getAttribute("data-fsub")||null; F.limit=40; render(); top(); return; }
     if((x=t.closest("[data-fs]"))){ F.sub=x.getAttribute("data-fs")||null; F.limit=40; render(); return; }
     if(t.closest("[data-fmore]")){ F.limit+=40; render(); return; }
     if(t.closest("#fdCart")){ var c=activeCart(); if(c) openFieldCart(c.id); else { renderCartsSheet(); $i("fcSheet").classList.add("open"); } return; }
@@ -5928,7 +6206,7 @@ body.m-field #fieldMain{display:block}
       if(!pin){ pin=prompt("קוד מנהל (לשמירת המפרטים):")||""; }
       for(var j=0;j<P.specs.length&&pin;j+=300){
         prog("שומר מפרטים… "+Math.min(j+300,P.specs.length)+" / "+P.specs.length);
-        var rr=await sb.functions.invoke("product-specs",{body:{action:"import",pin:pin,force:true,rows:P.specs.slice(j,j+300)}});
+        var rr=await sb.functions.invoke("product-specs",{body:{action:"import",pin:pin,merge:true,rows:P.specs.slice(j,j+300)}});
         var d=rr.data; if(rr.error){ try{ d=await rr.error.context.json(); }catch(_){ d=null; } }
         if(!d||!d.ok){ specErr=(d&&d.text)||"שמירת המפרטים נכשלה (ודא שפונקציית product-specs פרוסה בגרסה החדשה)"; break; }
         savedSpecs+=d.saved||0;
@@ -5972,7 +6250,7 @@ body.m-field #fieldMain{display:block}
   document.addEventListener("change",function(e){ if(e.target&&e.target.id==="metaFile"&&e.target.files[0]){ importMeta(e.target.files[0]); e.target.value=""; } });
 
   window.renderField=render; window.loadMeta=loadMeta; window.__META=META; window.fieldRenderCartBar=renderCartBar;
-  setTimeout(loadMeta,2000);
+  setTimeout(loadMeta,2000); setTimeout(loadLogos,2500);
 })();
 </script>
 <!-- ================= סוף מודול שטח ================= -->
