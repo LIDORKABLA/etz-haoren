@@ -773,6 +773,11 @@ body.m-count #calcFab{display:inline-flex}
   border-radius:12px;cursor:pointer;color:var(--ink);background:var(--card)}
 .xlsx-fmt input{width:20px;height:20px;accent-color:var(--pine);flex:0 0 auto;margin-top:2px}
 .xlsx-fmt small{color:var(--ink2);font-weight:400}
+.vat-seg{display:flex;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:4px;margin-top:6px}
+.vat-seg label{flex:1;cursor:pointer}
+.vat-seg input{position:absolute;opacity:0;pointer-events:none}
+.vat-seg span{display:block;text-align:center;padding:9px 6px;border-radius:9px;font-weight:800;font-size:14px;color:var(--ink2)}
+.vat-seg input:checked+span{background:var(--pine,#075E54);color:#fff}
 .xlsx-fmt:has(input:checked){border-color:var(--pine);background:var(--bg)}
 
 
@@ -1190,6 +1195,13 @@ body.m-count #calcFab{display:inline-flex}
       <label class="xlsx-fmt"><input type="radio" name="cartFmt" value="full" checked><span><b>אקסל רגיל (מלא)</b><br><small>כל העמודות לבחירתך — לשימוש פנימי</small></span></label>
       <label class="xlsx-fmt"><input type="radio" name="cartFmt" value="quote"><span><b>הצעת מחיר לקומקס</b><br><small>מק״ט + כמות בלבד</small></span></label>
       <label class="xlsx-fmt"><input type="radio" name="cartFmt" value="invoice"><span><b>חשבונית מס לקומקס</b><br><small>מק״ט + כמות + סה״כ שורה</small></span></label>
+    </div>
+    <div id="cartXlsxVat" style="margin:0 0 12px">
+      <div class="meta">מחירים בקובץ</div>
+      <div class="vat-seg">
+        <label><input type="radio" name="cartVat" value="inc" checked><span>כולל מע״מ</span></label>
+        <label><input type="radio" name="cartVat" value="ex"><span>לפני מע״מ</span></label>
+      </div>
     </div>
     <div id="cartXlsxNote" class="clr-note" style="display:none;margin:4px 0 12px"></div>
     <div id="cartXlsxColsWrap">
@@ -3726,10 +3738,10 @@ var CART_XLSX_COLS=[
   {label:"שם מוצר",     w:42, def:true,  get:function(it,p,cm){ return it.name||(p&&p.name)||""; }},
   {label:"ברקוד",       w:20, def:true,  get:function(it,p,cm){ return (p&&p.barcode)||""; }},
   {label:"כמות",        w:10, def:true,  get:function(it,p,cm){ return Number(it.qty)||0; }},
-  {label:"מחיר יחידה",  w:12, def:true,  get:function(it,p,cm){ return Number(it.unit_price)||0; }},
+  {label:"מחיר יחידה",  w:12, def:true, money:true,  get:function(it,p,cm){ return Number(it.unit_price)||0; }},
   {label:"הנחה %",      w:9,  def:true,  get:function(it,p,cm){ return itemDisc(it)||""; }},
-  {label:"מחיר אחרי הנחה", w:14, def:false, get:function(it,p,cm){ return itemUnit(it); }},
-  {label:"סה״כ שורה",   w:13, def:true,  get:function(it,p,cm){ return itemSub(it); }},
+  {label:"מחיר אחרי הנחה", w:14, def:false, money:true, get:function(it,p,cm){ return itemUnit(it); }},
+  {label:"סה״כ שורה",   w:13, def:true, money:true,  get:function(it,p,cm){ return itemSub(it); }},
   {label:"קישור תמונה", w:48, def:true,  get:function(it,p,cm){ return (p&&(p.image_url||p.image))||(cm&&cm.image_url)||""; }},
   {label:"מלאי נוכחי",   w:12, def:false, get:function(it,p,cm){ return (p&&p.stock!=null&&p.stock!=="")?p.stock:""; }},
   {label:"יחידה",       w:12, def:false, get:function(it,p,cm){ return (p&&p.unit)||""; }},
@@ -3745,6 +3757,7 @@ function cartXlsxSync(){
   var wrap=document.getElementById("cartXlsxColsWrap");
   var note=document.getElementById("cartXlsxNote");
   if(wrap) wrap.style.display=(fmt==="full")?"":"none";
+  var vw=document.getElementById("cartXlsxVat"); if(vw) vw.style.display=(fmt==="quote")?"none":"";
   if(note){
     if(CART_FMT_NOTE[fmt]){ note.textContent=CART_FMT_NOTE[fmt]; note.style.display=""; }
     else { note.style.display="none"; note.textContent=""; }
@@ -3760,6 +3773,7 @@ function openCartXlsx(){
     }).join("");
   }
   var full=document.querySelector('input[name=cartFmt][value=full]'); if(full) full.checked=true;
+  var vi=document.querySelector('input[name=cartVat][value=inc]'); if(vi) vi.checked=true;
   cartXlsxSync();
   var s=document.getElementById("cartXlsxSheet"); if(s) s.classList.add("open");
 }
@@ -3769,6 +3783,9 @@ function doCartXlsx(){
   var items=cartItems(CUR_CART);
   if(!items.length){ toast("העגלה ריקה"); return; }
   var fmt=cartFmtSel();
+  var vr=document.querySelector('input[name=cartVat]:checked'), EX=!!(vr&&vr.value==="ex"&&fmt!=="quote");
+  var money=function(v){ var n=Number(v); if(v===""||v==null||isNaN(n)) return v; return EX?exVat(n):n; };
+  var vatLbl=EX?" (לפני מע״מ)":"";
   var d=new Date(), pad=function(n){ return String(n).padStart(2,"0"); };
   var stamp=d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
   var aoa, wch, sheetName, fname;
@@ -3780,25 +3797,25 @@ function doCartXlsx(){
     wch=[{wch:16},{wch:10}]; sheetName="הצעת מחיר"; fname="הצעת-מחיר-קומקס_"+stamp+".xlsx";
   } else if(fmt==="invoice"){
     /* חשבונית מס לקומקס — מק״ט + כמות + סה״כ שורה, שורות פריטים בלבד */
-    aoa=[["מק״ט","כמות","סה״כ שורה"]];
-    items.forEach(function(it){ aoa.push([it.mktt, Number(it.qty)||0, itemSub(it)]); });
-    wch=[{wch:16},{wch:10},{wch:13}]; sheetName="חשבונית מס"; fname="חשבונית-מס-קומקס_"+stamp+".xlsx";
+    aoa=[["מק״ט","כמות","סה״כ שורה"+vatLbl]];
+    items.forEach(function(it){ aoa.push([it.mktt, Number(it.qty)||0, money(itemSub(it))]); });
+    wch=[{wch:16},{wch:10},{wch:13}]; sheetName="חשבונית מס"; fname="חשבונית-מס-קומקס"+(EX?"_לפני-מעמ":"")+"_"+stamp+".xlsx";
   } else {
     var box=document.getElementById("cartXlsxCols"); if(!box) return;
     var chosen=[];
     box.querySelectorAll('input[type=checkbox]').forEach(function(cb){ if(cb.checked) chosen.push(CART_XLSX_COLS[+cb.getAttribute("data-i")]); });
     if(!chosen.length){ toast("בחר לפחות עמודה אחת"); return; }
-    aoa=[chosen.map(function(c){ return c.label; })];
+    aoa=[chosen.map(function(c){ return c.label+(c.money?vatLbl:""); })];
     items.forEach(function(it){
       var p=PRODMAP.get(String(it.mktt));
       var cm=(typeof CLEARANCE_MAP!=="undefined")?CLEARANCE_MAP.get(String(it.mktt)):null;
-      aoa.push(chosen.map(function(c){ return c.get(it,p,cm); }));
+      aoa.push(chosen.map(function(c){ var v=c.get(it,p,cm); return c.money?money(v):v; }));
     });
     wch=chosen.map(function(c){ return {wch:c.w}; });
     sheetName="עגלה";
     var c=(typeof CARTS!=="undefined")?CARTS.find(function(x){ return String(x.id)===String(CUR_CART); }):null;
     var who=(c&&c.customer)?String(c.customer).replace(/[\\/:*?"<>|]/g,"_"):"עגלה";
-    fname=who+"_"+stamp+".xlsx";
+    fname=who+(EX?"_לפני-מעמ":"")+"_"+stamp+".xlsx";
   }
   var ws=XLSX.utils.aoa_to_sheet(aoa);
   ws["!cols"]=wch;
@@ -5426,6 +5443,8 @@ async function adminSendPush(){
 .sp-foot{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;align-items:center}
 .sp-foot a,.sp-foot button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:9px 12px;font-family:inherit;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer}
 .sp-foot .sp-age{flex:1;font-size:12px;color:var(--ink2);min-width:120px}
+.sp-foot .sp-wa{background:#25D366;border-color:#25D366;color:#fff}
+.sp-foot .sp-wa::before{content:"";display:inline-block;width:15px;height:15px;margin-inline-end:6px;vertical-align:-3px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23fff'%3E%3Cpath d='M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.3-.4.8-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.1 5.1 0 0 0 1.1 2.7 11.6 11.6 0 0 0 4.4 3.9c1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z'/%3E%3C/svg%3E") center/contain no-repeat}
 .sp-load{padding:30px 0;text-align:center;color:var(--ink2)}
 .sp-empty{padding:18px 0;text-align:center;color:var(--ink2);line-height:1.7}
 #specSync .sbar{height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin:10px 0 6px}
@@ -5526,15 +5545,22 @@ async function adminSendPush(){
     var age=s&&s.fetched_at?"עודכן "+timeAgo(new Date(s.fetched_at).getTime()):"";
     return '<div class="sp-foot"><span class="sp-age">'+esc(age)+'</span>'+
       (s&&s.url?'<a href="'+esc(s.url)+'" target="_blank" rel="noopener">לדף באתר ↗</a>':'')+
-      (s&&s.found!==false&&(s.specs||[]).length?'<button type="button" data-spec-share>שיתוף</button>':'')+
+      (s&&s.found!==false&&(s.specs||[]).length?'<button type="button" class="sp-wa" data-spec-wa>וואטסאפ</button>'+(navigator.share?'<button type="button" data-spec-share>שיתוף</button>':''):'')+
       '<button type="button" data-spec-retry>↻ רענן מהאתר</button></div>';
   }
   function shareText(){
     var s=SPECS.get(CUR), p=PRODMAP.get(CUR)||{}; if(!s) return "";
-    var L=["*"+(p.name||s.title||"")+"*","מק״ט: "+CUR,""];
-    (s.specs||[]).forEach(function(x){ L.push(x.k+": "+x.v); });
-    if(s.url) L.push("",s.url);
-    L.push("","עץ האורן — המרכז לכלי עבודה · 04-6156146");
+    var pr=(typeof effPrice==="function")?effPrice(p):null, clr=(typeof isClearance==="function")&&isClearance(CUR);
+    var L=["🛠️ *"+(p.name||s.title||"").trim()+"*","🔖 מק״ט: "+CUR];
+    if(pr!=null&&pr>0) L.push((clr?"🔥 מחיר חיסול: *":"💰 מחיר: *")+fmtNis(pr)+"* כולל מע״מ");
+    L.push("","📋 *מפרט טכני*");
+    var lastG=null;
+    (s.specs||[]).forEach(function(x){
+      if(x.g&&x.g!==lastG){ L.push("","▸ *"+x.g+"*"); lastG=x.g; }
+      L.push("• "+x.k+": *"+String(x.v).trim()+"*");
+    });
+    if(s.url) L.push("","🔗 תמונות ופרטים נוספים:",s.url);
+    L.push("","━━━━━━━━━━━━","*עץ האורן — המרכז לכלי עבודה*","📍 דרך השוקולד 1, צפת","📞 04-6156146");
     return L.join("\n");
   }
 
@@ -5581,6 +5607,7 @@ async function adminSendPush(){
     if(t.closest("#specInSheet")){ e.preventDefault(); if(typeof CURRENT!=="undefined"&&CURRENT) openSpec(CURRENT.mktt); return; }
     if(t.closest("#specClose")||t.id==="specSheet"){ $i("specSheet").classList.remove("open"); return; }
     if(t.closest("[data-spec-retry]")){ openSpec(CUR,true); return; }
+    if(t.closest("[data-spec-wa]")){ window.open("https://api.whatsapp.com/send?text="+encodeURIComponent(shareText()),"_blank","noopener"); return; }
     if(t.closest("[data-spec-share]")){ var tx=shareText(); if(navigator.share){ navigator.share({text:tx}).catch(function(){}); } else { window.open("https://wa.me/?text="+encodeURIComponent(tx),"_blank"); } return; }
     var sy=t.closest("[data-sync]"); if(sy){ syncCall("sync_"+sy.getAttribute("data-sync")); return; }
   },true);
